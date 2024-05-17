@@ -34,6 +34,8 @@ class Car:
                            "end": (1 if true_direction[self.direction] else -1) * self.get_braking_distance()}]
         segment.cars.append(self)
         self.extend_res()
+        self.last_segment = None
+        self.changed_lane = False
 
         # For gui only
         self.pos = Point(0, 0)
@@ -174,6 +176,8 @@ class Car:
                 len(self.res) == 1:
             next_lane_seg = self.get_adjacent_lane_segment(lane_diff)
             if next_lane_seg is not None:
+                self.changed_lane = True
+                self.last_segment = (self.pos.x, self.pos.y)
                 self.res[0]["seg"].cars.remove(self)
                 self.res[0] = {"seg": next_lane_seg,
                                "dir": self.res[0]["dir"],
@@ -181,7 +185,6 @@ class Car:
                                "begin": self.res[0]["begin"],
                                "end": self.res[0]["end"]}
                 self.res[0]["seg"].cars.append(self)
-
                 self._update_position()
                 return True
             else:
