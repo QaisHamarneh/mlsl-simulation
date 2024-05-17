@@ -35,7 +35,7 @@ class CarsWindow(pyglet.window.Window):
             self._draw_lane_lines(road)
 
         self.event_loop = pyglet.app.EventLoop()
-        pyglet.app.run(1 / FRAME_RATE)
+        pyglet.app.run(1)
 
     def on_draw(self):
         self.clear()
@@ -110,35 +110,62 @@ class CarsWindow(pyglet.window.Window):
                         width=abs(end_x - begin_x), height=abs(end_y - begin_y),
                         color=car.color if not car.dead else DEAD_GREY))
             else:
-                self.car_shapes.append(shapes.Rectangle(
+                car_rect = shapes.Rectangle(
                     x=car.pos.x, y=car.pos.y,
                     width=car.w, height=car.h,
-                    color=car.color if not car.dead else DEAD_GREY))
+                    color=car.color if not car.dead else DEAD_GREY)
+
+                car_brake = None
+                car_tri = None
 
                 if car.res[0]["dir"] == Direction.RIGHT:
-                    self.car_shapes.append(shapes.Triangle(car.pos.x + car.w, car.pos.y,
-                                                           car.pos.x + car.w, car.pos.y + car.h,
-                                                           car.pos.x + car.w + car.h // 6,
-                                                           car.pos.y + car.h // 2,
-                                                           car.color if not car.dead else DEAD_GREY))
+
+                    car_brake = shapes.Box(
+                        x=car.pos.x + car.w, y=car.pos.y,
+                        width=car.get_braking_distance(), height=car.h,
+                        color=car.color, thickness= 2)
+
+                    car_tri = shapes.Triangle(car.pos.x + car.w, car.pos.y,
+                                              car.pos.x + car.w, car.pos.y + car.h,
+                                              car.pos.x + car.w + car.h // 6,
+                                              car.pos.y + car.h // 2,
+                                              car.color if not car.dead else DEAD_GREY)
                 elif car.res[0]["dir"] == Direction.LEFT:
-                    self.car_shapes.append(shapes.Triangle(car.pos.x, car.pos.y,
-                                                           car.pos.x, car.pos.y + car.h,
-                                                           car.pos.x - car.h // 6,
-                                                           car.pos.y + car.h // 2,
-                                                           car.color if not car.dead else DEAD_GREY))
-                if car.res[0]["dir"] == Direction.UP:
-                    self.car_shapes.append(shapes.Triangle(car.pos.x, car.pos.y + car.h,
-                                                           car.pos.x + car.w, car.pos.y + car.h,
-                                                           car.pos.x + car.w // 2,
-                                                           car.pos.y + car.h + car.w // 6,
-                                                           car.color if not car.dead else DEAD_GREY))
-                if car.res[0]["dir"] == Direction.DOWN:
-                    self.car_shapes.append(shapes.Triangle(car.pos.x, car.pos.y,
-                                                           car.pos.x + car.w, car.pos.y,
-                                                           car.pos.x + car.w // 2,
-                                                           car.pos.y - car.w // 6,
-                                                           car.color if not car.dead else DEAD_GREY))
+                    car_brake = shapes.Box(
+                        x=car.pos.x - car.get_braking_distance(), y=car.pos.y,
+                        width=car.get_braking_distance(), height=car.h,
+                        color=car.color, thickness= 2)
+
+                    car_tri = shapes.Triangle(car.pos.x, car.pos.y,
+                                              car.pos.x, car.pos.y + car.h,
+                                              car.pos.x - car.h // 6,
+                                              car.pos.y + car.h // 2,
+                                              car.color if not car.dead else DEAD_GREY)
+                elif car.res[0]["dir"] == Direction.UP:
+                    car_brake = shapes.Box(
+                        x=car.pos.x, y=car.pos.y + car.h,
+                        width=car.w, height=car.get_braking_distance(),
+                        color=car.color, thickness= 2)
+                    car_tri = shapes.Triangle(car.pos.x, car.pos.y + car.h,
+                                              car.pos.x + car.w, car.pos.y + car.h,
+                                              car.pos.x + car.w // 2,
+                                              car.pos.y + car.h + car.w // 6,
+                                              car.color if not car.dead else DEAD_GREY)
+                elif car.res[0]["dir"] == Direction.DOWN:
+                    car_brake = shapes.Box(
+                        x=car.pos.x, y=car.pos.y - car.get_braking_distance(),
+                        width=car.w, height=car.get_braking_distance(),
+                        color=car.color, thickness= 2)
+                    car_tri = shapes.Triangle(car.pos.x, car.pos.y,
+                                              car.pos.x + car.w, car.pos.y,
+                                              car.pos.x + car.w // 2,
+                                              car.pos.y - car.w // 6,
+                                              car.color if not car.dead else DEAD_GREY)
+
+                self.car_shapes.append(car_rect)
+                if car_brake is not None:
+                    self.car_shapes.append(car_brake)
+                self.car_shapes.append(car_tri)
 
     def _update_goals(self):
         self.goal_shapes = []
