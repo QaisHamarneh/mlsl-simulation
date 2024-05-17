@@ -69,3 +69,20 @@ def draw_arrow(begin, end, horizontal, direction, tip=BLOCK_SIZE // 4, width=LAN
                                      begin.x + tip, begin.y + tip,
                                      width, color=color))
     return lines
+
+
+def create_car_rect(car):
+    return shapes.Rectangle(
+        x=car.pos.x, y=car.pos.y,
+        width=car.w, height=car.h,
+        color=car.color if not car.dead else DEAD_GREY
+    )
+
+
+def create_lines(*line_coords, color, width=2):
+    lines = []
+    for i in range(0, len(line_coords) - 2, 2):
+        lines.append(
+            shapes.Line(line_coords[i], line_coords[i + 1], line_coords[i + 2], line_coords[i + 3], color=color,
+                        width=width))
+    return lines

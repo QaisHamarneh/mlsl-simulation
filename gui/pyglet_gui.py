@@ -3,7 +3,7 @@ from pyglet import shapes
 
 from game_model.constants import *
 from game_model.road_network import Direction, Point, LaneSegment, horiz_direction, true_direction
-from gui.helpful_functions import draw_arrow, draw_dash_line
+from gui.helpful_functions import *
 
 
 class CarsWindow(pyglet.window.Window):
@@ -74,98 +74,78 @@ class CarsWindow(pyglet.window.Window):
     def _update_cars(self):
         self.car_shapes = []
         for player, car in enumerate(self.game.cars):
-            if self.segmentation:
-                for segment in car.get_size_segments():
-                    if isinstance(segment["seg"], LaneSegment):
-                        begin_x = segment["seg"].begin + segment["begin"] if segment["seg"].lane.road.horizontal \
-                            else segment["seg"].lane.top
-                        begin_y = segment["seg"].lane.top if segment["seg"].lane.road.horizontal \
-                            else segment["seg"].begin + segment["begin"]
-                        end_x = segment["seg"].begin + segment["end"] if segment["seg"].lane.road.horizontal \
-                            else segment["seg"].lane.top + BLOCK_SIZE
-                        end_y = segment["seg"].lane.top + BLOCK_SIZE if segment["seg"].lane.road.horizontal \
-                            else segment["seg"].begin + segment["end"]
-                    else:
-                        if true_direction[segment["dir"]]:
-                            begin_x = segment["seg"].vert_lane.top + segment["begin"] if horiz_direction[segment["dir"]] \
-                                else segment["seg"].vert_lane.top
-                            begin_y = segment["seg"].horiz_lane.top if horiz_direction[segment["dir"]] \
-                                else segment["seg"].horiz_lane.top + segment["begin"]
-                            end_x = segment["seg"].vert_lane.top + segment["end"] if horiz_direction[segment["dir"]] \
-                                else segment["seg"].vert_lane.top + BLOCK_SIZE
-                            end_y = segment["seg"].horiz_lane.top + BLOCK_SIZE if horiz_direction[segment["dir"]] \
-                                else segment["seg"].horiz_lane.top + segment["end"]
-                        else:
-                            begin_x = segment["seg"].vert_lane.top + BLOCK_SIZE + segment["begin"] if horiz_direction[segment["dir"]] \
-                                else segment["seg"].vert_lane.top
-                            begin_y = segment["seg"].horiz_lane.top if horiz_direction[segment["dir"]] \
-                                else segment["seg"].horiz_lane.top + BLOCK_SIZE + segment["begin"]
-                            end_x = segment["seg"].vert_lane.top + BLOCK_SIZE + segment["end"] if horiz_direction[segment["dir"]] \
-                                else segment["seg"].vert_lane.top + BLOCK_SIZE
-                            end_y = segment["seg"].horiz_lane.top + BLOCK_SIZE if horiz_direction[segment["dir"]] \
-                                else segment["seg"].horiz_lane.top + BLOCK_SIZE + segment["end"]
 
-                    self.car_shapes.append(shapes.Rectangle(
-                        x=min(begin_x, end_x), y=min(begin_y, end_y),
-                        width=abs(end_x - begin_x), height=abs(end_y - begin_y),
-                        color=car.color if not car.dead else DEAD_GREY))
-            else:
-                car_rect = shapes.Rectangle(
-                    x=car.pos.x, y=car.pos.y,
-                    width=car.w, height=car.h,
-                    color=car.color if not car.dead else DEAD_GREY)
+            car_rect = create_car_rect(car)
+            car_tri = None
+            car_brake_box = None
 
-                car_brake = None
-                car_tri = None
+            if car.res[0]["dir"] == Direction.RIGHT:
 
-                if car.res[0]["dir"] == Direction.RIGHT:
+                car_tri = shapes.Triangle(car.pos.x + car.w, car.pos.y,
+                                          car.pos.x + car.w, car.pos.y + car.h,
+                                          car.pos.x + car.w + car.h // 4,
+                                          car.pos.y + car.h // 2,
+                                          car.color if not car.dead else DEAD_GREY)
 
-                    car_brake = shapes.Box(
-                        x=car.pos.x + car.w, y=car.pos.y,
-                        width=car.get_braking_distance(), height=car.h,
-                        color=car.color, thickness= 2)
+                car_brake_box = create_lines(car.pos.x + car.w, car.pos.y,
+                                             car.pos.x + car.w + car.get_braking_distance(), car.pos.y,
+                                             car.pos.x + car.w + car.get_braking_distance() + car.h // 4,
+                                             car.pos.y + car.h // 2,
+                                             car.pos.x + car.w + car.get_braking_distance(), car.pos.y + car.h,
+                                             car.pos.x + car.w, car.pos.y + car.h,
+                                             color=car.color, width=2)
 
-                    car_tri = shapes.Triangle(car.pos.x + car.w, car.pos.y,
-                                              car.pos.x + car.w, car.pos.y + car.h,
-                                              car.pos.x + car.w + car.h // 6,
-                                              car.pos.y + car.h // 2,
-                                              car.color if not car.dead else DEAD_GREY)
-                elif car.res[0]["dir"] == Direction.LEFT:
-                    car_brake = shapes.Box(
-                        x=car.pos.x - car.get_braking_distance(), y=car.pos.y,
-                        width=car.get_braking_distance(), height=car.h,
-                        color=car.color, thickness= 2)
+            elif car.res[0]["dir"] == Direction.LEFT:
 
-                    car_tri = shapes.Triangle(car.pos.x, car.pos.y,
-                                              car.pos.x, car.pos.y + car.h,
-                                              car.pos.x - car.h // 6,
-                                              car.pos.y + car.h // 2,
-                                              car.color if not car.dead else DEAD_GREY)
-                elif car.res[0]["dir"] == Direction.UP:
-                    car_brake = shapes.Box(
-                        x=car.pos.x, y=car.pos.y + car.h,
-                        width=car.w, height=car.get_braking_distance(),
-                        color=car.color, thickness= 2)
-                    car_tri = shapes.Triangle(car.pos.x, car.pos.y + car.h,
-                                              car.pos.x + car.w, car.pos.y + car.h,
-                                              car.pos.x + car.w // 2,
-                                              car.pos.y + car.h + car.w // 6,
-                                              car.color if not car.dead else DEAD_GREY)
-                elif car.res[0]["dir"] == Direction.DOWN:
-                    car_brake = shapes.Box(
-                        x=car.pos.x, y=car.pos.y - car.get_braking_distance(),
-                        width=car.w, height=car.get_braking_distance(),
-                        color=car.color, thickness= 2)
-                    car_tri = shapes.Triangle(car.pos.x, car.pos.y,
-                                              car.pos.x + car.w, car.pos.y,
-                                              car.pos.x + car.w // 2,
-                                              car.pos.y - car.w // 6,
-                                              car.color if not car.dead else DEAD_GREY)
+                car_tri = shapes.Triangle(car.pos.x, car.pos.y,
+                                          car.pos.x, car.pos.y + car.h,
+                                          car.pos.x - car.h // 4,
+                                          car.pos.y + car.h // 2,
+                                          car.color if not car.dead else DEAD_GREY)
 
-                self.car_shapes.append(car_rect)
-                if car_brake is not None:
-                    self.car_shapes.append(car_brake)
-                self.car_shapes.append(car_tri)
+                car_brake_box = create_lines(car.pos.x, car.pos.y,
+                                             car.pos.x - car.get_braking_distance(), car.pos.y,
+                                             car.pos.x - car.get_braking_distance() - car.h // 4,
+                                             car.pos.y + car.h // 2,
+                                             car.pos.x - car.get_braking_distance(), car.pos.y + car.h,
+                                             car.pos.x, car.pos.y + car.h,
+                                             color=car.color, width=2)
+
+            elif car.res[0]["dir"] == Direction.UP:
+
+                car_tri = shapes.Triangle(car.pos.x, car.pos.y + car.h,
+                                          car.pos.x + car.w, car.pos.y + car.h,
+                                          car.pos.x + car.w // 2,
+                                          car.pos.y + car.h + car.h // 4,
+                                          car.color if not car.dead else DEAD_GREY)
+
+                car_brake_box = create_lines(car.pos.x, car.pos.y + car.h,
+                                             car.pos.x, car.pos.y + car.h + car.get_braking_distance(),
+                                             car.pos.x + car.w // 2,
+                                             car.pos.y + car.h + car.get_braking_distance() + car.h // 4,
+                                             car.pos.x + car.w, car.pos.y + car.h + car.get_braking_distance(),
+                                             car.pos.x + car.w, car.pos.y + car.h,
+                                             color=car.color, width=2)
+            elif car.res[0]["dir"] == Direction.DOWN:
+
+                car_tri = shapes.Triangle(car.pos.x, car.pos.y,
+                                          car.pos.x + car.w, car.pos.y,
+                                          car.pos.x + car.w // 2,
+                                          car.pos.y - car.h // 4,
+                                          car.color if not car.dead else DEAD_GREY)
+
+                car_brake_box = create_lines(car.pos.x, car.pos.y,
+                                             car.pos.x, car.pos.y - car.get_braking_distance(),
+                                             car.pos.x + car.w // 2,
+                                             car.pos.y - car.get_braking_distance() - car.h // 4,
+                                             car.pos.x + car.w, car.pos.y - car.get_braking_distance(),
+                                             car.pos.x + car.w, car.pos.y,
+                                             color=car.color, width=2)
+
+            self.car_shapes.append(car_rect)
+            if car_brake_box:
+                self.car_shapes.extend(car_brake_box)
+            self.car_shapes.append(car_tri)
 
     def _update_goals(self):
         self.goal_shapes = []
@@ -214,3 +194,42 @@ class CarsWindow(pyglet.window.Window):
                                    Point(lane.top + BLOCK_SIZE // 2, 3 * BLOCK_SIZE), False, lane.direction)
                 for line in arrow:
                     self.road_shapes.append(line)
+
+
+"""
+            if self.segmentation:
+                for segment in car.get_size_segments():
+                    if isinstance(segment["seg"], LaneSegment):
+                        begin_x = segment["seg"].begin + segment["begin"] if segment["seg"].lane.road.horizontal \
+                            else segment["seg"].lane.top
+                        begin_y = segment["seg"].lane.top if segment["seg"].lane.road.horizontal \
+                            else segment["seg"].begin + segment["begin"]
+                        end_x = segment["seg"].begin + segment["end"] if segment["seg"].lane.road.horizontal \
+                            else segment["seg"].lane.top + BLOCK_SIZE
+                        end_y = segment["seg"].lane.top + BLOCK_SIZE if segment["seg"].lane.road.horizontal \
+                            else segment["seg"].begin + segment["end"]
+                    else:
+                        if true_direction[segment["dir"]]:
+                            begin_x = segment["seg"].vert_lane.top + segment["begin"] if horiz_direction[segment["dir"]] \
+                                else segment["seg"].vert_lane.top
+                            begin_y = segment["seg"].horiz_lane.top if horiz_direction[segment["dir"]] \
+                                else segment["seg"].horiz_lane.top + segment["begin"]
+                            end_x = segment["seg"].vert_lane.top + segment["end"] if horiz_direction[segment["dir"]] \
+                                else segment["seg"].vert_lane.top + BLOCK_SIZE
+                            end_y = segment["seg"].horiz_lane.top + BLOCK_SIZE if horiz_direction[segment["dir"]] \
+                                else segment["seg"].horiz_lane.top + segment["end"]
+                        else:
+                            begin_x = segment["seg"].vert_lane.top + BLOCK_SIZE + segment["begin"] if horiz_direction[segment["dir"]] \
+                                else segment["seg"].vert_lane.top
+                            begin_y = segment["seg"].horiz_lane.top if horiz_direction[segment["dir"]] \
+                                else segment["seg"].horiz_lane.top + BLOCK_SIZE + segment["begin"]
+                            end_x = segment["seg"].vert_lane.top + BLOCK_SIZE + segment["end"] if horiz_direction[segment["dir"]] \
+                                else segment["seg"].vert_lane.top + BLOCK_SIZE
+                            end_y = segment["seg"].horiz_lane.top + BLOCK_SIZE if horiz_direction[segment["dir"]] \
+                                else segment["seg"].horiz_lane.top + BLOCK_SIZE + segment["end"]
+
+                    self.car_shapes.append(shapes.Rectangle(
+                        x=min(begin_x, end_x), y=min(begin_y, end_y),
+                        width=abs(end_x - begin_x), height=abs(end_y - begin_y),
+                        color=car.color if not car.dead else DEAD_GREY))
+            else:"""
