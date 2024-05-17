@@ -1,6 +1,6 @@
 from pyglet import shapes
 
-from game_model.constants import BLOCK_SIZE, LANE_DISPLACEMENT, WHITE
+from game_model.constants import BLOCK_SIZE, LANE_DISPLACEMENT, WHITE, DEAD_GREY
 from game_model.road_network import Direction
 
 
@@ -86,3 +86,5 @@ def create_lines(*line_coords, color, width=2):
             shapes.Line(line_coords[i], line_coords[i + 1], line_coords[i + 2], line_coords[i + 3], color=color,
                         width=width))
     return lines
+
+
