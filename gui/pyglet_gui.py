@@ -315,6 +315,8 @@ class CarsWindow(pyglet.window.Window):
 
 
             elif isinstance(seg, CrossingSegment):
+                continue
+
 
 
 
