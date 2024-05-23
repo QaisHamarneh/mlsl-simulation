@@ -7,6 +7,53 @@ from game_model.road_network import Direction, Point, LaneSegment, horiz_directi
 from gui.helpful_functions import *
 
 
+def determine_x_y(seg):
+    x = 0
+    y = 0
+    right = False
+    down = False
+    count_right = 0
+    count_down = 0
+    x_seg = seg
+    y_seg = seg
+
+    if seg.connected_segments[Direction.LEFT] is not None:
+        right = True
+        while not isinstance(x_seg, LaneSegment):
+            count_right += 1
+            x_seg = x_seg.connected_segments[Direction.LEFT]
+        x = x_seg.begin
+        count_right -= 1 # => anchor point always left side in crossing segment
+    elif seg.connected_segments[Direction.RIGHT] is not None:
+        while not isinstance(x_seg, LaneSegment):
+            count_right += 1
+            x_seg = x_seg.connected_segments[Direction.RIGHT]
+        x = x_seg.begin
+
+
+    if seg.connected_segments[Direction.DOWN] is not None:
+        down = True
+        while not isinstance(y_seg, LaneSegment):
+            count_down += 1
+            y_seg = y_seg.connected_segments[Direction.DOWN]
+        y = y_seg.begin
+        count_down -= 1 # => anchor point always down side in crossing segment
+    elif seg.connected_segments[Direction.UP] is not None:
+        while not isinstance(y_seg, LaneSegment):
+            count_down += 1
+            y_seg = y_seg.connected_segments[Direction.UP]
+        y = y_seg.begin
+
+
+
+
+    xnew = x + count_right * BLOCK_SIZE + (count_right - 1) * LANE_DISPLACEMENT if right else x - count_right * BLOCK_SIZE - (count_right - 1) * LANE_DISPLACEMENT
+    ynew = y + count_down * BLOCK_SIZE + (count_down - 1) * LANE_DISPLACEMENT if down else y - count_down * BLOCK_SIZE - (count_down - 1) * LANE_DISPLACEMENT
+
+    return x, y, xnew, ynew
+
+
+
 class CarsWindow(pyglet.window.Window):
     def __init__(self, game, controllers, segmentation=False, manual=False):
         super().__init__()
@@ -76,6 +123,7 @@ class CarsWindow(pyglet.window.Window):
         self.car_shapes = []
         for player, car in enumerate(self.game.cars):
             print(len(car.res), car.res)
+            print(car.res[0]["seg"])
             car_rect = create_car_rect(car)
             car_tri = None
             car_brake_box = None
@@ -254,6 +302,7 @@ class CarsWindow(pyglet.window.Window):
     def brake_box(self, car):
         left_points = []
         right_points = []
+        interesting_points = []
         (car_x, car_y) = car.pos.x, car.pos.y
 
         # left back corner of car based on direction, append points as starting points for the brake box
@@ -315,9 +364,11 @@ class CarsWindow(pyglet.window.Window):
 
 
             elif isinstance(seg, CrossingSegment):
-                continue
-
-
+                if i == 0:
+                    segx, segy, xnew, ynew = determine_x_y(seg)
+                    interesting_points.append((segx, segy))
+                    interesting_points.append((xnew, ynew))
+                    break
 
 
         #add points for the brake box, the tip of the triangle
@@ -342,6 +393,7 @@ class CarsWindow(pyglet.window.Window):
         shapes_at_end = []
         shapes_at_end += [shapes.Rectangle(p[0], p[1], 6, 6, color=PALE_GREEN) for p in left_points]
         shapes_at_end += [shapes.Rectangle(p[0], p[1], 6, 6, color=BLACK) for p in right_points]
+        shapes_at_end += [shapes.Rectangle(p[0], p[1], 10, 10, color=RED) for p in interesting_points]
 
         return shapes_at_end
 
