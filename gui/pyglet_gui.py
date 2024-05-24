@@ -1,57 +1,8 @@
 import pyglet
-from pyglet import shapes
 
 from game_model.constants import *
-from game_model.road_network import Direction, Point, LaneSegment, horiz_direction, true_direction, CrossingSegment, \
-    clock_wise
+from game_model.road_network import Point
 from gui.helpful_functions import *
-
-
-def determine_x_y(seg):
-    x = 0
-    y = 0
-    right = False
-    down = False
-    count_right = 0
-    count_down = 0
-    x_seg = seg
-    y_seg = seg
-
-    if seg.connected_segments[Direction.LEFT] is not None:
-        right = True
-        while not isinstance(x_seg, LaneSegment):
-            count_right += 1
-            x_seg = x_seg.connected_segments[Direction.LEFT]
-        x = x_seg.begin
-        count_right -= 1 # => anchor point always left side in crossing segment
-    elif seg.connected_segments[Direction.RIGHT] is not None:
-        while not isinstance(x_seg, LaneSegment):
-            count_right += 1
-            x_seg = x_seg.connected_segments[Direction.RIGHT]
-        x = x_seg.begin
-
-
-    if seg.connected_segments[Direction.DOWN] is not None:
-        down = True
-        while not isinstance(y_seg, LaneSegment):
-            count_down += 1
-            y_seg = y_seg.connected_segments[Direction.DOWN]
-        y = y_seg.begin
-        count_down -= 1 # => anchor point always down side in crossing segment
-    elif seg.connected_segments[Direction.UP] is not None:
-        while not isinstance(y_seg, LaneSegment):
-            count_down += 1
-            y_seg = y_seg.connected_segments[Direction.UP]
-        y = y_seg.begin
-
-
-
-
-    xnew = x + count_right * BLOCK_SIZE + (count_right - 1) * LANE_DISPLACEMENT if right else x - count_right * BLOCK_SIZE - (count_right - 1) * LANE_DISPLACEMENT
-    ynew = y + count_down * BLOCK_SIZE + (count_down - 1) * LANE_DISPLACEMENT if down else y - count_down * BLOCK_SIZE - (count_down - 1) * LANE_DISPLACEMENT
-
-    return x, y, xnew, ynew
-
 
 
 class CarsWindow(pyglet.window.Window):
@@ -77,13 +28,14 @@ class CarsWindow(pyglet.window.Window):
         self.goal_shapes = []
         self.car_shapes = []
 
+
         for road in self.game.roads:
             self._draw_road(road)
         for road in self.game.roads:
             self._draw_lane_lines(road)
 
         self.event_loop = pyglet.app.EventLoop()
-        pyglet.app.run(1 / FRAME_RATE)
+        pyglet.app.run(1/FRAME_RATE)
 
     def on_draw(self):
         self.clear()
@@ -122,12 +74,8 @@ class CarsWindow(pyglet.window.Window):
     def _update_cars(self):
         self.car_shapes = []
         for player, car in enumerate(self.game.cars):
-            print(len(car.res), car.res)
-            print(car.res[0]["seg"])
             car_rect = create_car_rect(car)
             car_tri = None
-            car_brake_box = None
-            changed_box = None
 
             if car.res[0]["dir"] == Direction.RIGHT:
 
@@ -246,7 +194,7 @@ class CarsWindow(pyglet.window.Window):
 
             self.car_shapes.append(car_rect)
 
-            brake_box_points = self.brake_box(car)
+            brake_box_points = brake_box(car)
 
             self.car_shapes.append(car_tri)
             self.car_shapes += brake_box_points
@@ -299,103 +247,8 @@ class CarsWindow(pyglet.window.Window):
                 for line in arrow:
                     self.road_shapes.append(line)
 
-    def brake_box(self, car):
-        left_points = []
-        right_points = []
-        interesting_points = []
-        (car_x, car_y) = car.pos.x, car.pos.y
+    # return line #for only brake box
 
-        # left back corner of car based on direction, append points as starting points for the brake box
-        if car.res[0]["dir"] == Direction.RIGHT:
-            car_y = car_y + car.h
-            car_x2, car_y2 = (car_x, car_y - car.h)
-        if car.res[0]["dir"] == Direction.DOWN:
-            car_x = car_x + car.w
-            car_y = car_y + car.h
-            car_x2, car_y2 = (car_x - car.w, car_y)
-        if car.res[0]["dir"] == Direction.LEFT:
-            car_x = car_x + car.w
-            car_x2, car_y2 = (car_x, car_y + car.h)
-        if car.res[0]["dir"] == Direction.UP:
-            car_x2, car_y2 = (car_x + car.w, car_y)
-
-        left_points.append((car_x, car_y))
-        right_points.append((car_x2, car_y2))
-
-        remaining_distance = car.get_braking_distance()
-        last_dir = car.res[0]["dir"]
-        last_x, last_y = car_x, car_y
-
-        for i in range(0, len(car.res)):
-            segment = car.res[i]
-            seg = segment["seg"]
-            if isinstance(seg, LaneSegment):
-                if seg.lane.road.horizontal:
-                    dis = abs(seg.end - car_x)
-                    if dis > remaining_distance:
-                        if last_dir == Direction.RIGHT:
-                            car_x += remaining_distance
-                            car_x2 += remaining_distance
-                        elif last_dir == Direction.LEFT:
-                            car_x -= remaining_distance
-                            car_x2 -= remaining_distance
-                    else:
-                        car_x = seg.end
-                        car_x2 = seg.end
-                        remaining_distance -= dis
-                    left_points.append((car_x, car_y))
-                    right_points.append((car_x2, car_y2))
-                else:
-                    dis = abs(seg.end - car_y)
-                    if dis > remaining_distance:
-                        if last_dir == Direction.DOWN:
-                            car_y -= remaining_distance
-                            car_y2 -= remaining_distance
-                        elif last_dir == Direction.UP:
-                            car_y += remaining_distance
-                            car_y2 += remaining_distance
-                    else:
-                        car_y = seg.end
-                        car_y2 = seg.end
-                        remaining_distance -= dis
-                    left_points.append((car_x, car_y))
-                    right_points.append((car_x2, car_y2))
-                last_dir = segment["dir"]
-
-
-            elif isinstance(seg, CrossingSegment):
-                if i == 0:
-                    segx, segy, xnew, ynew = determine_x_y(seg)
-                    interesting_points.append((segx, segy))
-                    interesting_points.append((xnew, ynew))
-                    break
-
-
-        #add points for the brake box, the tip of the triangle
-        if car.res[0]["dir"] == Direction.RIGHT:
-            car_x = car_x + car.h//4
-            car_y = car_y - car.h//2
-
-        if car.res[0]["dir"] == Direction.LEFT:
-            car_x = car_x - car.h//4
-            car_y = car_y + car.h//2
-
-        if car.res[0]["dir"] == Direction.UP:
-
-            car_x = car_x + car.w//2
-            car_y = car_y + car.w//4
-
-        if car.res[0]["dir"] == Direction.DOWN:
-            car_x = car_x - car.w//2
-            car_y = car_y - car.w//4
-
-        left_points.append((car_x, car_y))
-        shapes_at_end = []
-        shapes_at_end += [shapes.Rectangle(p[0], p[1], 6, 6, color=PALE_GREEN) for p in left_points]
-        shapes_at_end += [shapes.Rectangle(p[0], p[1], 6, 6, color=BLACK) for p in right_points]
-        shapes_at_end += [shapes.Rectangle(p[0], p[1], 10, 10, color=RED) for p in interesting_points]
-
-        return shapes_at_end
 
     """
                 if self.segmentation:
