@@ -6,7 +6,7 @@ from gui.helpful_functions import *
 
 
 class CarsWindow(pyglet.window.Window):
-    def __init__(self, game, controllers, segmentation=False, manual=False):
+    def __init__(self, game, controllers, segmentation=False, manual=False, debug=False):
         super().__init__()
         self.set_size(WINDOW_WIDTH, WINDOW_HEIGHT)
         self.set_minimum_size(WINDOW_WIDTH, WINDOW_HEIGHT)
@@ -27,6 +27,7 @@ class CarsWindow(pyglet.window.Window):
         self.road_shapes = []
         self.goal_shapes = []
         self.car_shapes = []
+        self.debug = debug
 
 
         for road in self.game.roads:
@@ -194,7 +195,7 @@ class CarsWindow(pyglet.window.Window):
 
             self.car_shapes.append(car_rect)
 
-            brake_box_points = brake_box(car)
+            brake_box_points = brake_box(car, self.debug)
 
             self.car_shapes.append(car_tri)
             self.car_shapes += brake_box_points
@@ -246,9 +247,6 @@ class CarsWindow(pyglet.window.Window):
                                    Point(lane.top + BLOCK_SIZE // 2, 3 * BLOCK_SIZE), False, lane.direction)
                 for line in arrow:
                     self.road_shapes.append(line)
-
-    # return line #for only brake box
-
 
     """
                 if self.segmentation:

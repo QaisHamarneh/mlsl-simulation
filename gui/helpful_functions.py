@@ -132,7 +132,7 @@ def get_xy_crossingseg(seg):
     return x, y
 
 
-def brake_box(car):
+def brake_box(car, debug):
     left_points = []
     right_points = []
     interesting_points = []
@@ -393,4 +393,7 @@ def brake_box(car):
     # create lines from points
     line = create_lines(*[p for point in points for p in point], color=car.color, width=2)
 
-    return line + shapes_at_end
+    if debug:
+        return line + shapes_at_end
+    else:
+        return line

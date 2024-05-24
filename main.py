@@ -5,12 +5,12 @@ from game_model.road_network import Road
 from gui.pyglet_gui import CarsWindow
 
 
-def main(players, roads, segmentation):
+def main(players, roads, segmentation, debug=False):
 
     game = TrafficEnv(players=players, roads=roads)
     controllers = [AstarCarController(game=game, player=i) for i in range(players)]
 
-    CarsWindow(game, controllers, segmentation=segmentation)
+    CarsWindow(game, controllers, segmentation=segmentation, debug=debug)
 
 
 if __name__ == '__main__':
