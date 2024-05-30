@@ -20,6 +20,7 @@ class TrafficEnv:
         # init display
         self.gui = None
         self.moved = True
+        self.time = 0
 
         self.reset()
 
@@ -33,6 +34,7 @@ class TrafficEnv:
             self.cars.append(create_random_car(self.segments, self.cars))
         for i in range(self.players):
             self._place_goal(i)
+        self.time = 0
 
     def _place_goal(self, player):
         self.useless_iterations[player] = 0
@@ -53,6 +55,9 @@ class TrafficEnv:
 
         # Execute selected action
         moved = self._move(player, action)  # update the head
+
+        #increment time
+        self.time += 1
 
         # Check if the action was possible
         if isinstance(moved, Problem):
