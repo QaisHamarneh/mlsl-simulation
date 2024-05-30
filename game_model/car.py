@@ -13,6 +13,8 @@ class Car:
                  color: Color,
                  max_speed: int) -> None:
 
+        self.reserved_segment = None
+        self.changing_lane = None
         self.name = name
         self.speed = speed
         self.size = size
@@ -25,6 +27,7 @@ class Car:
         self.parallel_res: list = []
         self.lane_change_counter: int = 0
         self.crossing_counter: int = 0
+        self.time: int = 0
 
         self.claim: list = []
         self.res: list = [{"seg": segment,
@@ -47,6 +50,9 @@ class Car:
     def move(self):
         # Within the lane
         self.loc += (1 if true_direction[self.res[0]["dir"]] else -1) * self.speed
+        self.check_reservation()
+
+        self.time += 1
 
         # Cancel claimed lanes if the car enters a crossing
         if len(self.res) > 1 and len(self.claimed_lane) > 0:
@@ -171,6 +177,60 @@ class Car:
             return lanes[num + actual_lane_diff].segments[current_seg_num]
         return None
 
+
+
+    def change_lane(self, lane_diff):
+        #case 1: car is not in a lane segment -> return problem
+        if not (isinstance(self.res[0]["seg"], LaneSegment) and \
+                len(self.res) == 1):
+            return Problem.CHANGE_LANE_WHILE_CROSSING
+        #case 2: car is not in lane segment in LANECHANGE time steps -> return problem
+        if abs(self.loc) + self.get_braking_distance() + LANECHANGE_TIME_STEPS * self.speed > self.res[0]["seg"].length:
+            return Problem.LANE_TOO_SHORT
+
+        next_lane_seg = self.get_adjacent_lane_segment(lane_diff)
+
+        #case 3: there is no adjacent lane segment -> return problem
+        if next_lane_seg is None:
+            return Problem.NO_ADJACENT_LANE
+
+        self.changing_lane = True
+        self.last_segment = (self.pos.x, self.pos.y)
+        self.reserved_segment = (self.time, next_lane_seg)
+        return True
+
+    def check_reservation(self):
+        if not self.changing_lane:
+            return
+
+        #check for collision in the new lane
+        for car in self.reserved_segment[1].cars:
+
+            from game_model.helper_functions import collision_check
+
+            if car != self and collision_check(self):
+                self.changing_lane = False
+                self.reserved_segment = None
+                return False
+
+        if self.time - self.reserved_segment[0] == LANECHANGE_TIME_STEPS:
+            self.changing_lane = False
+            self.res[0]["seg"].cars.remove(self)
+            self.res[0] = {"seg": self.reserved_segment[1],
+                           "dir": self.res[0]["dir"],
+                           "turn": False,
+                           "begin": self.res[0]["begin"],
+                           "end": self.res[0]["end"]}
+            self.res[0]["seg"].cars.append(self)
+            self._update_position()
+            return True
+
+
+
+
+
+
+    """
     def change_lane(self, lane_diff):
         if isinstance(self.res[0]["seg"], LaneSegment) and \
                 len(self.res) == 1:
@@ -244,6 +304,19 @@ class Car:
         #     return True
 
         # return Problem.CHANGE_LANE_WHILE_CROSSING
+    """
+
+    def claim_lane(self, lane_diff):
+        # check that only in one (lane) segment
+        if len(self.res) == 1 and isinstance(self.res[0]["seg"], LaneSegment):
+            # check that car is still only in one lane segment in CLAIMTIME time steps
+            if self.loc + (1 if true_direction[self.direction] else -1) * self.speed * CLAIMTIME > self.res[0]["seg"].length:
+                return
+
+            next_lane_seg = self.get_adjacent_lane_segment(lane_diff)
+            if next_lane_seg is not None:
+                return
+                #todo
 
     def _update_position(self):
         """ Returns the bottom left corner of the car """
@@ -272,6 +345,25 @@ class Car:
             # BLOCK_SIZE // 6 for the triangle
             self.w = BLOCK_SIZE
             self.h = self.size - BLOCK_SIZE // 6
+
+    def return_updated_position(self, seg):
+        """ Returns the bottom left corner of the car """
+        seg, direction = seg, self.res[0]["dir"]
+        road = seg.lane.road
+        seg_begin = seg.begin
+        if road.horizontal:
+            y = seg.lane.top + self.lane_change_counter * (BLOCK_SIZE // LANE_CHANGE_STEPS)
+            x = seg_begin + self.loc - (0 if true_direction[direction] else self.size)
+            # BLOCK_SIZE // 6 for the triangle
+            w = self.size - BLOCK_SIZE // 6
+            h = BLOCK_SIZE
+        else:
+            x = seg.lane.top + self.lane_change_counter * (BLOCK_SIZE // LANE_CHANGE_STEPS)
+            y = seg_begin + self.loc - (0 if true_direction[direction] else self.size)
+            # BLOCK_SIZE // 6 for the triangle
+            w = BLOCK_SIZE
+            h = self.size - BLOCK_SIZE // 6
+        return x, y, w, h
 
     def get_center(self):
         if horiz_direction[self.res[0]["dir"]]:
