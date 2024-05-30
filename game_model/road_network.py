@@ -23,6 +23,7 @@ class Problem(Enum):
     SLOWER_WHILE_0 = 3
     FASTER_WHILE_MAX = 4
     NO_ADJACENT_LANE = 5
+    LANE_TOO_SHORT = 6
 
 
 direction_axis = {Direction.RIGHT: (1, 0),
