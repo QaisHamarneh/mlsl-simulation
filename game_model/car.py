@@ -282,9 +282,10 @@ class Car:
     def get_braking_distance(self, speed=None):
         if speed is None:
             speed = self.speed
-        braking = (speed * (speed + 1)) // 2
+        # braking = (speed * (speed + 1)) // 2
+        braking = speed**2  // 2
         # BLOCK_SIZE // 2 additional distance when speed = 0
-        return self.size + braking + BLOCK_SIZE // 2
+        return self.size + braking + BUFFER
 
     def get_segment_info(self, segment):
         for seg in self.res:

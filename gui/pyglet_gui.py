@@ -74,130 +74,13 @@ class CarsWindow(pyglet.window.Window):
 
     def _update_cars(self):
         self.car_shapes = []
-        for player, car in enumerate(self.game.cars):
+        for car in self.game.cars:
             car_rect = create_car_rect(car)
-            car_tri = None
-
-            if car.res[0]["dir"] == Direction.RIGHT:
-
-                car_tri = shapes.Triangle(car.pos.x + car.w, car.pos.y,
-                                          car.pos.x + car.w, car.pos.y + car.h,
-                                          car.pos.x + car.w + car.h // 4,
-                                          car.pos.y + car.h // 2,
-                                          car.color if not car.dead else DEAD_GREY)
-
-                """
-
-                car_brake_box = create_lines(car.pos.x, car.pos.y,
-                                             car.pos.x + car.get_braking_distance(), car.pos.y,
-                                             car.pos.x + car.get_braking_distance() + car.h // 4,
-                                             car.pos.y + car.h // 2,
-                                             car.pos.x + car.get_braking_distance(), car.pos.y + car.h,
-                                             car.pos.x, car.pos.y + car.h,
-                                             color=car.color, width=2)
-
-                if car.changed_lane:
-                    x, y = car.last_segment
-                    changed_box = create_lines(x, y,
-                                               x + car.get_braking_distance() + car.w, y,
-                                               x + car.get_braking_distance() + car.w + car.h // 4, y + car.h // 2,
-                                               x + car.get_braking_distance() + car.w, y + car.h,
-                                               x, y + car.h, x, y,
-                                               color=car.color, width=2)
-                                               
-                """
-
-            elif car.res[0]["dir"] == Direction.LEFT:
-
-                car_tri = shapes.Triangle(car.pos.x, car.pos.y,
-                                          car.pos.x, car.pos.y + car.h,
-                                          car.pos.x - car.h // 4,
-                                          car.pos.y + car.h // 2,
-                                          car.color if not car.dead else DEAD_GREY)
-
-                """
-                car_brake_box = create_lines(car.pos.x, car.pos.y,
-                                             car.pos.x - car.get_braking_distance() + car.w, car.pos.y,
-                                             car.pos.x - car.get_braking_distance() - car.h // 4 + car.w,
-                                             car.pos.y + car.h // 2,
-                                             car.pos.x - car.get_braking_distance() + car.w, car.pos.y + car.h,
-                                             car.pos.x, car.pos.y + car.h,
-                                             color=car.color, width=2)
-
-                if car.changed_lane:
-                    x, y = car.last_segment
-                    changed_box = create_lines(x, y,
-                                               x - car.get_braking_distance() - car.w, y,
-                                               x - car.get_braking_distance() - car.h // 4 - car.w, y + car.h // 2,
-                                               x - car.get_braking_distance() - car.w, y + car.h,
-                                               x, y + car.h, x, y,
-                                               color=car.color, width=2)
-                """
-
-            elif car.res[0]["dir"] == Direction.UP:
-
-                car_tri = shapes.Triangle(car.pos.x, car.pos.y + car.h,
-                                          car.pos.x + car.w, car.pos.y + car.h,
-                                          car.pos.x + car.w // 2,
-                                          car.pos.y + car.h + car.h // 4,
-                                          car.color if not car.dead else DEAD_GREY)
-
-                """
-
-                car_brake_box = create_lines(car.pos.x, car.pos.y,
-                                             car.pos.x, car.pos.y+ car.get_braking_distance(),
-                                             car.pos.x + car.w // 2,
-                                             car.pos.y + car.get_braking_distance() + car.w // 4,
-                                             car.pos.x + car.w, car.pos.y + car.get_braking_distance(),
-                                             car.pos.x + car.w, car.pos.y,
-                                             color=car.color, width=2)
-
-                if car.changed_lane:
-                    x, y = car.last_segment
-                    changed_box = create_lines(x, y,
-                                               x, y + car.get_braking_distance() + car.h,
-                                               x + car.w // 2, y + car.get_braking_distance() + car.w // 4 + car.h,
-                                               x + car.w, y + car.get_braking_distance() + car.h,
-                                               x + car.w, y, x, y,
-                                               color=car.color, width=2)
-                                               
-                """
-
-            elif car.res[0]["dir"] == Direction.DOWN:
-
-                car_tri = shapes.Triangle(car.pos.x, car.pos.y,
-                                          car.pos.x + car.w, car.pos.y,
-                                          car.pos.x + car.w // 2,
-                                          car.pos.y - car.h // 4,
-                                          car.color if not car.dead else DEAD_GREY)
-
-                """
-
-                car_brake_box = create_lines(car.pos.x, car.pos.y,
-                                             car.pos.x, car.pos.y - car.get_braking_distance() + car.h,
-                                             car.pos.x + car.w // 2,
-                                             car.pos.y - car.get_braking_distance() - car.w // 4 + car.h,
-                                             car.pos.x + car.w, car.pos.y - car.get_braking_distance() + car.h,
-                                             car.pos.x + car.w, car.pos.y,
-                                             color=car.color, width=2)
-
-                if car.changed_lane:
-                    x, y = car.last_segment
-                    changed_box = create_lines(x, y,
-                                               x, y - car.get_braking_distance() - car.h,
-                                               x + car.w // 2, y - car.get_braking_distance() - car.w // 4 - car.h,
-                                               x + car.w, y - car.get_braking_distance() - car.h,
-                                               x + car.w, y,
-                                               x, y,
-                                               color=car.color, width=2)
-                                               
-                """
 
             self.car_shapes.append(car_rect)
 
             brake_box_points = brake_box(car, self.debug)
 
-            self.car_shapes.append(car_tri)
             self.car_shapes += brake_box_points
 
     def _update_goals(self):
