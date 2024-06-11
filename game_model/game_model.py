@@ -7,14 +7,14 @@ from game_model.constants import *
 
 
 class TrafficEnv:
-    def __init__(self, roads: list[Road], players: int, cars: list[Car] = None):
+
+    def __init__(self, roads: list[Road], players: int, cars: list[Car] = None, goals: list[Goal] = None):
         super().__init__()
         self.roads = roads
         self.segments = create_segments(roads)
         self.players = players
 
         self.cars = cars
-
         self.n_actions = 3
 
         # init display
@@ -22,7 +22,8 @@ class TrafficEnv:
         self.moved = True
         self.time = 0
 
-        self.reset()
+        if cars is None or goals is None:
+            self.reset()
 
     def reset(self):
         # init game state
