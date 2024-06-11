@@ -161,3 +161,21 @@ def collision_check(car: Car):
                             return True
 
     return False
+
+
+def reservation_check(car: Car):
+    seg = car.reserved_segment[1]
+    print(car.loc, car.loc+car.size)
+    car_loc = abs(car.loc)
+    for other_car in seg.cars:
+        if other_car != car:
+            other_seg = other_car.get_size_segments()
+            o_begin = abs(other_seg[0]["begin"])
+            o_end = abs(other_seg[0]["end"])
+            # check if the other car overlaps with the given car, also considering the size of the car
+            print(other_seg[0]["begin"], other_seg[0]["end"])
+            print(o_begin, o_end)
+            if o_begin <= car_loc <= o_end or o_begin <= car_loc + car.size <= \
+                    o_end or car_loc <= o_begin <= car_loc + car.size or car_loc <= o_end <= car_loc + car.size:
+                return True
+    return False

@@ -1,12 +1,8 @@
-import random
-
-from game_model.car import Car
 from game_model.constants import *
 from controller.astar_car_controller import AstarCarController
 from game_model.game_model import TrafficEnv
-from game_model.road_network import Direction, Goal
 from gui.pyglet_gui import CarsWindow
-from scenarios import RIGHT_OVERTAKE, STARTING_SCENARIO, ONE_ROAD, HORIZONTAL_VERTICAL
+from scenarios import LEFT_RIGHT_OVERTAKE, STARTING_SCENARIO, ONE_ROAD, HORIZONTAL_VERTICAL
 
 
 def main(players, roads, segmentation, debug=False):
@@ -17,4 +13,4 @@ def main(players, roads, segmentation, debug=False):
 
 
 if __name__ == '__main__':
-    main(**STARTING_SCENARIO, debug=True)
+    main(**LEFT_RIGHT_OVERTAKE, debug=True)
