@@ -202,13 +202,11 @@ class Car:
     def check_reservation(self):
         if not self.changing_lane:
             return
-
+        from game_model.helper_functions import reservation_check
         #check for collision in the new lane
         for car in self.reserved_segment[1].cars:
 
-            from game_model.helper_functions import collision_check
-
-            if car != self and collision_check(self):
+            if car != self and reservation_check(self):
                 self.changing_lane = False
                 self.reserved_segment = None
                 return False
