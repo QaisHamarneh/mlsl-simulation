@@ -35,7 +35,7 @@ class CarsWindow(pyglet.window.Window):
             self._draw_lane_lines(road)
 
         self.event_loop = pyglet.app.EventLoop()
-        pyglet.app.run(1 / FRAME_RATE)
+        pyglet.app.run(0.2)
 
     def on_draw(self):
         self.clear()
@@ -74,6 +74,7 @@ class CarsWindow(pyglet.window.Window):
     def _update_cars(self):
         self.car_shapes = []
         for player, car in enumerate(self.game.cars):
+            print(len(car.res))
             car_rect = create_car_rect(car)
             car_tri = None
             car_res_box = None

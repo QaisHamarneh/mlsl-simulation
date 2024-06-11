@@ -106,7 +106,6 @@ class Car:
             return last_seg["seg"].connected_segments[direction]
 
     def extend_res(self):
-
         while abs(self.loc) + self.get_braking_distance() >= sum([seg["seg"].length for seg in self.res]):
             next_seg = self.get_next_segment()
             parallel_next_seg = None
@@ -137,11 +136,42 @@ class Car:
                                           "end": extra}
                 self.parallel_res.append(next_parallel_seg_info)
                 parallel_next_seg.cars.append(self)
+        while isinstance(self.res[-1]["seg"], CrossingSegment):
+            next_seg = self.get_next_segment()
+            if next_seg is None:
+                print("Problem.NO_NEXT_SEGMENT")
+                break
+            if isinstance(next_seg, CrossingSegment):
+                next_seg_info = {"seg": next_seg,
+                                    "dir": self.direction,
+                                    "turn": False,
+                                    "begin": 0,
+                                    "end": 1 if true_direction[self.direction] else -1 * next_seg.length}
+                self.res.append(next_seg_info)
+                next_seg.cars.append(self)
+            elif isinstance(next_seg, LaneSegment):
+                next_seg_info = {"seg": next_seg,
+                                 "dir": self.direction,
+                                 "turn": False,
+                                 "begin": 0,
+                                 "end": (1 if true_direction[self.direction] else -1) * self.size}
+                self.res.append(next_seg_info)
+                next_seg.cars.append(self)
 
     def turn(self, new_direction):
 
         if isinstance(self.res[-1]["seg"], CrossingSegment):
             self.direction = new_direction
+            self.res[-1]["dir"] = self.direction
+            self.res[-1]["turn"] = True
+            if self.parallel_res:
+                self.parallel_res[-1]["turn"] = True
+            return True
+        if isinstance(self.res[-2]["seg"], CrossingSegment):
+            self.direction = new_direction
+            #remove the last segment
+            seg = self.res.pop()
+            seg["seg"].cars.remove(self)
             self.res[-1]["dir"] = self.direction
             self.res[-1]["turn"] = True
             if self.parallel_res:
@@ -176,8 +206,6 @@ class Car:
             current_seg_num = self.res[0]["seg"].num
             return lanes[num + actual_lane_diff].segments[current_seg_num]
         return None
-
-
 
     def change_lane(self, lane_diff):
         #case 1: car is not in a lane segment -> return problem
@@ -216,19 +244,15 @@ class Car:
         if self.time - self.reserved_segment[0] == LANECHANGE_TIME_STEPS:
             self.changing_lane = False
             self.res[0]["seg"].cars.remove(self)
-            self.res[0] = {"seg": self.reserved_segment[1],
-                           "dir": self.res[0]["dir"],
-                           "turn": False,
-                           "begin": self.res[0]["begin"],
-                           "end": self.res[0]["end"]}
+            self.res = [{"seg": self.reserved_segment[1],
+                         "dir": self.res[0]["dir"],
+                         "turn": False,
+                         "begin": self.res[0]["begin"],
+                         "end": self.res[0]["end"]}]
             self.res[0]["seg"].cars.append(self)
+            self.extend_res()
             self._update_position()
             return True
-
-
-
-
-
 
     """
     def change_lane(self, lane_diff):
@@ -310,7 +334,8 @@ class Car:
         # check that only in one (lane) segment
         if len(self.res) == 1 and isinstance(self.res[0]["seg"], LaneSegment):
             # check that car is still only in one lane segment in CLAIMTIME time steps
-            if self.loc + (1 if true_direction[self.direction] else -1) * self.speed * CLAIMTIME > self.res[0]["seg"].length:
+            if self.loc + (1 if true_direction[self.direction] else -1) * self.speed * CLAIMTIME > self.res[0][
+                "seg"].length:
                 return
 
             next_lane_seg = self.get_adjacent_lane_segment(lane_diff)

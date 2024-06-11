@@ -168,6 +168,8 @@ def brake_box(car, debug):
             if seg.lane.road.horizontal:
                 dis = abs(seg.end - car_x)
                 if dis > remaining_distance:
+                    if remaining_distance < car.size:
+                        remaining_distance = car.size
                     if last_dir == Direction.RIGHT:
                         car_x += remaining_distance
                         car_x2 += remaining_distance
@@ -248,7 +250,7 @@ def brake_box(car, debug):
                 right_points.append((car_x2, car_y2))
                 last_dir = segment["dir"]
             else:
-                if last_dir.value == segment["dir"].value or remaining_distance < BLOCK_SIZE + LANE_DISPLACEMENT:
+                if last_dir.value == segment["dir"].value:
 
                     if remaining_distance > BLOCK_SIZE:
                         if segment["dir"] == Direction.RIGHT:
@@ -273,26 +275,26 @@ def brake_box(car, debug):
                     else:
 
                         if car.res[i - 1]["dir"] == Direction.RIGHT:
-                            car_x += remaining_distance
-                            car_x2 += remaining_distance
+                            car_x += BLOCK_SIZE
+                            car_x2 += BLOCK_SIZE
                             tip_dir = Direction.RIGHT
 
                         elif car.res[i - 1]["dir"] == Direction.LEFT:
-                            car_x -= remaining_distance
-                            car_x2 -= remaining_distance
+                            car_x -= BLOCK_SIZE
+                            car_x2 -= BLOCK_SIZE
                             tip_dir = Direction.LEFT
 
                         elif car.res[i - 1]["dir"] == Direction.UP:
-                            car_y += remaining_distance
-                            car_y2 += remaining_distance
+                            car_y += BLOCK_SIZE
+                            car_y2 += BLOCK_SIZE
                             tip_dir = Direction.UP
 
                         elif car.res[i - 1]["dir"] == Direction.DOWN:
-                            car_y -= remaining_distance
-                            car_y2 -= remaining_distance
+                            car_y -= BLOCK_SIZE
+                            car_y2 -= BLOCK_SIZE
                             tip_dir = Direction.DOWN
 
-                        remaining_distance = 0
+                        remaining_distance = car.size
                         left_points.append((car_x, car_y))
                         right_points.append((car_x2, car_y2))
                         last_dir = segment["dir"]
