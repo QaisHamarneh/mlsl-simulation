@@ -6,7 +6,7 @@ from gui.helpful_functions import *
 
 
 class CarsWindow(pyglet.window.Window):
-    def __init__(self, game, controllers, segmentation=False, manual=False, debug=False):
+    def __init__(self, game, controllers, segmentation=False, manual=False, debug=False, pause=False):
         super().__init__()
         self.set_size(WINDOW_WIDTH, WINDOW_HEIGHT)
         self.set_minimum_size(WINDOW_WIDTH, WINDOW_HEIGHT)
@@ -21,7 +21,7 @@ class CarsWindow(pyglet.window.Window):
         self.manual = manual
 
         self.game_over = [False] * self.game.players
-        self.pause = False
+        self.pause = pause
         self.scores = [0] * self.game.players
 
         self.road_shapes = []
@@ -35,7 +35,8 @@ class CarsWindow(pyglet.window.Window):
             self._draw_lane_lines(road)
 
         self.event_loop = pyglet.app.EventLoop()
-        pyglet.app.run(1 / FRAME_RATE)
+
+        pyglet.app.run(0.1)
 
     def on_draw(self):
         self.clear()
@@ -106,11 +107,11 @@ class CarsWindow(pyglet.window.Window):
 
                 if car.changing_lane:
                     x, y, w, h = car.return_updated_position(car.reserved_segment[1])
-                    car_res_box = create_lines(x, y, x - car.get_braking_distance(), y,
-                                               x - car.get_braking_distance() - h // 4,
+                    car_res_box = create_lines(x + w, y, x + w - car.get_braking_distance(), y,
+                                               x + w - car.get_braking_distance() - h // 4,
                                                y + h // 2,
-                                               x - car.get_braking_distance(), y + h,
-                                               x, y + h, x, y,
+                                               x + w - car.get_braking_distance(), y + h,
+                                               x + w, y + h, x + w, y,
                                                color=car.color, width=2)
 
             elif car.res[0]["dir"] == Direction.UP:
@@ -145,7 +146,7 @@ class CarsWindow(pyglet.window.Window):
                                                x + w, y, x, y,
                                                color=car.color, width=2)
 
-            if self.debug and car.changing_lane and car.direction != Direction.RIGHT:
+            if self.debug and car.changing_lane:
                 self.pause = True
 
             self.car_shapes.append(car_rect)
