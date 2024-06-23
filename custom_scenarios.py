@@ -59,7 +59,7 @@ RIGHT_FRONT_NO_CHANGE = {
     "car2_speed": 1,
     "car1_max_speed": 1,
     "car2_max_speed": 1,
-    "change": 1
+    "change": -1
 }
 
 RIGHT_CATCH_UP_NO_CHANGE = {
@@ -78,7 +78,7 @@ RIGHT_CATCH_UP_NO_CHANGE = {
     "car2_speed": 0,
     "car1_max_speed": 30,
     "car2_max_speed": 0,
-    "change": 1
+    "change": -1
 
 }
 
@@ -98,7 +98,7 @@ RIGHT_BEHIND_CHANGE = {
     "car2_speed": 1,
     "car1_max_speed": 10,
     "car2_max_speed": 1,
-    "change": 1
+    "change": -1
 }
 
 LEFT_BEHIND_NO_CHANGE = {
