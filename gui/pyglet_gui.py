@@ -140,10 +140,10 @@ class CarsWindow(pyglet.window.Window):
 
                 if car.changing_lane:
                     x, y, w, h = car.return_updated_position(car.reserved_segment[1])
-                    car_res_box = create_lines(x, y, x, y - car.get_braking_distance(),
-                                               x + w // 2, y - car.get_braking_distance() - w // 4,
-                                               x + w, y - car.get_braking_distance(),
-                                               x + w, y, x, y,
+                    car_res_box = create_lines(x, y + h, x, y - car.get_braking_distance() + h,
+                                               x + w // 2, y - car.get_braking_distance() - w // 4 + h,
+                                               x + w, y - car.get_braking_distance() + h,
+                                               x + w, y + h, x, y + h,
                                                color=car.color, width=2)
 
             if self.debug and car.changing_lane:
