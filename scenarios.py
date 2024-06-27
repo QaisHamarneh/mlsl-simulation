@@ -39,7 +39,7 @@ STARTING_SCENARIO = {
         Road("v3", False, 1200, 2, 0)
     ],
     "segmentation": False,
-    "players": 25
+    "players": 10
 }
 
 ONE_ROAD = {
