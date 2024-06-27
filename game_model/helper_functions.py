@@ -42,7 +42,7 @@ def create_random_car(segments: list[Segment], cars) -> Car:
                                   if isinstance(seg, LaneSegment) and
                                   not any([seg == car.res[0]["seg"] for car in cars])])
 
-    max_speed = random.randint(BLOCK_SIZE // 4, BLOCK_SIZE // 2)
+    max_speed = random.randint(BLOCK_SIZE // 4, BLOCK_SIZE // 3)
     speed = random.randint(BLOCK_SIZE // 10, max_speed)
 
     size = random.randint(BLOCK_SIZE // 2, 3 * BLOCK_SIZE // 2)

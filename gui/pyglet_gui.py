@@ -35,8 +35,7 @@ class CarsWindow(pyglet.window.Window):
             self._draw_lane_lines(road)
 
         self.event_loop = pyglet.app.EventLoop()
-
-        pyglet.app.run(0.1)
+        pyglet.app.run(1/FRAME_RATE)
 
     def on_draw(self):
         self.clear()
@@ -74,23 +73,14 @@ class CarsWindow(pyglet.window.Window):
 
     def _update_cars(self):
         self.car_shapes = []
-        for player, car in enumerate(self.game.cars):
+        for car in self.game.cars:
             car_rect = create_car_rect(car)
-            car_tri = None
             car_res_box = None
             if car.res[0]["dir"] == Direction.RIGHT:
-
-                car_tri = shapes.Triangle(car.pos.x + car.w, car.pos.y,
-                                          car.pos.x + car.w, car.pos.y + car.h,
-                                          car.pos.x + car.w + car.h // 4,
-                                          car.pos.y + car.h // 2,
-                                          car.color if not car.dead else DEAD_GREY)
 
                 if car.changing_lane:
                     x, y, w, h = car.return_updated_position(car.reserved_segment[1])
                     car_res_box = create_lines(x, y, x + car.get_braking_distance(), y,
-                                               x + car.get_braking_distance() + h // 4,
-                                               y + h // 2,
                                                x + car.get_braking_distance(), y + h,
                                                x, y + h, x, y,
                                                color=car.color, width=2)
@@ -99,29 +89,14 @@ class CarsWindow(pyglet.window.Window):
 
             elif car.res[0]["dir"] == Direction.LEFT:
 
-                car_tri = shapes.Triangle(car.pos.x, car.pos.y,
-                                          car.pos.x, car.pos.y + car.h,
-                                          car.pos.x - car.h // 4,
-                                          car.pos.y + car.h // 2,
-                                          car.color if not car.dead else DEAD_GREY)
-
                 if car.changing_lane:
                     x, y, w, h = car.return_updated_position(car.reserved_segment[1])
                     car_res_box = create_lines(x + w, y, x + w - car.get_braking_distance(), y,
-                                               x + w - car.get_braking_distance() - h // 4,
-                                               y + h // 2,
                                                x + w - car.get_braking_distance(), y + h,
                                                x + w, y + h, x + w, y,
                                                color=car.color, width=2)
 
             elif car.res[0]["dir"] == Direction.UP:
-
-                car_tri = shapes.Triangle(car.pos.x, car.pos.y + car.h,
-                                          car.pos.x + car.w, car.pos.y + car.h,
-                                          car.pos.x + car.w // 2,
-                                          car.pos.y + car.h + car.h // 4,
-                                          car.color if not car.dead else DEAD_GREY)
-
                 if car.changing_lane:
                     x, y, w, h = car.return_updated_position(car.reserved_segment[1])
                     car_res_box = create_lines(x, y, x, y + car.get_braking_distance(),
@@ -131,17 +106,9 @@ class CarsWindow(pyglet.window.Window):
                                                color=car.color, width=2)
 
             elif car.res[0]["dir"] == Direction.DOWN:
-
-                car_tri = shapes.Triangle(car.pos.x, car.pos.y,
-                                          car.pos.x + car.w, car.pos.y,
-                                          car.pos.x + car.w // 2,
-                                          car.pos.y - car.h // 4,
-                                          car.color if not car.dead else DEAD_GREY)
-
                 if car.changing_lane:
                     x, y, w, h = car.return_updated_position(car.reserved_segment[1])
                     car_res_box = create_lines(x, y + h, x, y - car.get_braking_distance() + h,
-                                               x + w // 2, y - car.get_braking_distance() - w // 4 + h,
                                                x + w, y - car.get_braking_distance() + h,
                                                x + w, y + h, x, y + h,
                                                color=car.color, width=2)
@@ -152,8 +119,6 @@ class CarsWindow(pyglet.window.Window):
             self.car_shapes.append(car_rect)
 
             brake_box_points = brake_box(car, self.debug)
-
-            self.car_shapes.append(car_tri)
             self.car_shapes += brake_box_points
             if car_res_box is not None:
                 self.car_shapes += car_res_box
