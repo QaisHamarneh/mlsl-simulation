@@ -7,6 +7,7 @@ from game_model.constants import *
 from game_model.car import Car
 from game_model.road_network import Direction, Road, CrossingSegment, LaneSegment, true_direction, Goal, Segment
 from gui.colors import colors
+from game_model.road_network import LaneSegment, CrossingSegment, Point, Segment
 
 
 def dist(p1, p2):
@@ -165,17 +166,17 @@ def collision_check(car: Car):
 
 def reservation_check(car: Car):
     seg = car.reserved_segment[1]
-    print(car.loc, car.loc+car.size)
+    print(car.loc, car.loc + car.size)
     car_loc = abs(car.loc)
     for other_car in seg.cars:
         if other_car != car:
             other_seg = other_car.get_size_segments()
             o_begin = abs(other_seg[0]["begin"])
-            o_end = abs(other_seg[0]["end"])
-            # check if the other car overlaps with the given car, also considering the size of the car
-            print(other_seg[0]["begin"], other_seg[0]["end"])
-            print(o_begin, o_end)
-            if o_begin <= car_loc <= o_end or o_begin <= car_loc + car.size <= \
-                    o_end or car_loc <= o_begin <= car_loc + car.size or car_loc <= o_end <= car_loc + car.size:
+            o_end = o_begin + other_car.get_braking_distance()
+            if o_begin <= car_loc <= o_end or o_begin <= car_loc + car.get_braking_distance() <= \
+                    o_end or car_loc <= o_begin <= car_loc + car.get_braking_distance() or car_loc <= o_end <= car_loc + car.get_braking_distance():
                 return True
     return False
+
+
+
