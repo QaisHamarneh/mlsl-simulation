@@ -35,6 +35,8 @@ class TrafficEnv:
             self.cars.append(create_random_car(self.segments, self.cars))
         for i in range(self.players):
             self._place_goal(i)
+        for i in range(self.players):
+            self.cars[i].goal = self.goals[i]
         self.time = 0
 
     def _place_goal(self, player):
