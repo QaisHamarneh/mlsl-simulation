@@ -4,7 +4,7 @@ from scenarios import LEFT_RIGHT_OVERTAKE, STARTING_SCENARIO, ONE_ROAD, HORIZONT
 
 
 def main():
-    setup_2_car_scenarios(**DOWN_BEHIND_CHANGE)
+    setup_2_car_scenarios(**CHANGE_TO_RIGHT_LANESEGMENT_LEFT_AND_RIGHT)
 
 
 if __name__ == '__main__':

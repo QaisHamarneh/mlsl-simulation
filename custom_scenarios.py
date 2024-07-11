@@ -348,4 +348,60 @@ DOWN_BEHIND_CHANGE = {
     "change": -1
 }
 
+CHANGE_TO_RIGHT_LANESEGMENT_DOWN = {
+    "env": UP_DOWN_OVERTAKE["roads"],
+    "car1_seg": 17,
+    "car1_loc": -5,
+    "car2_seg": 8,
+    "car2_loc": 50,
+    "goal1_seg": 10,
+    "goal2_seg": 1,
+    "car1_size": 20,
+    "car2_size": 20,
+    "car1_color": BLUE,
+    "car2_color": RED,
+    "car1_speed": 1,
+    "car2_speed": 0,
+    "car1_max_speed": 1,
+    "car2_max_speed": 0,
+    "change": 0
+}
+
+CHANGE_TO_RIGHT_LANESEGMENT_UP = {
+    "env": UP_DOWN_OVERTAKE["roads"],
+    "car1_seg": 19,
+    "car1_loc": 5,
+    "car2_seg": 8,
+    "car2_loc": 50,
+    "goal1_seg": 10,
+    "goal2_seg": 1,
+    "car1_size": 20,
+    "car2_size": 20,
+    "car1_color": BLUE,
+    "car2_color": RED,
+    "car1_speed": 1,
+    "car2_speed": 0,
+    "car1_max_speed": 1,
+    "car2_max_speed": 0,
+    "change": 0
+}
+
+CHANGE_TO_RIGHT_LANESEGMENT_LEFT_AND_RIGHT = {
+    "env": LEFT_RIGHT_OVERTAKE["roads"],
+    "car1_seg": 17,
+    "car1_loc": -5,
+    "car2_seg": 15,
+    "car2_loc": 50,
+    "goal1_seg": 10,
+    "goal2_seg": 1,
+    "car1_size": 20,
+    "car2_size": 20,
+    "car1_color": BLUE,
+    "car2_color": RED,
+    "car1_speed": 1,
+    "car2_speed": 1,
+    "car1_max_speed": 1,
+    "car2_max_speed": 1,
+    "change": 0
+}
 
