@@ -157,7 +157,7 @@ def brake_box(car, debug):
     left_points.append((car_x, car_y))
     right_points.append((car_x2, car_y2))
 
-    remaining_distance = car.get_braking_distance() - BUFFER
+    remaining_distance = car.get_braking_distance()
     last_dir = car.res[0]["dir"]
     tip_dir = car.res[0]["dir"]
 

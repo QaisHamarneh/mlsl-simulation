@@ -35,7 +35,7 @@ class CarsWindow(pyglet.window.Window):
             self._draw_lane_lines(road)
 
         self.event_loop = pyglet.app.EventLoop()
-        pyglet.app.run(1/FRAME_RATE)
+        pyglet.app.run(1/20)
 
     def on_draw(self):
         self.clear()
@@ -100,7 +100,6 @@ class CarsWindow(pyglet.window.Window):
                 if car.changing_lane:
                     x, y, w, h = car.return_updated_position(car.reserved_segment[1])
                     car_res_box = create_lines(x, y, x, y + car.get_braking_distance(),
-                                               x + w // 2, y + car.get_braking_distance() + w // 4,
                                                x + w, y + car.get_braking_distance(),
                                                x + w, y, x, y,
                                                color=car.color, width=2)
