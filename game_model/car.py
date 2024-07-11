@@ -223,6 +223,8 @@ class Car:
             else lane_segment.lane.road.left_lanes
         if 0 <= num + actual_lane_diff < len(lanes):
             current_seg_num = self.res[0]["seg"].num
+            if self.res[0]["dir"] != lanes[num + actual_lane_diff].direction:
+                return None
             return lanes[num + actual_lane_diff].segments[current_seg_num]
         return None
 
@@ -536,7 +538,10 @@ class Car:
         if self.changing_lane:
             return
         if isinstance(self.res[0]["seg"], LaneSegment) and len(self.res) == 1:
-            # check if there is a right lane
+            # check if goal is on this segment
+            if self.goal.lane_segment == self.res[0]["seg"]:
+                return
+
             right_lane = self.get_adjacent_lane_segment(1)
             if right_lane is not None:
                 self.change_lane(1)
