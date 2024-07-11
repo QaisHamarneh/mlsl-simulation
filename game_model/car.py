@@ -56,6 +56,7 @@ class Car:
     def move(self):
         # Within the lane
         self.loc += (1 if true_direction[self.res[0]["dir"]] else -1) * self.speed
+        self.check_right_lane()
         self.check_reservation()
 
         self.time += 1
@@ -65,6 +66,18 @@ class Car:
             self.claimed_lane = {}
 
         self.extend_res()
+
+        # stagnation check
+        if self.last_loc == self.loc:
+            self.stagnation += 1
+        else:
+            self.stagnation = 0
+            self.last_loc = self.loc
+        # stagnation removal
+        if self.stagnation > 5:
+            for seg in self.res[1:]:
+                seg["seg"].cars.remove(self)
+            self.res = [self.res[0]]
 
 
         while abs(self.loc) > self.res[0]["seg"].length:
@@ -221,6 +234,9 @@ class Car:
         # case 2: car is not in lane segment in LANECHANGE time steps -> return problem
         if abs(self.loc) + self.get_braking_distance() + LANECHANGE_TIME_STEPS * self.speed > self.res[0]["seg"].length:
             return Problem.LANE_TOO_SHORT
+
+        if lane_diff == 0:
+            return False
 
         next_lane_seg = self.get_adjacent_lane_segment(lane_diff)
 
@@ -515,3 +531,14 @@ class Car:
                     open_list.append((f_score[neighbor], neighbor))
 
         return None  # No path found
+
+    def check_right_lane(self):
+        if self.changing_lane:
+            return
+        if isinstance(self.res[0]["seg"], LaneSegment) and len(self.res) == 1:
+            # check if there is a right lane
+            right_lane = self.get_adjacent_lane_segment(1)
+            if right_lane is not None:
+                self.change_lane(1)
+        else:
+            return
