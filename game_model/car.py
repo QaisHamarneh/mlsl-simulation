@@ -2,7 +2,7 @@ import numpy as np
 
 from game_model.constants import *
 from game_model.road_network import Color, LaneSegment, true_direction, Problem, CrossingSegment, Point, \
-    horiz_direction, right_direction, Segment
+    horiz_direction, right_direction, Segment, clock_wise
 
 
 class Car:
@@ -33,6 +33,7 @@ class Car:
         self.time: int = 0
         self.stagnation: int = 0
         self.last_loc: Point = loc
+        self.right_check_segment = None
 
         self.claim: list = []
         self.res: list = [{"seg": segment,
@@ -52,11 +53,15 @@ class Car:
         self.h = 0
 
         self._update_position()
+        print(name, self.res[0]["seg"].lane.road.get_outer_lane_segment(self.res[0]["seg"], True), self.res[0]["seg"].lane.road.get_outer_lane_segment(self.res[0]["seg"], False), self.res[0]["seg"])
 
     def move(self):
         # Within the lane
         self.loc += (1 if true_direction[self.res[0]["dir"]] else -1) * self.speed
-        self.check_right_lane()
+        if self.right_check_segment is None or self.right_check_segment == self.res[0]["seg"]:
+            self.check_right_lane()
+            self.right_check_segment = self.res[2]["seg"] if len(self.res) > 2 else None
+            self.extend_res()
         self.check_reservation()
 
         self.time += 1
@@ -125,13 +130,13 @@ class Car:
         else:
             return last_seg["seg"].connected_segments[direction]
 
-    def extend_res(self):
+    def extend_res(self, goal=None):
         next_segs = None
         while self.goal is not None and (
                 abs(self.loc) + self.get_braking_distance() >= sum([seg["seg"].length for seg in self.res]) or
                 isinstance(self.res[-1]["seg"], CrossingSegment)):
             if next_segs is None:
-                next_segs = self.astar()
+                next_segs = self.astar(goal)
             if len(next_segs) < 2:
                 print("Problem.NO_NEXT_SEGMENT")
                 print(f"Problem car {self.name} loc {self.loc} speed {self.speed}")
@@ -222,7 +227,7 @@ class Car:
         lanes = lane_segment.lane.road.right_lanes if right_direction[self.direction] \
             else lane_segment.lane.road.left_lanes
         if 0 <= num + actual_lane_diff < len(lanes):
-            current_seg_num = self.res[0]["seg"].num
+            current_seg_num = lane_segment.num
             if self.res[0]["dir"] != lanes[num + actual_lane_diff].direction:
                 return None
             return lanes[num + actual_lane_diff].segments[current_seg_num]
@@ -456,7 +461,7 @@ class Car:
             i += 1
         return segments
 
-    def astar(self) -> list[Segment]:
+    def astar(self, goal = None) -> list[Segment]:
 
         def dist(p1, p2):
             return np.linalg.norm([p1.x - p2.x, p1.y - p2.y])
@@ -496,7 +501,7 @@ class Car:
             return path
 
         start_seg = self.res[-1]["seg"]
-        goal_seg = self.goal.lane_segment
+        goal_seg = self.goal.lane_segment if goal is None else goal
         # Initialize the open list with the start node and a cost of 0
         open_list = [(0, start_seg)]
         # Initialize the came_from dictionary to track the path
@@ -545,5 +550,107 @@ class Car:
             right_lane = self.get_adjacent_lane_segment(1)
             if right_lane is not None:
                 self.change_lane(1)
-        else:
+
             return
+
+        if isinstance(self.res[0]["seg"], LaneSegment):
+            cur_dir = self.res[0]["dir"]
+            right_turn = None
+            turn_direction = None
+            turn_index = None
+            for i, seg in enumerate(self.res):
+                if i == 0:
+                    continue
+                if isinstance(seg["seg"], LaneSegment):
+                    print(self.goal.lane_segment, seg["seg"])
+                    if self.goal.lane_segment == seg["seg"]:
+                        return
+                    else:
+                        break
+
+                #change of direction
+                if seg["dir"] != cur_dir and isinstance(seg["seg"], CrossingSegment):
+                    turn_direction = seg["dir"]
+                    right_turn = (clock_wise.index(cur_dir) + 1) % len(clock_wise) ==  clock_wise.index(turn_direction)
+                    turn_index = i
+                else:
+                    continue
+
+            if right_turn is None:
+                return
+
+            if right_turn:
+                # change the turning direction of first crossing segment that can be turned to turn_direction
+                for i, seg in enumerate(self.res):
+                    if isinstance(seg["seg"], CrossingSegment):
+                        if seg["seg"].connected_segments[turn_direction] is not None:
+                            seg["dir"] = turn_direction
+                            seg["turn"] = True
+                            # remove the rest of the path
+                            for j in range(i + 1, len(self.res)):
+                                self.res[j]["seg"].cars.remove(self)
+                            self.res = self.res[0:i+1]
+                            # add the next segment
+                            next_seg = seg["seg"].connected_segments[turn_direction]
+                            self.res.append({"seg": next_seg,
+                                             "dir": turn_direction,
+                                             "turn": False,
+                                             "begin": 0,
+                                             "end": 1 * BLOCK_SIZE})
+                            next_seg.cars.append(self)
+                            return
+            else:
+                temp_res = self.res[0:turn_index]
+                # add the first segment, if connected_segments[cur_dir] is not None
+                if self.res[turn_index]["seg"].connected_segments[cur_dir] is not None:
+                    temp_res.append({"seg": self.res[turn_index]["seg"],
+                                     "dir": cur_dir,
+                                     "turn": False,
+                                     "begin": 0,
+                                     "end": 1 * BLOCK_SIZE})
+                # else turn on the first segment
+                else:
+                    temp_res.append({"seg": self.res[turn_index]["seg"],
+                                     "dir": turn_direction,
+                                     "turn": True,
+                                     "begin": 0,
+                                     "end": 1 * BLOCK_SIZE})
+                # starting from turn_index, try to go straight until the next segment is a lane segment
+                while temp_res[-1]["seg"].connected_segments[cur_dir] is not None:
+                    next_seg = temp_res[-1]["seg"].connected_segments[cur_dir]
+                    if isinstance(next_seg, LaneSegment):
+                        next_seg = temp_res[-1]["seg"].connected_segments[turn_direction]
+                        temp_res[-1]["turn"] = True
+                        temp_res[-1]["dir"] = turn_direction
+                        temp_res.append({"seg": next_seg,
+                                         "dir": turn_direction,
+                                         "turn": False,
+                                         "begin": 0,
+                                         "end": 1 * BLOCK_SIZE})
+                        break
+                    else:
+                        temp_res.append({"seg": next_seg,
+                                         "dir": cur_dir,
+                                         "turn": False,
+                                         "begin": 0,
+                                         "end": 1 * BLOCK_SIZE})
+                # remove original res
+                for i in range(len(self.res)):
+                    self.res[i]["seg"].cars.remove(self)
+                # replace res with temp_res
+                self.res = temp_res
+                # add reservation of temp_res
+                for i in range(len(self.res)):
+                    self.res[i]["seg"].cars.append(self)
+                self.extend_res()
+
+
+
+
+
+
+
+
+
+
+

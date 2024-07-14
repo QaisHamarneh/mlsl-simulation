@@ -83,6 +83,12 @@ class Road:
         self.bottom = self.top + (right + left) * BLOCK_SIZE + (
                 right + left - 1) * LANE_DISPLACEMENT
 
+    def get_outer_lane_segment(self, segment, right_lanes: bool):
+        if right_lanes:
+            return self.right_lanes[0].segments[segment.num] if len(self.right_lanes) > 0 else None
+        else:
+            return self.left_lanes[-1].segments[segment.num] if len(self.left_lanes) > 0 else None
+
 
 class Lane:
     def __init__(self,
