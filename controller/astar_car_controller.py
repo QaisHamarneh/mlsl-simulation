@@ -43,7 +43,7 @@ class AstarCarController:
                         if left_lane_acceleration > acceleration:
                             lane_change = 1
         if lane_change == 0:
-            lane_change = self.check_right_lane()
+            lane_change = self.check_right_lane_just_lane()
         action = acceleration
         if dir_diff > 0:
             action = dir_diff * 10 + action
@@ -92,7 +92,7 @@ class AstarCarController:
                         return -1
         return acceleration
 
-    def check_right_lane(self):
+    def check_right_lane_just_lane(self):
         if self.car.changing_lane:
             return 0
         if isinstance(self.car.res[0]["seg"], LaneSegment) and len(self.car.res) == 1:
@@ -105,3 +105,6 @@ class AstarCarController:
                 return 1
         else:
             return 0
+
+
+
