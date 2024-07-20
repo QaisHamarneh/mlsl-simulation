@@ -536,14 +536,15 @@ class Car:
 
     def check_right_lane(self):
         if self.changing_lane:
-            return
+            return False
         if isinstance(self.res[0]["seg"], LaneSegment) and len(self.res) == 1:
             # check if goal is on this segment
             if self.goal.lane_segment == self.res[0]["seg"]:
-                return
+                return False
 
             right_lane = self.get_adjacent_lane_segment(1)
             if right_lane is not None:
                 self.change_lane(1)
+                return True
         else:
-            return
+            return False
