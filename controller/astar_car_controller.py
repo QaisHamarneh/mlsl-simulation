@@ -42,6 +42,8 @@ class AstarCarController:
                         }])
                         if left_lane_acceleration > acceleration:
                             lane_change = 1
+        if lane_change == 0:
+            lane_change = self.check_right_lane_just_lane()
         action = acceleration
         if dir_diff > 0:
             action = dir_diff * 10 + action
@@ -89,3 +91,20 @@ class AstarCarController:
                     if priority > 0 and len(seg["seg"].cars) > 0:
                         return -1
         return acceleration
+
+    def check_right_lane_just_lane(self):
+        if self.car.changing_lane:
+            return 0
+        if isinstance(self.car.res[0]["seg"], LaneSegment) and len(self.car.res) == 1:
+            # check if goal is on this segment
+            if self.goal.lane_segment == self.car.res[0]["seg"]:
+                return 0
+
+            right_lane = self.car.get_adjacent_lane_segment(1)
+            if right_lane is not None:
+                return 1
+        else:
+            return 0
+
+
+
