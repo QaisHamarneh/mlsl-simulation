@@ -89,3 +89,18 @@ class AstarCarController:
                     if priority > 0 and len(seg["seg"].cars) > 0:
                         return -1
         return acceleration
+
+    def check_right_lane(self):
+        if self.car.changing_lane:
+            return False
+        if isinstance(self.car.res[0]["seg"], LaneSegment) and len(self.car.res) == 1:
+            # check if goal is on this segment
+            if self.goal.lane_segment == self.car.res[0]["seg"]:
+                return False
+
+            right_lane = self.car.get_adjacent_lane_segment(1)
+            if right_lane is not None:
+                self.car.change_lane(1)
+                return True
+        else:
+            return False

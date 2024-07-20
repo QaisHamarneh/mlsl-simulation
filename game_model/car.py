@@ -56,7 +56,6 @@ class Car:
     def move(self):
         # Within the lane
         self.loc += (1 if true_direction[self.res[0]["dir"]] else -1) * self.speed
-        self.check_right_lane()
         self.check_reservation()
 
         self.time += 1
