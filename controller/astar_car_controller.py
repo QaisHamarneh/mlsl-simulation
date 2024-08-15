@@ -1,6 +1,7 @@
 from controller.helper_functions import astar_heuristic, reconstruct_path
 from game_model.game_model import TrafficEnv
 from game_model.road_network import LaneSegment, CrossingSegment, Segment, true_direction
+from game_model.constants import max_acc_a, max_decc_b
 
 
 class AstarCarController:
@@ -11,8 +12,12 @@ class AstarCarController:
         self.car = self.game.cars[player]
         self.goal = self.game.goals[player]
         self.next_segments = []
+        self.first_go = True
 
-    def get_action(self) -> int:
+    def get_action(self) -> (int, int, int):
+        if self.first_go:
+            self.first_go = False
+            return 0, 0, 0
         dir_diff = 0
         lane_change = 0
         acceleration = self.get_accelerate(self.car.res + self.car.parallel_res)
@@ -44,12 +49,7 @@ class AstarCarController:
                             lane_change = 1
         if lane_change == 0:
             lane_change = self.check_right_lane_just_lane()
-        action = acceleration
-        if dir_diff > 0:
-            action = dir_diff * 10 + action
-        if lane_change > 0:
-            action = lane_change * 100 + action
-        return action
+        return acceleration, dir_diff, lane_change
 
     def get_accelerate(self, segments):
         acceleration = 1
@@ -103,6 +103,8 @@ class AstarCarController:
             right_lane = self.car.get_adjacent_lane_segment(1)
             if right_lane is not None:
                 return 1
+            else:
+                return 0
         else:
             return 0
 

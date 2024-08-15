@@ -104,66 +104,21 @@ class TrafficEnv:
         return game_over, self.scores[player]
 
     def _move(self, player, action):
-        # -1, 0, 1 just acceleration
-        # 9, 11 turn and acceleration
-        # 99, 101 turn and acceleration
+        (acc, dir_diff, lane_change) = action
         car = self.cars[player]
         idx = clock_wise.index(car.direction)
-        match action:
-            case -1:
-                car.change_speed(-1)
-            case 1:
-                car.change_speed(1)
-            case 9:
-                car.change_speed(-1)
-                next_idx = (idx + 1) % 4
-                new_dir = clock_wise[next_idx]  # right turn r -> d -> l -> u ->
-                action_worked = car.turn(new_dir)
-                if not action_worked:
-                    return action_worked
-            case 11:
-                car.change_speed(1)
-                next_idx = (idx + 1) % 4
-                new_dir = clock_wise[next_idx]  # right turn r -> d -> l -> u ->
-                action_worked = car.turn(new_dir)
-                if not action_worked:
-                    return action_worked
-            case 19:
-                car.change_speed(-1)
-                next_idx = (idx - 1) % 4
-                new_dir = clock_wise[next_idx]  # left turn u -> l -> d -> r ->
-                action_worked = car.turn(new_dir)
-                if not action_worked:
-                    return action_worked
-            case 21:
-                car.change_speed(1)
-                next_idx = (idx - 1) % 4
-                new_dir = clock_wise[next_idx]  # left turn u -> l -> d -> r ->
-                action_worked = car.turn(new_dir)
-                if not action_worked:
-                    return action_worked
-            case -99:
-                car.change_speed(1)
-                action_worked = car.change_lane(-1)
-                if not action_worked:
-                    return action_worked
-            case -101:
-                car.change_speed(-1)
-                action_worked = car.change_lane(1)
-                if not action_worked:
-                    return action_worked
-            case 99:
-                car.change_speed(-1)
-                action_worked = car.change_lane(-1)
-                if not action_worked:
-                    return action_worked
-            case 101:
-                car.change_speed(1)
-                action_worked = car.change_lane(1)
-                if not action_worked:
-                    return action_worked
+        acceleration, dir_diff, lane_change = action
+        car.change_speed(acceleration)
 
-        action_worked = car.move()
+        action_worked = True
+        if dir_diff != 0:
+            next_idx = (idx + 4 + dir_diff) % 4
+            new_dir = clock_wise[next_idx]
+            action_worked = action_worked and car.turn(new_dir)
+        if lane_change != 0:
+            action_worked = action_worked and car.change_lane(lane_change)
+
+        action_worked = car.move() and action_worked
         return action_worked
 
     def is_collision(self, player, pt=None) -> bool:
