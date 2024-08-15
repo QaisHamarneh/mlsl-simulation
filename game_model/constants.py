@@ -24,3 +24,6 @@ BLUE = (0, 0, 255)
 LANECHANGE_TIME_STEPS = 3
 CLAIMTIME = 5
 
+max_acc_a = 3
+max_decc_b = 20
+
