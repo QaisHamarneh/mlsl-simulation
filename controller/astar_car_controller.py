@@ -52,9 +52,14 @@ class AstarCarController:
         return acceleration, dir_diff, lane_change
 
     def get_accelerate(self, segments):
-        acceleration = 1
+        max_acc, max_decceleration = max_acc_a, - max_decc_b
+        # limit max_acc to the max speed of the car
+        max_acc = min(max_acc, self.car.max_speed - self.car.speed)
+        # limit max_decceleration to 0
+        max_decceleration = max(max_decceleration, -self.car.speed)
+
         extended_segments = segments
-        max_jump = segments[-1]["end"] + 2 * (self.car.speed + 1)
+        max_jump = segments[-1]["end"] + 2 * (self.car.speed + max_acc)
         while max_jump > extended_segments[-1]["seg"].length:
             # if segments[-1]["end"] + 2 * (self.car.speed + 1) > segments[-1]["seg"].length:
             max_jump -= extended_segments[-1]["seg"].length
@@ -62,34 +67,49 @@ class AstarCarController:
             if next_seg is None:
                 return -1
             extended_segments = extended_segments + [{
-                    "seg": next_seg,
-                    "dir": self.car.direction,
-                    "turn": False,
-                    "begin": 0,
-                    "end": min(max_jump, next_seg.length)
+                "seg": next_seg,
+                "dir": self.car.direction,
+                "turn": False,
+                "begin": 0,
+                "end": min(max_jump, next_seg.length)
             }]
 
         # seg = extended_segments[-1]
-        for seg in extended_segments:
-            priority = seg["seg"].cars.index(self.car) if self.car in seg["seg"].cars else len(seg["seg"].cars)
-            match seg["seg"]:
-                case LaneSegment():
-                    if priority > 0 and len(seg["seg"].cars) > 0:
-                        for i in range(priority):
-                            other_car = seg["seg"].cars[i]
-                            other_car_seg_info = other_car.get_segment_info(seg["seg"])
-                            end = abs(seg["end"])
-                            o_begin = abs(other_car_seg_info["begin"])
-                            o_end = abs(other_car_seg_info["end"])
-                            if o_begin <= end <= o_end:
-                                return -1
-                            elif end + 2 * (self.car.speed + 1) < o_begin:
-                                acceleration = min(acceleration, 1)
-                            elif end + 2 * self.car.speed < o_begin:
-                                acceleration = 0
-                case CrossingSegment():
-                    if priority > 0 and len(seg["seg"].cars) > 0:
-                        return -1
+
+        # iterate over all acceleration values betweem max_acc and max_decceleration
+        for acceleration in range(max_acc, max_decceleration - 1, -1):
+            # check if car extends max speed of the current segment
+            if self.car.speed + acceleration > self.car.res[0]["seg"].max_speed:
+                continue
+
+            # for each segment in the extended segments
+            collision = False
+            for seg in extended_segments:
+                priority = seg["seg"].cars.index(self.car) if self.car in seg["seg"].cars else len(seg["seg"].cars)
+                match seg["seg"]:
+                    case LaneSegment():
+                        if priority > 0 and len(seg["seg"].cars) > 0:
+                            for i in range(priority):
+                                other_car = seg["seg"].cars[i]
+                                other_car_seg_info = other_car.get_segment_info(seg["seg"])
+                                end = abs(seg["end"])
+                                o_begin = abs(other_car_seg_info["begin"])
+                                o_end = abs(other_car_seg_info["end"])
+                                if o_begin <= end <= o_end:
+                                    collision = True
+                                    break
+                                elif end + 2 * (self.car.speed + 1) < o_begin:
+                                    collision = False
+                                    break
+                    case CrossingSegment():
+                        if priority > 0 and len(seg["seg"].cars) > 0:
+                            collision = True
+                            break
+            if collision:
+                continue
+            # if no collision is detected return the acceleration
+            else:
+                return acceleration
         return acceleration
 
     def check_right_lane_just_lane(self):
@@ -107,6 +127,3 @@ class AstarCarController:
                 return 0
         else:
             return 0
-
-
-

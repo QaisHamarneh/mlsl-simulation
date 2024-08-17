@@ -234,7 +234,7 @@ class Car:
             return Problem.CHANGE_LANE_WHILE_CROSSING
         # case 2: car is not in lane segment in LANECHANGE time steps -> return problem
         if abs(self.loc) + self.get_braking_distance() + LANECHANGE_TIME_STEPS * self.speed > self.res[0]["seg"].length:
-            return Problem.LANE_TOO_SHORT
+            return False
 
         if lane_diff == 0:
             return False
