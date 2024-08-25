@@ -1,20 +1,44 @@
 import random
-import string
+from typing import Optional, List
 
 import numpy as np
 
-from game_model.constants import *
 from game_model.car import Car
-from game_model.road_network import Direction, Road, CrossingSegment, LaneSegment, true_direction, Goal, Segment
+from game_model.constants import *
+from game_model.road_network import Direction, Road, true_direction, Goal
+from game_model.road_network import LaneSegment, CrossingSegment, Segment
 from gui.colors import colors
-from game_model.road_network import LaneSegment, CrossingSegment, Point, Segment
 
 
-def dist(p1, p2):
+def dist(p1: Point, p2: Point) -> float:
+    """
+    Calculate the Euclidean distance between two points.
+
+    Args:
+        p1 (Point): The first point.
+        p2 (Point): The second point.
+
+    Returns:
+        float: The distance between the two points.
+    """
     return np.linalg.norm([p1.x - p2.x, p1.y - p2.y])
 
 
-def overlap(p1, w1, h1, p2, w2, h2):
+def overlap(p1: Point, w1: int, h1: int, p2: Point, w2: int, h2: int) -> bool:
+    """
+    Check if two rectangles overlap.
+
+    Args:
+        p1 (Point): The top-left point of the first rectangle.
+        w1 (int): The width of the first rectangle.
+        h1 (int): The height of the first rectangle.
+        p2 (Point): The top-left point of the second rectangle.
+        w2 (int): The width of the second rectangle.
+        h2 (int): The height of the second rectangle.
+
+    Returns:
+        bool: True if the rectangles overlap, False otherwise.
+    """
     # If one rectangle is on left side of other
     if p1.x > p2.x + w2 or p2.x > p1.x + w1:
         return False
@@ -26,14 +50,35 @@ def overlap(p1, w1, h1, p2, w2, h2):
     return True
 
 
-def reached_goal(car: Car, goal: Goal):
+def reached_goal(car: Car, goal: Goal) -> bool:
+    """
+    Check if a car has reached its goal.
+
+    Args:
+        car (Car): The car to check.
+        goal (Goal): The goal to check against.
+
+    Returns:
+        bool: True if the car has reached the goal, False otherwise.
+    """
     if car.res[0]["seg"] == goal.lane_segment:
         if dist(car.get_center(), goal.pos) < car.size // 2 + BLOCK_SIZE // 2:
             return True
     return False
 
 
-def create_random_car(segments: list[Segment], cars) -> Car:
+def create_random_car(segments: List[Segment], cars: List[Car]) -> Car:
+    """
+    Create a random car that does not overlap with existing cars.
+    Randomly selects a color, lane segment, speed, size. The location is set to 0.
+
+    Args:
+        segments (List[Segment]): The list of segments to place the car in.
+        cars (List[Car]): The list of existing cars.
+
+    Returns:
+        Car: The randomly created car.
+    """
     name = random.choice([color for color in colors.keys()
                           if not any([car.name == color for car in cars])])
     color = colors[name]
@@ -57,7 +102,16 @@ def create_random_car(segments: list[Segment], cars) -> Car:
                max_speed=max_speed)
 
 
-def create_segments(roads: list[Road]):
+def create_segments(roads: List[Road]) -> Optional[List[Segment]]:
+    """
+    Create segments for the given roads.
+
+    Args:
+        roads (List[Road]): The list of roads to create segments for.
+
+    Returns:
+        Optional[List[Segment]]: The list of created segments, or None if there was an overlap.
+    """
     roads.sort(key=lambda r: r.top)
     segments = []
     last_horiz = 0
@@ -146,7 +200,16 @@ def create_segments(roads: list[Road]):
     return segments
 
 
-def collision_check(car: Car):
+def collision_check(car: Car) -> bool:
+    """
+    Check if a car is in collision with any other car.
+
+    Args:
+        car (Car): The car to check.
+
+    Returns:
+        bool: True if there is a collision, False otherwise.
+    """
     for segment in car.get_size_segments():
         begin = abs(segment["begin"])
         end = abs(segment["end"])
@@ -164,7 +227,16 @@ def collision_check(car: Car):
     return False
 
 
-def reservation_check(car: Car):
+def reservation_check(car: Car) -> bool:
+    """
+    Check if a car's reservation overlaps with any other car's reservation.
+
+    Args:
+        car (Car): The car to check.
+
+    Returns:
+        bool: True if there is an overlap, False otherwise.
+    """
     seg = car.reserved_segment[1]
     print(car.loc, car.loc + car.size)
     car_loc = abs(car.loc)
