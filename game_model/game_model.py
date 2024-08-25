@@ -1,22 +1,50 @@
 import random
+from typing import Optional, Tuple, List
 
 from game_model.car import Car
-from game_model.road_network import Goal, Road, CrossingSegment, LaneSegment, Problem, clock_wise
+from game_model.road_network import Goal, Road, CrossingSegment, LaneSegment, Problem, clock_wise, Point
 from game_model.helper_functions import create_random_car, overlap, create_segments, reached_goal, collision_check
 from game_model.constants import *
 
 
 class TrafficEnv:
+    """
+    A class to represent the traffic environment.
 
-    def __init__(self, roads: list[Road], players: int, cars: list[Car] = None, goals: list[Goal] = None):
+    Attributes:
+        roads (List[Road]): List of roads in the environment.
+        segments (List[Segment]): List of segments created from the roads.
+        players (int): Number of players in the environment.
+        cars (List[Car]): List of cars in the environment.
+        n_actions (int): Number of possible actions.
+        gui (Optional[GUI]): GUI for the environment.
+        moved (bool): Flag to indicate if a car has moved.
+        time (int): Current time in the environment.
+        scores (List[int]): Scores of the players.
+        goals (List[Goal]): Goals for the players.
+        useless_iterations (List[int]): Count of useless iterations for each player.
+    """
+
+    def __init__(self, roads: List[Road], players: int, cars: Optional[List[Car]] = None, goals: Optional[List[Goal]] = None):
+        """
+        Initialize the TrafficEnv.
+
+        Args:
+            roads (List[Road]): List of roads in the environment.
+            players (int): Number of players in the environment.
+            cars (Optional[List[Car]]): List of cars in the environment.
+            goals (Optional[List[Goal]]): List of goals for the players.
+        """
         super().__init__()
+        self.useless_iterations = None
+        self.goals = None
+        self.scores = None
         self.roads = roads
         self.segments = create_segments(roads)
         self.players = players
 
         self.cars = cars
-        self.n_actions = 3
-
+        self.n_actions = N_ACTIONS
         # init display
         self.gui = None
         self.moved = True
@@ -25,8 +53,10 @@ class TrafficEnv:
         if cars is None or goals is None:
             self.reset()
 
-    def reset(self):
-        # init game state
+    def reset(self) -> None:
+        """
+        Reset the environment to its initial state.
+        """
         self.scores: list[int] = [0] * self.players
         self.goals: list[Goal] = [None] * self.players
         self.useless_iterations: list[int] = [0] * self.players
@@ -39,7 +69,13 @@ class TrafficEnv:
             self.cars[i].goal = self.goals[i]
         self.time = 0
 
-    def _place_goal(self, player):
+    def _place_goal(self, player: int) -> None:
+        """
+        Place a goal for the specified player.
+
+        Args:
+            player (int): The index of the player.
+        """
         self.useless_iterations[player] = 0
 
         road = random.choice(self.roads)
@@ -51,7 +87,18 @@ class TrafficEnv:
             self.goals[player].lane_segment = lane_segment
             self.goals[player].update_position()
 
-    def play_step(self, player, action):
+    def play_step(self, player: int, action: Tuple[int, int]) -> Tuple[bool, int]:
+        """
+        Execute a step in the environment for the specified player.
+
+        Args:
+            player (int): The index of the player.
+            action (Tuple[int, int]): The action to be executed.
+
+        Returns:
+            Tuple[bool, int]: A tuple containing a boolean indicating if the game is over and the player's score.
+        """
+
         self.useless_iterations[player] += 1
         car = self.cars[player]
         game_over = False
@@ -66,8 +113,6 @@ class TrafficEnv:
         if isinstance(moved, Problem):
             game_over = True
             car.dead = True
-            print(f"Illegal Action: {car.color} {car.pos}")
-            print(moved)
             return game_over, self.scores[player]
 
         # Crash detection:
@@ -92,7 +137,6 @@ class TrafficEnv:
         if reached_goal(car, self.goals[player]):
             self.scores[player] += 1
             self._place_goal(player)
-            # print(f"Player {player}: Score {self.scores[player]}")
 
         # Player won!
         if self.scores[player] > 100:
@@ -103,7 +147,17 @@ class TrafficEnv:
         # 7. return game over and score
         return game_over, self.scores[player]
 
-    def _move(self, player, action):
+    def _move(self, player: int, action: Tuple[int, int]) -> bool:
+        """
+        Move the car of the specified player based on the action.
+
+        Args:
+            player (int): The index of the player.
+            action (Tuple[int, int]): The action to be executed.
+
+        Returns:
+            bool: True if the action was successful, False otherwise.
+        """
         car = self.cars[player]
         acceleration, lane_change = action
         car.change_speed(acceleration)
@@ -115,20 +169,25 @@ class TrafficEnv:
         action_worked = car.move() and action_worked
         return action_worked
 
-    def is_collision(self, player, pt=None) -> bool:
+
+    def is_collision(self, player: int, pt: Optional[Point] = None) -> bool:
+        """
+        Check if the car of the given player is in collision with other cars.
+
+        Args:
+            player (int): The index of the player whose car is being checked.
+            pt (Optional[Point]): The point to check for collision. If None, the car's current position is used.
+
+        Returns:
+            bool: True if there is a collision, False otherwise.
+        """
         car = self.cars[player]
         if pt is None:
             pt = self.cars[player].pos
-        # hits boundary
         if pt.x > WINDOW_WIDTH - 1 or pt.x < 0 or pt.y > WINDOW_HEIGHT - 1 or pt.y < 0:
             return True
-        # hits other cars
-        if any([overlap(pt,
-                        car.w,
-                        car.h,
-                        self.cars[i].pos,
-                        self.cars[i].w,
-                        self.cars[i].h)
-                for i in range(self.players) if i != player]):
+        if any([overlap(pt, car.w, car.h, self.cars[i].pos, self.cars[i].w, self.cars[i].h) for i in range(self.players) if
+                i != player]):
             return True
         return False
+
