@@ -1,3 +1,5 @@
+from typing import Tuple
+
 from game_model.game_model import TrafficEnv
 from game_model.road_network import LaneSegment, CrossingSegment
 from game_model.constants import max_acc_a, max_decc_b, LEFT_LANE_CHANGE, RIGHT_LANE_CHANGE, NO_LANE_CHANGE, \
