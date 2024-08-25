@@ -1,7 +1,6 @@
-from controller.helper_functions import astar_heuristic, reconstruct_path
 from game_model.game_model import TrafficEnv
-from game_model.road_network import LaneSegment, CrossingSegment, Segment, true_direction
-from game_model.constants import max_acc_a, max_decc_b
+from game_model.road_network import LaneSegment, CrossingSegment
+from game_model.constants import max_acc_a, max_decc_b, LEFT_LANE_CHANGE, RIGHT_LANE_CHANGE, NO_LANE_CHANGE
 
 
 class AstarCarController:
@@ -32,7 +31,7 @@ class AstarCarController:
                     "end": self.car.res[0]["end"]
                 }])
                 if right_lane_acceleration > acceleration:
-                    lane_change = -1
+                    lane_change = RIGHT_LANE_CHANGE
                 else:
                     left_lane = self.car.get_adjacent_lane_segment(1)
                     if left_lane is not None:
@@ -44,8 +43,8 @@ class AstarCarController:
                             "end": self.car.res[0]["end"]
                         }])
                         if left_lane_acceleration > acceleration:
-                            lane_change = 1
-        if lane_change == 0:
+                            lane_change = LEFT_LANE_CHANGE
+        if lane_change == NO_LANE_CHANGE:
             lane_change = self.check_right_lane_just_lane()
         return acceleration, lane_change
 

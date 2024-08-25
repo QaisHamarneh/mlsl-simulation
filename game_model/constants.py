@@ -27,3 +27,7 @@ CLAIMTIME = 5
 max_acc_a = 3
 max_decc_b = 20
 
+# lane change
+NO_LANE_CHANGE = 0
+LEFT_LANE_CHANGE = 1
+RIGHT_LANE_CHANGE = -1
