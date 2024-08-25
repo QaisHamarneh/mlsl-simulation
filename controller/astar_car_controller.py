@@ -1,26 +1,40 @@
 from game_model.game_model import TrafficEnv
 from game_model.road_network import LaneSegment, CrossingSegment
-from game_model.constants import max_acc_a, max_decc_b, LEFT_LANE_CHANGE, RIGHT_LANE_CHANGE, NO_LANE_CHANGE
+from game_model.constants import max_acc_a, max_decc_b, LEFT_LANE_CHANGE, RIGHT_LANE_CHANGE, NO_LANE_CHANGE, \
+    JUMP_TIME_STEPS
 
 
 class AstarCarController:
-    def __init__(self, game: TrafficEnv, player: int):
+    def __init__(self, game: TrafficEnv, player: int) -> None:
+        """
+        Initialize the AstarCarController.
+
+        Args:
+            game (TrafficEnv): The game environment.
+            player (int): The player index.
+        """
         self.game = game
         self.player = player
-
         self.car = self.game.cars[player]
         self.goal = self.game.goals[player]
         self.first_go = True
 
-    def get_action(self) -> (int, int):
+    def get_action(self) -> Tuple[int, int]:
+        """
+        Determine the next action for the car.
+
+        Returns:
+            Tuple[int, int]: A tuple containing the acceleration and lane change values.
+        """
         if self.first_go:
             self.first_go = False
-            return 0, 0, 0
-        lane_change = 0
+            return 0, 0
+        lane_change = NO_LANE_CHANGE
         acceleration = self.get_accelerate(self.car.res + self.car.parallel_res)
         if isinstance(self.car.res[0]["seg"], LaneSegment) \
                 and acceleration < 1 and len(self.car.res) == 1 \
                 and self.car.res[0]["seg"] != self.game.goals[self.player].lane_segment:
+            #try right lane
             right_lane = self.car.get_adjacent_lane_segment(-1)
             if right_lane is not None:
                 right_lane_acceleration = self.get_accelerate([{
@@ -33,6 +47,7 @@ class AstarCarController:
                 if right_lane_acceleration > acceleration:
                     lane_change = RIGHT_LANE_CHANGE
                 else:
+                    #try left lane
                     left_lane = self.car.get_adjacent_lane_segment(1)
                     if left_lane is not None:
                         left_lane_acceleration = self.get_accelerate([{
@@ -45,20 +60,29 @@ class AstarCarController:
                         if left_lane_acceleration > acceleration:
                             lane_change = LEFT_LANE_CHANGE
         if lane_change == NO_LANE_CHANGE:
-            lane_change = self.check_right_lane_just_lane()
+            lane_change = self.check_right_lane()
         return acceleration, lane_change
 
-    def get_accelerate(self, segments):
-        max_acc, max_decceleration = max_acc_a, - max_decc_b
+    def get_accelerate(self, segments: list[dict]) -> int:
+        """
+        Calculate the optimal acceleration for the car based on the given segments, the car's speed and other cars on the
+        road. The value is limited by the car's maximum speed and the maximum acceleration and deceleration values.
+
+        Args:
+            segments (list[dict]): A list of segment dictionaries containing information about the segments.
+
+        Returns:
+            int: The optimal acceleration value
+        """
+        max_acc, max_deceleration = max_acc_a, - max_decc_b
         # limit max_acc to the max speed of the car
         max_acc = min(max_acc, self.car.max_speed - self.car.speed)
-        # limit max_decceleration to 0
-        max_decceleration = max(max_decceleration, -self.car.speed)
+        # limit max_deceleration to 0
+        max_deceleration = max(max_deceleration, -self.car.speed)
 
         extended_segments = segments
-        max_jump = segments[-1]["end"] + 2 * (self.car.speed + max_acc)
+        max_jump = segments[-1]["end"] + JUMP_TIME_STEPS * (self.car.speed + max_acc)
         while max_jump > extended_segments[-1]["seg"].length:
-            # if segments[-1]["end"] + 2 * (self.car.speed + 1) > segments[-1]["seg"].length:
             max_jump -= extended_segments[-1]["seg"].length
             next_seg = self.car.get_next_segment(extended_segments[-1])
             if next_seg is None:
@@ -71,10 +95,8 @@ class AstarCarController:
                 "end": min(max_jump, next_seg.length)
             }]
 
-        # seg = extended_segments[-1]
-
-        # iterate over all acceleration values betweem max_acc and max_decceleration
-        for acceleration in range(max_acc, max_decceleration - 1, -1):
+        # iterate over all acceleration values between max_acc and max_deceleration
+        for acceleration in range(max_acc, max_deceleration - 1, -1):
             # check if car extends max speed of the current segment
             if self.car.speed + acceleration > self.car.res[0]["seg"].max_speed:
                 continue
@@ -92,10 +114,10 @@ class AstarCarController:
                                 end = abs(seg["end"])
                                 o_begin = abs(other_car_seg_info["begin"])
                                 o_end = abs(other_car_seg_info["end"])
-                                if o_begin <= end <= o_end:
+                                if o_begin <= end <= o_end or o_end <= end <= o_begin:
                                     collision = True
                                     break
-                                elif end + 2 * (self.car.speed + 1) < o_begin:
+                                elif end + JUMP_TIME_STEPS * (self.car.speed + 1) < o_begin:
                                     collision = False
                                     break
                     case CrossingSegment():
@@ -109,11 +131,16 @@ class AstarCarController:
                 return acceleration
         return acceleration
 
-    def check_right_lane_just_lane(self):
+    def check_right_lane(self) -> int:
+        """
+        Check if the car should change to the right lane.
+
+        Returns:
+            int: 1 if the car should change to the right lane, 0 otherwise.
+        """
         if self.car.changing_lane:
             return 0
         if isinstance(self.car.res[0]["seg"], LaneSegment) and len(self.car.res) == 1:
-            # check if goal is on this segment
             if self.goal.lane_segment == self.car.res[0]["seg"]:
                 return 0
 
