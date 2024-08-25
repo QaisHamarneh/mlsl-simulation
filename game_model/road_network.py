@@ -1,7 +1,9 @@
+from abc import ABC
 from dataclasses import dataclass
 from enum import Enum
+from typing import Optional, Dict, List
+
 from game_model.constants import *
-from abc import ABC
 
 
 @dataclass
@@ -57,12 +59,17 @@ Color = (int, int, int)
 
 
 class Road:
-    def __init__(self,
-                 name: str,
-                 horizontal: bool,
-                 top: int,
-                 right: int,
-                 left: int) -> None:
+    def __init__(self, name: str, horizontal: bool, top: int, right: int, left: int) -> None:
+        """
+        Initialize a Road object.
+
+        Args:
+            name (str): The name of the road.
+            horizontal (bool): Whether the road is horizontal.
+            top (int): The top position of the road.
+            right (int): The number of right lanes.
+            left (int): The number of left lanes.
+        """
         self.name = name
         self.horizontal = horizontal
         self.top = top
@@ -83,57 +90,114 @@ class Road:
         self.bottom = self.top + (right + left) * BLOCK_SIZE + (
                 right + left - 1) * LANE_DISPLACEMENT
 
+    def get_outer_lane_segment(self, segment: 'Segment', right_lanes: bool) -> Optional['LaneSegment']:
+        """
+        Get the outer lane segment.
+
+        Args:
+            segment (Segment): The segment to get the outer lane segment for.
+            right_lanes (bool): Whether to get the right lanes.
+
+        Returns:
+            Optional[LaneSegment]: The outer lane segment if it exists, otherwise None.
+        """
+        if right_lanes:
+            return self.right_lanes[0].segments[segment.num] if len(self.right_lanes) > 0 else None
+        else:
+            return self.left_lanes[-1].segments[segment.num] if len(self.left_lanes) > 0 else None
+
 
 class Lane:
-    def __init__(self,
-                 road: Road,
-                 num: int,
-                 direction: Direction,
-                 top: int) -> None:
-        self.road = road
-        self.num = num
-        self.top = top
-        self.direction = direction
-        self.segments = []
+    def __init__(self, road: Road, num: int, direction: Direction, top: int) -> None:
+        """
+        Initialize a Lane object.
+
+        Args:
+            road (Road): The road the lane belongs to.
+            num (int): The lane number.
+            direction (Direction): The direction of the lane.
+            top (int): The top position of the lane.
+        """
+        self.road: Road = road
+        self.num: int = num
+        self.top: int = top
+        self.direction: Direction = direction
+        self.segments: List[Segment] = []
 
 
 class Segment(ABC):
     def __init__(self) -> None:
-        self.length = 0
-        self.cars = []
-        self.max_speed = 0
+        """
+        Initialize a Segment object.
+        """
+        self.length: int = 0
+        self.cars: List['Car'] = []
+        self.max_speed: int = 0
 
 
 class LaneSegment(Segment):
     def __init__(self, lane: Lane, begin: int, end: int) -> None:
-        super().__init__()
-        self.lane = lane
-        self.begin = begin
-        self.end = end
-        self.end_crossing = None
-        self.length = abs(self.end - self.begin)
-        self.num = None
-        self.max_speed = BLOCK_SIZE // 3
+        """
+        Initialize a LaneSegment object.
 
-    def __str__(self):
+        Args:
+            lane (Lane): The lane the segment belongs to.
+            begin (int): The beginning position of the segment.
+            end (int): The ending position of the segment.
+        """
+        super().__init__()
+        self.lane: Lane = lane
+        self.begin: int = begin
+        self.end: int = end
+        self.end_crossing: Optional[CrossingSegment] = None
+        self.length: int = abs(self.end - self.begin)
+        self.num: Optional[int] = None
+        self.max_speed: int = BLOCK_SIZE // 3
+
+    def __str__(self) -> str:
+        """
+        Return a string representation of the LaneSegment.
+
+        Returns:
+            str: The string representation of the LaneSegment.
+        """
         return f"{self.lane.road.name}:{self.lane.direction.name}:{self.lane.num}"
 
 
 class CrossingSegment(Segment):
     def __init__(self, horiz_lane: Lane, vert_lane: Lane) -> None:
-        super().__init__()
-        self.horiz_lane = horiz_lane
-        self.vert_lane = vert_lane
-        self.connected_segments: dict[Direction, Segment] = {Direction.RIGHT: None,
-                                                             Direction.LEFT: None,
-                                                             Direction.UP: None,
-                                                             Direction.DOWN: None}
-        self.length = BLOCK_SIZE
-        self.horiz_num = None
-        self.vert_num = None
-        self.max_speed = BLOCK_SIZE // 10
+        """
+        Initialize a CrossingSegment object.
 
-    def get_road(self, direction: Direction, opposite: bool = False):
+        Args:
+            horiz_lane (Lane): The horizontal lane.
+            vert_lane (Lane): The vertical lane.
+        """
+        super().__init__()
+        self.horiz_lane: Lane = horiz_lane
+        self.vert_lane: Lane = vert_lane
+        self.connected_segments: Dict[Direction, Optional[Segment]] = {
+            Direction.RIGHT: None,
+            Direction.LEFT: None,
+            Direction.UP: None,
+            Direction.DOWN: None
+        }
+        self.length: int = BLOCK_SIZE
+        self.horiz_num: Optional[int] = None
+        self.vert_num: Optional[int] = None
+        self.max_speed: int = BLOCK_SIZE // 5
+
+    def get_road(self, direction: Direction, opposite: bool = False) -> Road:
+        """
+        Get the road in the given direction.
+
+        Args:
+            direction (Direction): The direction to get the road for.
+            opposite (bool): Whether to get the opposite road.
+
+        Returns:
+            Road: The road in the given direction.
+        """
         if horiz_direction[direction] and not opposite:
             return self.horiz_lane.road
         else:
@@ -146,11 +210,22 @@ class CrossingSegment(Segment):
 
 class Goal:
     def __init__(self, lane_segment: LaneSegment, color: Color) -> None:
+        """
+        Initialize a Goal object.
+
+        Args:
+            lane_segment (LaneSegment): The lane segment the goal is on.
+            color (Color): The color of the goal.are
+        """
+        self.pos = None
         self.lane_segment = lane_segment
         self.color = color
         self.update_position()
 
-    def update_position(self):
+    def update_position(self) -> None:
+        """
+        Update the position of the goal.
+        """
         mid_seg = (self.lane_segment.begin + self.lane_segment.end) // 2
         self.pos = Point(mid_seg, self.lane_segment.lane.top + BLOCK_SIZE // 2) \
             if self.lane_segment.lane.road.horizontal \
