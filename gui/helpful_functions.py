@@ -1,10 +1,23 @@
 from pyglet import shapes
-
 from game_model.constants import *
 from game_model.road_network import Direction, LaneSegment, CrossingSegment
+from typing import List, Tuple, Union
 
+def draw_dash_line(start, end, width: int = LANE_DISPLACEMENT,
+                   color: Tuple[int, int, int] = WHITE, dash: int = 20) -> List[shapes.Line]:
+    """
+    Draws a dashed line between two points.
 
-def draw_dash_line(start, end, width=LANE_DISPLACEMENT, color=WHITE, dash=20):
+    Args:
+        start (shapes.Point): The starting point of the dashed line.
+        end (shapes.Point): The ending point of the dashed line.
+        width (int, optional): The width of the dashed line. Defaults to LANE_DISPLACEMENT.
+        color (Tuple[int, int, int], optional): The color of the dashed line. Defaults to WHITE.
+        dash (int, optional): The length of each dash. Defaults to 20.
+
+    Returns:
+        List[shapes.Line]: A list of pyglet shapes representing the dashed line.
+    """
     lines = []
     # Vertical
     if start.x == end.x:
@@ -30,7 +43,24 @@ def draw_dash_line(start, end, width=LANE_DISPLACEMENT, color=WHITE, dash=20):
     return lines
 
 
-def draw_arrow(begin, end, horizontal, direction, tip=BLOCK_SIZE // 4, width=LANE_DISPLACEMENT, color=WHITE):
+def draw_arrow(begin, end, horizontal: bool, direction: Direction,
+               tip: int = BLOCK_SIZE // 4, width: int = LANE_DISPLACEMENT, color: Tuple[int, int, int] = WHITE) \
+        -> List[shapes.Line]:
+    """
+    Draws an arrow between two points.
+
+    Args:
+        begin (shapes.Point): The starting point of the arrow.
+        end (shapes.Point): The ending point of the arrow.
+        horizontal (bool): Whether the arrow is horizontal.
+        direction (Direction): The direction of the arrow.
+        tip (int, optional): The size of the arrow tip. Defaults to BLOCK_SIZE // 4.
+        width (int, optional): The width of the arrow. Defaults to LANE_DISPLACEMENT.
+        color (Tuple[int, int, int], optional): The color of the arrow. Defaults to WHITE.
+
+    Returns:
+        List[shapes.Line]: A list of pyglet shapes representing the arrow.
+    """
     lines = []
     if horizontal:
         lines.append(shapes.Line(begin.x, begin.y,
@@ -71,7 +101,16 @@ def draw_arrow(begin, end, horizontal, direction, tip=BLOCK_SIZE // 4, width=LAN
     return lines
 
 
-def create_car_rect(car):
+def create_car_rect(car: 'Car') -> shapes.Rectangle:
+    """
+    Creates a rectangle shape for a car.
+
+    Args:
+        car (Car): The car object.
+
+    Returns:
+        shapes.Rectangle: A pyglet rectangle shape representing the car.
+    """
     return shapes.Rectangle(
         x=car.pos.x, y=car.pos.y,
         width=car.w, height=car.h,
@@ -79,7 +118,18 @@ def create_car_rect(car):
     )
 
 
-def create_lines(*line_coords, color, width=2):
+def create_lines(*line_coords: int, color: Tuple[int, int, int], width: int = 2) -> List[shapes.Line]:
+    """
+    Creates lines from given coordinates.
+
+    Args:
+        *line_coords (int): The coordinates of the lines.
+        color (Tuple[int, int, int]): The color of the lines.
+        width (int, optional): The width of the lines. Defaults to 2.
+
+    Returns:
+        List[shapes.Line]: A list of pyglet shapes representing the lines.
+    """
     lines = []
     for i in range(0, len(line_coords) - 2, 2):
         lines.append(
@@ -88,7 +138,16 @@ def create_lines(*line_coords, color, width=2):
     return lines
 
 
-def get_xy_crossingseg(seg):
+def get_xy_crossingseg(seg: CrossingSegment) -> Tuple[int, int]:
+    """
+    Gets the x and y coordinates of a crossing segment.
+
+    Args:
+        seg (CrossingSegment): The crossing segment.
+
+    Returns:
+        Tuple[int, int]: The x and y coordinates of the crossing segment.
+    """
     x = 0
     y = 0
     right = False
@@ -132,7 +191,17 @@ def get_xy_crossingseg(seg):
     return x, y
 
 
-def brake_box(car, debug):
+def brake_box(car: 'Car', debug: bool) -> List[Union[shapes.Line, shapes.Rectangle]]:
+    """
+    Creates a brake box for a car.
+
+    Args:
+        car (Car): The car object.
+        debug (bool): Whether to include debug shapes.
+
+    Returns:
+        List[Union[shapes.Line, shapes.Rectangle]]: A list of pyglet shapes representing the brake box.
+    """
     left_points = []
     right_points = []
     interesting_points = []
@@ -358,25 +427,6 @@ def brake_box(car, debug):
 
                 else:
                     print("error, not a valid turn", car.res[i - 1]["dir"], segment["dir"])
-
-    # add points for the brake box, the tip of the triangle
-    last_dir = tip_dir
-
-    # if last_dir == Direction.RIGHT:
-    #     car_x = car_x + w // 4
-    #     car_y = car_y - w // 2
-
-    # if last_dir == Direction.LEFT:
-    #     car_x = car_x - w // 4
-    #     car_y = car_y + w // 2
-
-    # if last_dir == Direction.UP:
-    #     car_x = car_x + w // 2
-    #     car_y = car_y + w // 4
-
-    # if last_dir == Direction.DOWN:
-    #     car_x = car_x - w // 2
-    #     car_y = car_y - w // 4
 
     left_points.append((car_x, car_y))
 

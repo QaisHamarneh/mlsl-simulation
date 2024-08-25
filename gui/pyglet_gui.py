@@ -1,33 +1,48 @@
 import pyglet
+from typing import List, Tuple, Optional
 
+from controller.astar_car_controller import AstarCarController
 from game_model.constants import *
-from game_model.road_network import Point
+from game_model.game_model import TrafficEnv
+from game_model.road_network import Point, Road
 from gui.helpful_functions import *
+from timed_automata.timed_automata_classes import Transition
 
 
 class CarsWindow(pyglet.window.Window):
-    def __init__(self, game, controllers, segmentation=False, manual=False, debug=False, pause=False):
+    def __init__(self, game: 'TrafficEnv', controllers: List['AstarCarController'], segmentation: bool = False, manual: bool = False, debug: bool = False, pause: bool = False) -> None:
+        """
+        Initialize the CarsWindow.
+
+        Args:
+            game (TrafficEnv): The game environment.
+            controllers (List[AstarCarController]): List of car controllers.
+            segmentation (bool, optional): Flag for segmentation. Defaults to False.
+            manual (bool, optional): Flag for manual control. Defaults to False.
+            debug (bool, optional): Flag for debug mode. Defaults to False.
+            pause (bool, optional): Flag for pause state. Defaults to False.
+        """
         super().__init__()
         self.set_size(WINDOW_WIDTH, WINDOW_HEIGHT)
         self.set_minimum_size(WINDOW_WIDTH, WINDOW_HEIGHT)
-        self.pos = Point(0, 0)
+        self.pos: Point = Point(0, 0)
         self.pos.x, self.pos.y = self.get_location()
         self.set_location(self.pos.x - 300, self.pos.y - 200)
 
-        self.game = game
-        self.controllers = controllers
-        self.segmentation = segmentation
-        self.frames_count = 0
-        self.manual = manual
+        self.game: TrafficEnv = game
+        self.controllers: List[AstarCarController] = controllers
+        self.segmentation: bool = segmentation
+        self.frames_count: int = 0
+        self.manual: bool = manual
 
-        self.game_over = [False] * self.game.players
-        self.pause = pause
-        self.scores = [0] * self.game.players
+        self.game_over: List[bool]= [False] * self.game.players
+        self.pause: bool = pause
+        self.scores: List[int] = [0] * self.game.players
 
         self.road_shapes = []
         self.goal_shapes = []
         self.car_shapes = []
-        self.debug = debug
+        self.debug: bool = debug
 
         for road in self.game.roads:
             self._draw_road(road)
@@ -35,11 +50,14 @@ class CarsWindow(pyglet.window.Window):
             self._draw_lane_lines(road)
 
         self.event_loop = pyglet.app.EventLoop()
-        pyglet.app.run(1/20)
+        pyglet.app.run(TIME_PER_FRAME)
 
-    def on_draw(self):
+    def on_draw(self) -> None:
+        """
+        Handle the draw event to update the window content.
+        """
         self.clear()
-        if not self.pause and self.frames_count % FRAME_RATE == 0:
+        if not self.pause and self.frames_count % (int(1/TIME_PER_FRAME)) == 0:
             self._update_game()
             self.frames_count = 0
         self._update_cars()
@@ -53,9 +71,13 @@ class CarsWindow(pyglet.window.Window):
         for shape in self.car_shapes:
             shape.draw()
         if not self.pause:
-            self.frames_count += FRAME_RATE
+            self.frames_count += int(1/TIME_PER_FRAME)
 
-    def _update_game(self):
+    def _update_game(self) -> None:
+        """
+        Update the game state for each player.
+        Checks for game over state.
+        """
         for player in range(self.game.players):
             if not self.game_over[player]:
                 self.game_over[player], self.scores[player] = self.game.play_step(player,
@@ -67,11 +89,22 @@ class CarsWindow(pyglet.window.Window):
             self.game_over = [False] * self.game.players
             self.game.reset()
 
-    def on_key_press(self, symbol, modifiers):
+    def on_key_press(self, symbol: int, modifiers: int) -> None:
+        """
+        Handle key press events.
+        Space key toggles pause state.
+
+        Args:
+            symbol (int): The key symbol pressed.
+            modifiers (int): The modifier keys pressed.
+        """
         if symbol == pyglet.window.key.SPACE:
             self.pause = not self.pause
 
-    def _update_cars(self):
+    def _update_cars(self) -> None:
+        """
+        Update the car shapes for rendering.
+        """
         self.car_shapes = []
         for car in self.game.cars:
             car_rect = create_car_rect(car)
@@ -122,14 +155,23 @@ class CarsWindow(pyglet.window.Window):
             if car_res_box is not None:
                 self.car_shapes += car_res_box
 
-    def _update_goals(self):
+    def _update_goals(self) -> None:
+        """
+        Update the goal shapes for rendering.
+        """
         self.goal_shapes = []
         for goal in self.game.goals:
             self.goal_shapes.append(shapes.Circle(goal.pos.x, goal.pos.y, BLOCK_SIZE // 2, color=goal.color))
             self.goal_shapes.append(shapes.Circle(goal.pos.x, goal.pos.y, BLOCK_SIZE // 3, color=ROAD_BLUE))
             self.goal_shapes.append(shapes.Circle(goal.pos.x, goal.pos.y, BLOCK_SIZE // 4, color=goal.color))
 
-    def _draw_road(self, road):
+    def _draw_road(self, road: 'Road') -> None:
+        """
+        Draw the road shapes.
+
+        Args:
+            road (Road): The road to draw.
+        """
         if road.horizontal:
             self.road_shapes.append(shapes.Rectangle(0, road.top, WINDOW_WIDTH, road.bottom - road.top,
                                                      color=ROAD_BLUE
@@ -139,7 +181,13 @@ class CarsWindow(pyglet.window.Window):
                                                      color=ROAD_BLUE
                                                      ))
 
-    def _draw_lane_lines(self, road):
+    def _draw_lane_lines(self, road: 'Road') -> None:
+        """
+        Draw the lane lines on the road.
+
+        Args:
+            road (Road): The road to draw lane lines on.
+        """
         for i, lane in enumerate(road.right_lanes + road.left_lanes):
             if road.horizontal:
                 if i == len(road.right_lanes) - 1 and len(road.left_lanes) > 0:
@@ -169,41 +217,3 @@ class CarsWindow(pyglet.window.Window):
                                    Point(lane.top + BLOCK_SIZE // 2, 3 * BLOCK_SIZE), False, lane.direction)
                 for line in arrow:
                     self.road_shapes.append(line)
-
-    """
-                if self.segmentation:
-                    for segment in car.get_size_segments():
-                        if isinstance(segment["seg"], LaneSegment):
-                            begin_x = segment["seg"].begin + segment["begin"] if segment["seg"].lane.road.horizontal \
-                                else segment["seg"].lane.top
-                            begin_y = segment["seg"].lane.top if segment["seg"].lane.road.horizontal \
-                                else segment["seg"].begin + segment["begin"]
-                            end_x = segment["seg"].begin + segment["end"] if segment["seg"].lane.road.horizontal \
-                                else segment["seg"].lane.top + BLOCK_SIZE
-                            end_y = segment["seg"].lane.top + BLOCK_SIZE if segment["seg"].lane.road.horizontal \
-                                else segment["seg"].begin + segment["end"]
-                        else:
-                            if true_direction[segment["dir"]]:
-                                begin_x = segment["seg"].vert_lane.top + segment["begin"] if horiz_direction[segment["dir"]] \
-                                    else segment["seg"].vert_lane.top
-                                begin_y = segment["seg"].horiz_lane.top if horiz_direction[segment["dir"]] \
-                                    else segment["seg"].horiz_lane.top + segment["begin"]
-                                end_x = segment["seg"].vert_lane.top + segment["end"] if horiz_direction[segment["dir"]] \
-                                    else segment["seg"].vert_lane.top + BLOCK_SIZE
-                                end_y = segment["seg"].horiz_lane.top + BLOCK_SIZE if horiz_direction[segment["dir"]] \
-                                    else segment["seg"].horiz_lane.top + segment["end"]
-                            else:
-                                begin_x = segment["seg"].vert_lane.top + BLOCK_SIZE + segment["begin"] if horiz_direction[segment["dir"]] \
-                                    else segment["seg"].vert_lane.top
-                                begin_y = segment["seg"].horiz_lane.top if horiz_direction[segment["dir"]] \
-                                    else segment["seg"].horiz_lane.top + BLOCK_SIZE + segment["begin"]
-                                end_x = segment["seg"].vert_lane.top + BLOCK_SIZE + segment["end"] if horiz_direction[segment["dir"]] \
-                                    else segment["seg"].vert_lane.top + BLOCK_SIZE
-                                end_y = segment["seg"].horiz_lane.top + BLOCK_SIZE if horiz_direction[segment["dir"]] \
-                                    else segment["seg"].horiz_lane.top + BLOCK_SIZE + segment["end"]
-    
-                        self.car_shapes.append(shapes.Rectangle(
-                            x=min(begin_x, end_x), y=min(begin_y, end_y),
-                            width=abs(end_x - begin_x), height=abs(end_y - begin_y),
-                            color=car.color if not car.dead else DEAD_GREY))
-                else:"""

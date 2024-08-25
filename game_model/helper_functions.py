@@ -5,7 +5,7 @@ import numpy as np
 
 from game_model.car import Car
 from game_model.constants import *
-from game_model.road_network import Direction, Road, true_direction, Goal
+from game_model.road_network import Direction, Road, true_direction, Goal, Point
 from game_model.road_network import LaneSegment, CrossingSegment, Segment
 from gui.colors import colors
 
