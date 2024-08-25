@@ -11,14 +11,12 @@ class AstarCarController:
 
         self.car = self.game.cars[player]
         self.goal = self.game.goals[player]
-        self.next_segments = []
         self.first_go = True
 
-    def get_action(self) -> (int, int, int):
+    def get_action(self) -> (int, int):
         if self.first_go:
             self.first_go = False
             return 0, 0, 0
-        dir_diff = 0
         lane_change = 0
         acceleration = self.get_accelerate(self.car.res + self.car.parallel_res)
         if isinstance(self.car.res[0]["seg"], LaneSegment) \
@@ -49,7 +47,7 @@ class AstarCarController:
                             lane_change = 1
         if lane_change == 0:
             lane_change = self.check_right_lane_just_lane()
-        return acceleration, dir_diff, lane_change
+        return acceleration, lane_change
 
     def get_accelerate(self, segments):
         max_acc, max_decceleration = max_acc_a, - max_decc_b

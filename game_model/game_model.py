@@ -104,17 +104,11 @@ class TrafficEnv:
         return game_over, self.scores[player]
 
     def _move(self, player, action):
-        (acc, dir_diff, lane_change) = action
         car = self.cars[player]
-        idx = clock_wise.index(car.direction)
-        acceleration, dir_diff, lane_change = action
+        acceleration, lane_change = action
         car.change_speed(acceleration)
 
         action_worked = True
-        if dir_diff != 0:
-            next_idx = (idx + 4 + dir_diff) % 4
-            new_dir = clock_wise[next_idx]
-            action_worked = action_worked and car.turn(new_dir)
         if lane_change != 0:
             action_worked = action_worked and car.change_lane(lane_change)
 
