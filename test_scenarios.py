@@ -1,17 +1,55 @@
-from controller.astar_car_controller import AstarCarController
+from typing import List, Tuple
+from game_model.road_network import Road, LaneSegment
 from game_model.car import Car
-from game_model.constants import RED, BLUE
 from game_model.game_model import TrafficEnv
-from game_model.road_network import Goal, LaneSegment
+from game_model.road_network import Goal
+from controller.astar_car_controller import AstarCarController
 from gui.pyglet_gui import CarsWindow
-from scenarios import LEFT_RIGHT_OVERTAKE, UP_DOWN_OVERTAKE
 
+def setup_2_car_scenarios(
+    env: List[Road],
+    car1_seg: int,
+    car1_loc: int,
+    car2_seg: int,
+    car2_loc: int,
+    goal1_seg: int,
+    goal2_seg: int,
+    car1_size: int,
+    car2_size: int,
+    car1_color: Tuple[int, int, int],
+    car2_color: Tuple[int, int, int],
+    car1_speed: int,
+    car2_speed: int,
+    car1_max_speed: int,
+    car2_max_speed: int,
+    change: int
+) -> None:
+    """
+    Set up a traffic environment with two cars and their respective goals.
 
-def setup_2_car_scenarios(env, car1_seg, car1_loc, car2_seg, car2_loc, goal1_seg, goal2_seg, car1_size, car2_size,
-                          car1_color, car2_color, car1_speed, car2_speed, car1_max_speed, car2_max_speed, change):
+    Args:
+        env (List[Road]): List of roads in the environment.
+        car1_seg (int): Segment index for car 1.
+        car1_loc (int): Location of car 1 within its segment.
+        car2_seg (int): Segment index for car 2.
+        car2_loc (int): Location of car 2 within its segment.
+        goal1_seg (int): Segment index for the goal of car 1.
+        goal2_seg (int): Segment index for the goal of car 2.
+        car1_size (int): Size of car 1.
+        car2_size (int): Size of car 2.
+        car1_color (Tuple[int, int, int]): Color of car 1 in RGB format.
+        car2_color (Tuple[int, int, int]): Color of car 2 in RGB format.
+        car1_speed (int): Initial speed of car 1.
+        car2_speed (int): Initial speed of car 2.
+        car1_max_speed (int): Maximum speed of car 1.
+        car2_max_speed (int): Maximum speed of car 2.
+        change (int): Lane change value for car 1.
+
+    Returns:
+        None
+    """
     game = TrafficEnv(players=2, roads=env)
     for i, seg in enumerate(game.segments):
-        # print type of segment
         if isinstance(seg, LaneSegment):
             print(i, seg.begin, seg.end, seg.lane.top, seg.lane.direction)
     game.cars[1] = Car("car1", car1_loc, game.segments[car1_seg], car1_speed, car1_size, car1_color, car1_max_speed)
