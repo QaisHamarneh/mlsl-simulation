@@ -3,6 +3,7 @@ import numpy as np
 from game_model.constants import *
 from game_model.road_network import Color, LaneSegment, true_direction, Problem, CrossingSegment, Point, \
     horiz_direction, right_direction, Segment
+from typing import Optional, List, Dict
 
 
 class Car:
@@ -45,7 +46,6 @@ class Car:
         self.stagnation: int = 0
         self.last_loc: Point = loc
 
-        self.claim: list = []
         self.res: list = [{"seg": segment,
                            "dir": self.direction,
                            "turn": False,
@@ -53,9 +53,6 @@ class Car:
                            "end": (1 if true_direction[self.direction] else -1) * self.get_braking_distance()}]
         segment.cars.append(self)
         self.extend_res()
-        self.last_segment = None
-        self.changed_lane = False
-        self.updated_path_needed = False
 
         # For gui only
         self.pos = Point(0, 0)
@@ -92,7 +89,7 @@ class Car:
             self.stagnation = 0
             self.last_loc = self.loc
         # stagnation removal
-        if self.stagnation > 20:
+        if self.stagnation > MAX_STAGNATION_TIME:
             for seg in self.res[1:]:
                 seg["seg"].cars.remove(self)
             self.res = [self.res[0]]
