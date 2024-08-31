@@ -238,7 +238,6 @@ def reservation_check(car: Car) -> bool:
         bool: True if there is an overlap, False otherwise.
     """
     seg = car.reserved_segment[1]
-    print(car.loc, car.loc + car.size)
     car_loc = abs(car.loc)
     for other_car in seg.cars:
         if other_car != car:
