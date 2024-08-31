@@ -84,17 +84,29 @@ class AstarCarController:
 
         extended_segments = segments
         max_jump = segments[-1]["end"] + JUMP_TIME_STEPS * (self.car.speed + max_acc)
-        while max_jump > extended_segments[-1]["seg"].length:
+        if max_jump > extended_segments[-1]["seg"].length:
             max_jump -= extended_segments[-1]["seg"].length
-            next_seg = self.car.get_next_segment(extended_segments[-1])
-            if next_seg is None:
-                return -1
+            next_segments = self.car.get_next_segment(extended_segments[-1])
+            if not next_segments:
+                print("NO next segments in get_accelerate - Bug?")
+                print("min acceleration")
+                print(self.car.name)
+                return max_deceleration
+            for next_seg in next_segments[:-1]:
+                max_jump -= next_seg.length
+                extended_segments = extended_segments + [{
+                    "seg": next_seg,
+                    "dir": self.car.direction,
+                    "turn": False,
+                    "begin": 0,
+                    "end": next_seg.length
+                }]
             extended_segments = extended_segments + [{
-                "seg": next_seg,
+                "seg":  next_segments[-1],
                 "dir": self.car.direction,
                 "turn": False,
                 "begin": 0,
-                "end": min(max_jump, next_seg.length)
+                "end": max(self.car.size, max_jump)
             }]
 
         # iterate over all acceleration values between max_acc and max_deceleration
