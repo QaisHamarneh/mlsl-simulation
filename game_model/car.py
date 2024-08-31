@@ -35,6 +35,7 @@ class Car:
         self.color = color
         self.dead = False
         self.goal = None
+        self.second_goal = None
         self.direction = segment.lane.direction
         self.loc = loc
         self.max_speed = max_speed
@@ -501,7 +502,7 @@ class Car:
             i += 1
         return segments
 
-    def astar(self) -> Optional[List[Segment]]:
+    def astar(self, start_seg = None) -> Optional[List[Segment]]:
         """
         Perform the A* search algorithm to find the shortest path from the car's current segment to the goal segment.
 
@@ -574,7 +575,7 @@ class Car:
                 path.insert(0, current)
             return path
 
-        start_seg = self.res[-1]["seg"]
+        start_seg = self.res[-1]["seg"] if start_seg is None else start_seg
         goal_seg = self.goal.lane_segment
         # Initialize the open list with the start node and a cost of 0
         open_list = [(0, start_seg)]

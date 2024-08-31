@@ -38,6 +38,7 @@ class TrafficEnv:
         super().__init__()
         self.useless_iterations = None
         self.goals = None
+        self.second_goals = None
         self.scores = None
         self.roads = roads
         self.segments = create_segments(roads)
@@ -59,6 +60,7 @@ class TrafficEnv:
         """
         self.scores: list[int] = [0] * self.players
         self.goals: list[Goal] = [None] * self.players
+        self.second_goals: list[Goal] = [None] * self.players
         self.useless_iterations: list[int] = [0] * self.players
         self.cars = []
         for i in range(self.players):
@@ -67,6 +69,7 @@ class TrafficEnv:
             self._place_goal(i)
         for i in range(self.players):
             self.cars[i].goal = self.goals[i]
+            self.cars[i].second_goal = self.second_goals[i]
         self.time = 0
 
     def _place_goal(self, player: int) -> None:
@@ -81,11 +84,20 @@ class TrafficEnv:
         road = random.choice(self.roads)
         lane = random.choice(road.right_lanes + road.left_lanes)
         lane_segment = random.choice([seg for seg in lane.segments if isinstance(seg, LaneSegment)])
-        if self.goals[player] is None:
+
+        roads = self.roads.copy()
+        roads.remove(road)
+        road = random.choice(roads)
+        lane = random.choice(road.right_lanes + road.left_lanes)
+        lane_segment_second = random.choice([seg for seg in lane.segments if isinstance(seg, LaneSegment)])
+        if self.goals[player] is None and self.second_goals[player] is None:
             self.goals[player] = Goal(lane_segment, self.cars[player].color)
+            self.second_goals[player] = Goal(lane_segment_second, self.cars[player].color)
         else:
-            self.goals[player].lane_segment = lane_segment
+            self.goals[player].lane_segment = self.second_goals[player].lane_segment
+            self.second_goals[player].lane_segment = lane_segment
             self.goals[player].update_position()
+            self.second_goals[player].update_position()
 
     def play_step(self, player: int, action: Tuple[int, int]) -> Tuple[bool, int]:
         """
