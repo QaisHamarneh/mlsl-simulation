@@ -1,6 +1,7 @@
 from typing import Tuple
 
 from game_model.game_model import TrafficEnv
+from game_model.helper_functions import reservation_check
 from game_model.road_network import LaneSegment, CrossingSegment
 from game_model.constants import max_acc_a, max_decc_b, LEFT_LANE_CHANGE, RIGHT_LANE_CHANGE, NO_LANE_CHANGE, \
     JUMP_TIME_STEPS, LANECHANGE_TIME_STEPS
@@ -31,6 +32,14 @@ class AstarCarController:
         if self.first_go:
             self.first_go = False
             return 0, 0
+        # savety check for changing cars:
+        if self.car.changing_lane:
+            for car in self.car.reserved_segment[1].cars:
+
+                if car != self and reservation_check(self.car):
+                    self.car.changing_lane = False
+                    self.car.reserved_segment = None
+
         lane_change = NO_LANE_CHANGE
         acceleration = self.get_accelerate(self.car.res + self.car.parallel_res)
         if isinstance(self.car.res[0]["seg"], LaneSegment) \
@@ -47,7 +56,7 @@ class AstarCarController:
                     "begin": self.car.res[0]["begin"],
                     "end": self.car.res[0]["end"]
                 }])
-                if right_lane_acceleration >= acceleration:
+                if right_lane_acceleration > acceleration:
                     lane_change = RIGHT_LANE_CHANGE
                 else:
                     # try left lane
