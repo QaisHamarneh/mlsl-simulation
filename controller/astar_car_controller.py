@@ -35,7 +35,8 @@ class AstarCarController:
         acceleration = self.get_accelerate(self.car.res + self.car.parallel_res)
         if isinstance(self.car.res[0]["seg"], LaneSegment) \
                 and acceleration < 1 and len(self.car.res) == 1 \
-                and self.car.res[0]["seg"] != self.game.goals[self.player].lane_segment:
+                and self.car.res[0]["seg"] != self.game.goals[self.player].lane_segment \
+                and not self.car.changing_lane:
             # try right lane
             right_lane = self.car.get_adjacent_lane_segment(-1)
             if right_lane is not None:
@@ -46,7 +47,7 @@ class AstarCarController:
                     "begin": self.car.res[0]["begin"],
                     "end": self.car.res[0]["end"]
                 }])
-                if right_lane_acceleration > acceleration:
+                if right_lane_acceleration >= acceleration:
                     lane_change = RIGHT_LANE_CHANGE
                 else:
                     # try left lane
