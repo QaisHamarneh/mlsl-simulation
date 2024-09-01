@@ -155,7 +155,6 @@ class AstarCarController:
                 return acceleration
         return acceleration
 
-
     def check_right_lane(self) -> int:
         """
         Check if the car should change to the right lane.
