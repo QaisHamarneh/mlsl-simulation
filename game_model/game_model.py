@@ -81,19 +81,24 @@ class TrafficEnv:
         """
         self.useless_iterations[player] = 0
 
-        road = random.choice(self.roads)
-        lane = random.choice(road.right_lanes + road.left_lanes)
-        lane_segment = random.choice([seg for seg in lane.segments if isinstance(seg, LaneSegment)])
-
-        roads = self.roads.copy()
-        roads.remove(road)
-        road = random.choice(roads)
-        lane = random.choice(road.right_lanes + road.left_lanes)
-        lane_segment_second = random.choice([seg for seg in lane.segments if isinstance(seg, LaneSegment)])
         if self.goals[player] is None and self.second_goals[player] is None:
+            road = random.choice(self.roads)
+            lane = random.choice(road.right_lanes + road.left_lanes)
+            lane_segment = random.choice([seg for seg in lane.segments if isinstance(seg, LaneSegment)])
+            roads = self.roads.copy()
+            roads.remove(road)
+            road = random.choice(roads)
+            lane = random.choice(road.right_lanes + road.left_lanes)
+            lane_segment_second = random.choice([seg for seg in lane.segments if isinstance(seg, LaneSegment)])
             self.goals[player] = Goal(lane_segment, self.cars[player].color)
             self.second_goals[player] = Goal(lane_segment_second, self.cars[player].color)
         else:
+            roads_copy = self.roads.copy()
+            #remove the road used by the first goal
+            roads_copy.remove(self.goals[player].lane_segment.road)
+            road = random.choice(roads_copy)
+            lane = random.choice(road.right_lanes + road.left_lanes)
+            lane_segment = random.choice([seg for seg in lane.segments if isinstance(seg, LaneSegment)])
             self.goals[player].lane_segment = self.second_goals[player].lane_segment
             self.second_goals[player].lane_segment = lane_segment
             self.goals[player].update_position()
