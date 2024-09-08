@@ -146,6 +146,7 @@ class LaneSegment(Segment):
             end (int): The ending position of the segment.
         """
         super().__init__()
+        self.road: Road = lane.road
         self.lane: Lane = lane
         self.begin: int = begin
         self.end: int = end
