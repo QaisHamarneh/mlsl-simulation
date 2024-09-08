@@ -1,16 +1,17 @@
+from game_model.Tester import SimulationTester
+
 import pyglet
-from typing import List, Tuple, Optional
+from typing import List
 
 from controller.astar_car_controller import AstarCarController
-from game_model.constants import *
 from game_model.game_model import TrafficEnv
 from game_model.road_network import Point, Road
 from gui.helpful_functions import *
-from timed_automata.timed_automata_classes import Transition
 
 
 class CarsWindow(pyglet.window.Window):
-    def __init__(self, game: 'TrafficEnv', controllers: List['AstarCarController'], segmentation: bool = False, manual: bool = False, debug: bool = False, pause: bool = False) -> None:
+    def __init__(self, game: 'TrafficEnv', controllers: List['AstarCarController'], segmentation: bool = False, manual: bool = False, debug: bool = False, pause: bool = False,
+                 test:bool = False, test_mode: List[str] = None ) -> None:
         """
         Initialize the CarsWindow.
 
@@ -21,6 +22,8 @@ class CarsWindow(pyglet.window.Window):
             manual (bool, optional): Flag for manual control. Defaults to False.
             debug (bool, optional): Flag for debug mode. Defaults to False.
             pause (bool, optional): Flag for pause state. Defaults to False.
+            test (bool, optional): Flag for test mode. Defaults to False.
+            test_mode (List[str], optional): List of debug modes. Defaults to None.
         """
         super().__init__()
         self.set_size(WINDOW_WIDTH, WINDOW_HEIGHT)
@@ -43,6 +46,9 @@ class CarsWindow(pyglet.window.Window):
         self.goal_shapes = []
         self.car_shapes = []
         self.debug: bool = debug
+        self.test = test
+        self.tester = SimulationTester(self.game, self.controllers, test_mode)
+
 
         for road in self.game.roads:
             self._draw_road(road)
@@ -82,6 +88,9 @@ class CarsWindow(pyglet.window.Window):
             if not self.game_over[player]:
                 self.game_over[player], self.scores[player] = self.game.play_step(player,
                                                                                   self.controllers[player].get_action())
+        if self.test:
+            self.tester.run()
+
         if all(self.game_over):
             print(f"Game Over:")
             for player in range(self.game.players):
