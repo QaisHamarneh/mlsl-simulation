@@ -35,6 +35,7 @@ class Car:
         self.color = color
         self.dead = False
         self.goal = None
+        self.second_goal = None
         self.direction = segment.lane.direction
         self.loc = loc
         self.max_speed = max_speed
@@ -130,7 +131,7 @@ class Car:
         self._update_position()
         return True
 
-    def get_next_segment(self, last_seg: dict = None, direction: int = None) -> Segment:
+    def get_next_segment(self, last_seg: dict = None, direction: int = None) -> List[Segment]:
         """
         Get the next segment for the car to move to.
 
@@ -139,17 +140,36 @@ class Car:
             direction (int, optional): The direction the car is moving. Defaults to None.
 
         Returns:
-            Segment: The next segment for the car to move to.
+             List[Segment]: The next segments for the car to move to, up to the next Lanesegment
         """
         if last_seg is None:
             last_seg = self.res[-1]
         if direction is None:
             direction = self.res[-1]["dir"]
 
-        if isinstance(last_seg["seg"], LaneSegment):
-            return last_seg["seg"].end_crossing
+        if self.res[0]["seg"] == self.goal.lane_segment:
+            #case 1: cur seg == goal seg -> preplan path to second goal
+            segs = self.astar()
+
         else:
-            return last_seg["seg"].connected_segments[direction]
+            #case 2: cur seg != goal seg -> plan path to first goal(e.g. for alternative lanes (right, left)
+            segs = self.astar(last_seg["seg"])
+
+        if len(segs) == 0:
+            print("error")
+
+        if len(segs) == 1:
+            return segs
+
+        i = 1
+
+        for i in range(len(segs)):
+            if isinstance(segs[i], LaneSegment):
+                break
+
+        return segs[0:i + 1]
+
+
 
     def extend_res(self) -> None:
         """
@@ -326,14 +346,6 @@ class Car:
         """
         if not self.changing_lane:
             return
-        from game_model.helper_functions import reservation_check
-        # check for collision in the new lane
-        for car in self.reserved_segment[1].cars:
-
-            if car != self and reservation_check(self):
-                self.changing_lane = False
-                self.reserved_segment = None
-                return False
 
         if self.time - self.reserved_segment[0] == LANECHANGE_TIME_STEPS:
             self.changing_lane = False
@@ -501,7 +513,7 @@ class Car:
             i += 1
         return segments
 
-    def astar(self) -> Optional[List[Segment]]:
+    def astar(self, start_seg = None) -> Optional[List[Segment]]:
         """
         Perform the A* search algorithm to find the shortest path from the car's current segment to the goal segment.
 
@@ -574,7 +586,7 @@ class Car:
                 path.insert(0, current)
             return path
 
-        start_seg = self.res[-1]["seg"]
+        start_seg = self.res[-1]["seg"] if start_seg is None else start_seg
         goal_seg = self.goal.lane_segment
         # Initialize the open list with the start node and a cost of 0
         open_list = [(0, start_seg)]

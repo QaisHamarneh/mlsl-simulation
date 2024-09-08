@@ -1,9 +1,10 @@
 from typing import Tuple
 
 from game_model.game_model import TrafficEnv
+from game_model.helper_functions import reservation_check
 from game_model.road_network import LaneSegment, CrossingSegment
 from game_model.constants import max_acc_a, max_decc_b, LEFT_LANE_CHANGE, RIGHT_LANE_CHANGE, NO_LANE_CHANGE, \
-    JUMP_TIME_STEPS
+    JUMP_TIME_STEPS, LANECHANGE_TIME_STEPS
 
 
 class AstarCarController:
@@ -31,12 +32,21 @@ class AstarCarController:
         if self.first_go:
             self.first_go = False
             return 0, 0
+        # savety check for changing cars:
+        if self.car.changing_lane:
+            for car in self.car.reserved_segment[1].cars:
+
+                if car != self and reservation_check(self.car):
+                    self.car.changing_lane = False
+                    self.car.reserved_segment = None
+
         lane_change = NO_LANE_CHANGE
         acceleration = self.get_accelerate(self.car.res + self.car.parallel_res)
         if isinstance(self.car.res[0]["seg"], LaneSegment) \
                 and acceleration < 1 and len(self.car.res) == 1 \
-                and self.car.res[0]["seg"] != self.game.goals[self.player].lane_segment:
-            #try right lane
+                and self.car.res[0]["seg"] != self.game.goals[self.player].lane_segment \
+                and not self.car.changing_lane:
+            # try right lane
             right_lane = self.car.get_adjacent_lane_segment(-1)
             if right_lane is not None:
                 right_lane_acceleration = self.get_accelerate([{
@@ -49,7 +59,7 @@ class AstarCarController:
                 if right_lane_acceleration > acceleration:
                     lane_change = RIGHT_LANE_CHANGE
                 else:
-                    #try left lane
+                    # try left lane
                     left_lane = self.car.get_adjacent_lane_segment(1)
                     if left_lane is not None:
                         left_lane_acceleration = self.get_accelerate([{
@@ -84,17 +94,29 @@ class AstarCarController:
 
         extended_segments = segments
         max_jump = segments[-1]["end"] + JUMP_TIME_STEPS * (self.car.speed + max_acc)
-        while max_jump > extended_segments[-1]["seg"].length:
+        if max_jump > extended_segments[-1]["seg"].length:
             max_jump -= extended_segments[-1]["seg"].length
-            next_seg = self.car.get_next_segment(extended_segments[-1])
-            if next_seg is None:
-                return -1
+            next_segments = self.car.get_next_segment(extended_segments[-1])
+            if not next_segments:
+                print("NO next segments in get_accelerate - Bug?")
+                print("min acceleration")
+                print(self.car.name)
+                return max_deceleration
+            for next_seg in next_segments[:-1]:
+                max_jump -= next_seg.length
+                extended_segments = extended_segments + [{
+                    "seg": next_seg,
+                    "dir": self.car.direction,
+                    "turn": False,
+                    "begin": 0,
+                    "end": next_seg.length
+                }]
             extended_segments = extended_segments + [{
-                "seg": next_seg,
+                "seg": next_segments[-1],
                 "dir": self.car.direction,
                 "turn": False,
                 "begin": 0,
-                "end": min(max_jump, next_seg.length)
+                "end": max(self.car.size, max_jump)
             }]
 
         # iterate over all acceleration values between max_acc and max_deceleration
@@ -102,6 +124,14 @@ class AstarCarController:
             # check if car extends max speed of the current segment
             if self.car.speed + acceleration > self.car.res[0]["seg"].max_speed:
                 continue
+
+            # check if car is changing
+            if self.car.changing_lane:
+                remaining_time = LANECHANGE_TIME_STEPS - (self.car.time - self.car.reserved_segment[0])
+                required_space_in_segment = (self.car.speed + acceleration) * remaining_time
+                remaining_space_in_segment = segments[-1]["seg"].length - segments[-1]["end"]
+                if remaining_space_in_segment < required_space_in_segment:
+                    continue
 
             # for each segment in the extended segments
             collision = False
@@ -126,9 +156,10 @@ class AstarCarController:
                         if priority > 0 and len(seg["seg"].cars) > 0:
                             collision = True
                             break
+
             if collision:
                 continue
-            # if no collision is detected return the acceleration
+        # if no collision is detected return the acceleration
             else:
                 return acceleration
         return acceleration
