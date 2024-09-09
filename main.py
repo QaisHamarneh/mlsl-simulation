@@ -13,4 +13,4 @@ def main(players, roads, segmentation, debug=False):
 
 
 if __name__ == '__main__':
-    main(**STARTING_SCENARIO, debug=True)
+    main(**STARTING_SCENARIO, debug=False)
