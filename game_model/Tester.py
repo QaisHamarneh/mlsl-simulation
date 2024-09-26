@@ -43,12 +43,9 @@ class SimulationTester:
             return
 
         results = []
-        print(f"---Running {self.modes.keys()}. Time: {self.controllers[0].car.time}---")
 
         for mode in self.debug_mode:
             results.append(self.modes[mode]())
-
-        print("-------------------------")
 
         return results
 
@@ -59,6 +56,7 @@ class SimulationTester:
 
         Returns:
             bool: True if all cars are in a lane segment, False otherwise.
+            str: The result string of the check.
         """
         not_in_lane = 0
 
@@ -68,11 +66,11 @@ class SimulationTester:
                 not_in_lane += 1
 
         if not_in_lane > 0:
-            print(f"{not_in_lane} cars' last segment is not a lane segment")
+            res_string = f"Reserved Check: {not_in_lane} cars' last segment is not a lane segment"
         else:
-            print("Each car's last segment is a lane segment")
+            res_string = f"Reserved Check: Each car's last segment is a lane segment"
 
-        return not not_in_lane
+        return not not_in_lane, res_string
 
     def priority_check(self) -> bool:
         """
@@ -83,6 +81,7 @@ class SimulationTester:
 
         Returns:
             bool: True if all cars have the correct priority, False otherwise.
+            str: The result string of the check.
 
         """
         incorrect_priority = 0
@@ -97,11 +96,11 @@ class SimulationTester:
                     incorrect_priority += 1
 
         if incorrect_priority > 0:
-            print(f"{incorrect_priority} cars have incorrect priority")
+            res_string = f"Priority Check: {incorrect_priority} cars have incorrect priority"
         else:
-            print("Each car has the correct priority")
+            res_string = "Priority Check: Each car has the correct priority"
 
-        return not incorrect_priority
+        return not incorrect_priority, res_string
 
     def reservation_check(self):
         """
@@ -111,6 +110,7 @@ class SimulationTester:
         The function prints the number of cars with incorrect reservations.
         Returns:
             bool: True if all cars have correct reservations, False otherwise.
+            str: The result string of the check.
         """
         too_short_reservations = 0
         no_correct_reservation_on_last_segment = 0
@@ -129,12 +129,12 @@ class SimulationTester:
                     no_correct_reservation_on_last_segment += 1
 
         if too_short_reservations > 0 or no_correct_reservation_on_last_segment > 0:
-            print(
-                f"{too_short_reservations + no_correct_reservation_on_last_segment} cars have incorrect reservations, {too_short_reservations} are too short, {no_correct_reservation_on_last_segment} have no correct reservation on the last segment")
+            res_string = (f"Reservation Check: {too_short_reservations + no_correct_reservation_on_last_segment} cars have incorrect reservations, "
+                          f"{too_short_reservations} are too short, {no_correct_reservation_on_last_segment} have no correct reservation on the last segment")
         else:
-            print("Each car has the correct reservation")
+            res_string = "Reservation Check: Each car has correct reservations"
 
-        return not (too_short_reservations + no_correct_reservation_on_last_segment)
+        return not (too_short_reservations + no_correct_reservation_on_last_segment), res_string
 
 
     def consistency_check(self):
@@ -143,6 +143,7 @@ class SimulationTester:
         The function prints the number of cars with inconsistent reservations.
         Returns:
             bool: True if all cars have consistent reservations, False otherwise.
+            string: The result string of the check.
         """
         missing_reservations = 0
         additional_reservations = 0
@@ -160,8 +161,9 @@ class SimulationTester:
                     additional_reservations += 1
 
         if missing_reservations > 0 or additional_reservations > 0:
-            print(f"{missing_reservations + additional_reservations} inconsistent reservations, {missing_reservations} missing reservations, {additional_reservations} additional reservations")
+            res_string = (f"Consistency Check: {missing_reservations + additional_reservations} inconsistent reservations, "
+                          f"{missing_reservations} missing reservations, {additional_reservations} additional reservations")
         else:
-            print("Each car has consistent reservations")
+            res_string = "Consistency Check: Each car has consistent reservations"
 
-        return not (missing_reservations + additional_reservations)
+        return not (missing_reservations + additional_reservations), res_string
