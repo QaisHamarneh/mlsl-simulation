@@ -1,4 +1,8 @@
+import pyglet
 from pyglet import shapes
+from pyglet.text.document import FormattedDocument
+from pyglet.text.layout import TextLayout
+
 from game_model.constants import *
 from game_model.road_network import Direction, LaneSegment, CrossingSegment
 from typing import List, Tuple, Union
@@ -467,27 +471,28 @@ def find_greatest_gap(roads: List['Road']) -> Tuple[int, int, int, int]:
     if len(roads) == 0:
         return 0, 0, 0, 0
 
-    #seperate horizontal and vertical roads
+    # seperate horizontal and vertical roads
 
     horizontal_roads = [road for road in roads if road.horizontal]
     vertical_roads = [road for road in roads if not road.horizontal]
 
-    #sort roads by their top value
+    # sort roads by their top value
 
     horizontal_roads.sort(key=lambda road: road.top)
     vertical_roads.sort(key=lambda road: road.top)
 
-    #calculate the gap between each road (compare last.bottom with next.top)
+    # calculate the gap between each road (compare last.bottom with next.top)
 
-    horizontal_gaps = [horizontal_roads[i + 1].top - horizontal_roads[i].bottom for i in range(len(horizontal_roads) - 1)]
+    horizontal_gaps = [horizontal_roads[i + 1].top - horizontal_roads[i].bottom for i in
+                       range(len(horizontal_roads) - 1)]
     vertical_gaps = [vertical_roads[i + 1].top - vertical_roads[i].bottom for i in range(len(vertical_roads) - 1)]
 
-    #find the largest gap
+    # find the largest gap
 
     max_horizontal_gap = max(horizontal_gaps) if len(horizontal_gaps) > 0 else 0
     max_vertical_gap = max(vertical_gaps) if len(vertical_gaps) > 0 else 0
 
-    #find the top left corner of the gap
+    # find the top left corner of the gap
 
     vertical_index = vertical_gaps.index(max_vertical_gap) if len(vertical_gaps) > 0 else 0
     horizontal_index = horizontal_gaps.index(max_horizontal_gap) if len(horizontal_gaps) > 0 else 0
@@ -495,6 +500,45 @@ def find_greatest_gap(roads: List['Road']) -> Tuple[int, int, int, int]:
     x = vertical_roads[vertical_index].bottom
     y = horizontal_roads[horizontal_index].bottom
 
-    print(x,y,max_horizontal_gap,max_vertical_gap)
+    print(x, y, max_horizontal_gap, max_vertical_gap)
 
     return x, y, max_vertical_gap, max_horizontal_gap
+
+
+def create_test_result_shape(res, x, y, width, height):
+    """
+    Creates a text result shape.
+
+    Args:
+        res (List[Tuple[bool, str]]): The test result.
+        x (int): The x coordinate of the shape.
+        y (int): The y coordinate of the shape.
+        width (int): The width of the shape.
+        height (int): The height of the shape.
+
+    Returns:
+        pyglet.text.Label: A pyglet text label representing the test result.
+    """
+    lines = [res[1] for res in res]
+
+    font_size = 12
+
+    while True:
+        layout = pyglet.text.Label(
+            text='\n'.join(lines),
+            font_name='Arial',
+            font_size=font_size,
+            x=x,
+            y=y + height,
+            width=width,
+            height=height,
+            multiline=True,
+            anchor_x='left',
+            anchor_y='top',
+            color = BLACK
+        )
+        if layout.content_height < height:
+            break
+        font_size -= 1
+
+    return layout
