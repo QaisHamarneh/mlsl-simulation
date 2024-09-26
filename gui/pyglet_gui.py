@@ -101,6 +101,7 @@ class CarsWindow(pyglet.window.Window):
             test_results = self.tester.run()
             if test_results is not None:
                 test_shape = create_test_result_shape(test_results, *self.test_params)
+                self.test_shape = test_shape
 
         if all(self.game_over):
             print(f"Game Over:")
