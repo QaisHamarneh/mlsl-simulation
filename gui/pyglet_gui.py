@@ -9,6 +9,8 @@ from game_model.road_network import Point, Road
 from gui.helpful_functions import *
 
 
+
+
 class CarsWindow(pyglet.window.Window):
     def __init__(self, game: 'TrafficEnv', controllers: List['AstarCarController'], segmentation: bool = False, manual: bool = False, debug: bool = False, pause: bool = False,
                  test:bool = False, test_mode: List[str] = None ) -> None:
@@ -48,6 +50,8 @@ class CarsWindow(pyglet.window.Window):
         self.debug: bool = debug
         self.test = test
         self.tester = SimulationTester(self.game, self.controllers, test_mode)
+        self.test_shape = None
+        self.test_params = find_greatest_gap(self.game.roads)
 
 
         for road in self.game.roads:
@@ -76,8 +80,13 @@ class CarsWindow(pyglet.window.Window):
             shape.draw()
         for shape in self.car_shapes:
             shape.draw()
+        if self.test_shape is not None:
+            self.test_shape.draw()
+
+
         if not self.pause:
             self.frames_count += int(1/TIME_PER_FRAME)
+
 
     def _update_game(self) -> None:
         """
@@ -89,7 +98,9 @@ class CarsWindow(pyglet.window.Window):
                 self.game_over[player], self.scores[player] = self.game.play_step(player,
                                                                                   self.controllers[player].get_action())
         if self.test:
-            self.tester.run()
+            test_results = self.tester.run()
+            if test_results is not None:
+                test_shape = create_test_result_shape(test_results, *self.test_params)
 
         if all(self.game_over):
             print(f"Game Over:")
