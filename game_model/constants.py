@@ -29,8 +29,8 @@ GREEN = (0, 255, 0)
 LANECHANGE_TIME_STEPS = 3
 CLAIMTIME = 5
 
-max_acc_a = 3
-max_decc_b = 20
+MAX_ACC = 3
+MAX_DEC = 5
 JUMP_TIME_STEPS = 2
 
 # lane change

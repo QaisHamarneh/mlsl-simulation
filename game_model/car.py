@@ -144,12 +144,13 @@ class Car:
         """
         if last_seg is None:
             last_seg = self.res[-1]
-        if direction is None:
-            direction = self.res[-1]["dir"]
+        # if direction is None:
+        #     direction = self.res[-1]["dir"]
 
         if self.res[0]["seg"] == self.goal.lane_segment:
             #case 1: cur seg == goal seg -> preplan path to second goal
-            segs = self.astar()
+            # segs = self.astar()
+            segs = self.astar(goal=self.second_goal)
 
         else:
             #case 2: cur seg != goal seg -> plan path to first goal(e.g. for alternative lanes (right, left)
@@ -182,7 +183,9 @@ class Car:
             if next_segs is None:
                 next_segs = self.astar()
             if len(next_segs) < 2:
-                print("Problem.NO_NEXT_SEGMENT")
+                next_segs = self.astar(goal=self.second_goal)
+            if len(next_segs) < 2:
+                print(Problem.NO_NEXT_SEGMENT)
                 print(f"Problem car {self.name} loc {self.loc} speed {self.speed}")
                 for seg in self.res:
                     print(f"{seg['seg']} {seg['begin']} {seg['end']}")
@@ -198,7 +201,7 @@ class Car:
             if next_seg is None and parallel_next_seg is None:
                 #check if car is on the goal segment
                 if self.goal.lane_segment != self.res[-1]["seg"]:
-                    print("Problem.NO_NEXT_SEGMENT")
+                    print(Problem.NO_NEXT_SEGMENT)
                     print(f"Problem car {self.name} loc {self.loc} speed {self.speed}")
                     for seg in self.res:
                         print(f"{seg['seg']} {seg['begin']} {seg['end']}")
@@ -212,7 +215,7 @@ class Car:
                 elif isinstance(next_seg, CrossingSegment):
                     next_next_seg = next_segs[1] if next_segs else None
                     if next_next_seg is None:
-                        print("Problem.NO_NEXT_SEGMENT")
+                        print(Problem.NO_NEXT_SEGMENT)
                     if isinstance(next_next_seg, LaneSegment):
                         next_dir = next_next_seg.lane.direction
                     else:
@@ -469,7 +472,7 @@ class Car:
         if speed is None:
             speed = self.speed
         # braking = (speed * (speed + 1)) // 2
-        braking = speed**2  // 2
+        braking = speed**2  // (2 * MAX_DEC)
         # BLOCK_SIZE // 2 additional distance when speed = 0
         return self.size + braking + BUFFER
 
@@ -513,7 +516,7 @@ class Car:
             i += 1
         return segments
 
-    def astar(self, start_seg = None) -> Optional[List[Segment]]:
+    def astar(self, start_seg = None, goal = None) -> Optional[List[Segment]]:
         """
         Perform the A* search algorithm to find the shortest path from the car's current segment to the goal segment.
 
@@ -586,8 +589,9 @@ class Car:
                 path.insert(0, current)
             return path
 
+        goal = self.goal if goal is None else goal
         start_seg = self.res[-1]["seg"] if start_seg is None else start_seg
-        goal_seg = self.goal.lane_segment
+        goal_seg = self.goal.lane_segment if goal is None else goal.lane_segment
         # Initialize the open list with the start node and a cost of 0
         open_list = [(0, start_seg)]
         # Initialize the came_from dictionary to track the path
