@@ -259,6 +259,8 @@ def brake_box(car: 'Car', debug: bool) -> List[Union[shapes.Line, shapes.Rectang
             else:
                 dis = abs(seg.end - car_y)
                 if dis > remaining_distance:
+                    if remaining_distance < car.size:
+                        remaining_distance = car.size
                     if last_dir == Direction.DOWN:
                         car_y -= remaining_distance
                         car_y2 -= remaining_distance
@@ -381,12 +383,24 @@ def brake_box(car: 'Car', debug: bool) -> List[Union[shapes.Line, shapes.Rectang
                         right_points.append((car_x2, car_y2))
                         car_y2 = car_y2 + BLOCK_SIZE + LANE_DISPLACEMENT
                         right_points.append((car_x2, car_y2))
+                        #adjust left side with LANE_DISPLACEMENT
+                        car_x = car_x + LANE_DISPLACEMENT
+                        left_points.append((car_x, car_y))
+                        car_y = car_y + LANE_DISPLACEMENT
+                        left_points.append((car_x, car_y))
+
 
                     if car.res[i - 1]["dir"] == Direction.DOWN:
                         car_y2 = car_y2 - BLOCK_SIZE - LANE_DISPLACEMENT
                         right_points.append((car_x2, car_y2))
                         car_x2 = car_x2 + BLOCK_SIZE + LANE_DISPLACEMENT
                         right_points.append((car_x2, car_y2))
+                        #adjust left side with LANE_DISPLACEMENT
+                        car_y = car_y - LANE_DISPLACEMENT
+                        left_points.append((car_x, car_y))
+                        car_x = car_x + LANE_DISPLACEMENT
+                        left_points.append((car_x, car_y))
+
 
                     if car.res[i - 1]["dir"] == Direction.LEFT:
                         car_x2 = car_x2 - BLOCK_SIZE - LANE_DISPLACEMENT
@@ -394,11 +408,25 @@ def brake_box(car: 'Car', debug: bool) -> List[Union[shapes.Line, shapes.Rectang
                         car_y2 = car_y2 - BLOCK_SIZE - LANE_DISPLACEMENT
                         right_points.append((car_x2, car_y2))
 
+                        #adjust left side with LANE_DISPLACEMENT
+                        car_x = car_x - LANE_DISPLACEMENT
+                        left_points.append((car_x, car_y))
+                        car_y = car_y - LANE_DISPLACEMENT
+                        left_points.append((car_x, car_y))
+
+
                     if car.res[i - 1]["dir"] == Direction.UP:
                         car_y2 = car_y2 + BLOCK_SIZE + LANE_DISPLACEMENT
                         right_points.append((car_x2, car_y2))
                         car_x2 = car_x2 - BLOCK_SIZE - LANE_DISPLACEMENT
                         right_points.append((car_x2, car_y2))
+
+                        #adjust left side with LANE_DISPLACEMENT
+                        car_y = car_y + LANE_DISPLACEMENT
+                        left_points.append((car_x, car_y))
+                        car_x = car_x - LANE_DISPLACEMENT
+                        left_points.append((car_x, car_y))
+
 
                     remaining_distance -= BLOCK_SIZE
                     remaining_distance -= LANE_DISPLACEMENT
@@ -411,21 +439,46 @@ def brake_box(car: 'Car', debug: bool) -> List[Union[shapes.Line, shapes.Rectang
                         left_points.append((car_x, car_y))
                         car_y = car_y - BLOCK_SIZE - LANE_DISPLACEMENT
                         left_points.append((car_x, car_y))
+                        #adjust right side with LANE_DISPLACEMENT
+                        car_x2 = car_x2 - LANE_DISPLACEMENT
+                        right_points.append((car_x2, car_y2))
+                        car_y2 = car_y2 - LANE_DISPLACEMENT
+                        right_points.append((car_x2, car_y2))
+
                     if car.res[i - 1]["dir"] == Direction.DOWN:
                         car_y = car_y - BLOCK_SIZE - LANE_DISPLACEMENT
                         left_points.append((car_x, car_y))
                         car_x = car_x - BLOCK_SIZE - LANE_DISPLACEMENT
                         left_points.append((car_x, car_y))
+                        #adjust right side with LANE_DISPLACEMENT
+                        car_y2 = car_y2 + LANE_DISPLACEMENT
+                        right_points.append((car_x2, car_y2))
+                        car_x2 = car_x2 - LANE_DISPLACEMENT
+                        right_points.append((car_x2, car_y2))
+
+
                     if car.res[i - 1]["dir"] == Direction.LEFT:
                         car_x = car_x - BLOCK_SIZE - LANE_DISPLACEMENT
                         left_points.append((car_x, car_y))
                         car_y = car_y + BLOCK_SIZE + LANE_DISPLACEMENT
                         left_points.append((car_x, car_y))
+                        #adjust right side with LANE_DISPLACEMENT
+                        car_x2 = car_x2 + LANE_DISPLACEMENT
+                        right_points.append((car_x2, car_y2))
+                        car_y2 = car_y2 + LANE_DISPLACEMENT
+                        right_points.append((car_x2, car_y2))
+
                     if car.res[i - 1]["dir"] == Direction.UP:
                         car_y = car_y + BLOCK_SIZE + LANE_DISPLACEMENT
                         left_points.append((car_x, car_y))
                         car_x = car_x + BLOCK_SIZE + LANE_DISPLACEMENT
                         left_points.append((car_x, car_y))
+                        #adjust right side with LANE_DISPLACEMENT
+                        car_y2 = car_y2 - LANE_DISPLACEMENT
+                        right_points.append((car_x2, car_y2))
+                        car_x2 = car_x2 + LANE_DISPLACEMENT
+                        right_points.append((car_x2, car_y2))
+
                     remaining_distance -= BLOCK_SIZE
                     remaining_distance -= LANE_DISPLACEMENT
                     last_dir = segment["dir"]
@@ -535,7 +588,7 @@ def create_test_result_shape(res, x, y, width, height):
             multiline=True,
             anchor_x='left',
             anchor_y='top',
-            color = BLACK
+            color = BLACK_RGBA
         )
         if layout.content_height < height:
             break

@@ -12,4 +12,4 @@ def main(players, roads, segmentation, debug=False, test=False, test_mode=None):
 
 
 if __name__ == '__main__':
-    main(**JUST_ONE_CAR, debug=False, test=True, test_mode=["all"])
+    main(**JUST_ONE_CAR, debug=True, test=True, test_mode=["all"])
