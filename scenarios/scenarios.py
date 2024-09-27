@@ -63,3 +63,6 @@ HORIZONTAL_VERTICAL = {
     "segmentation": False,
     "players": 25
 }
+
+JUST_ONE_CAR = STARTING_SCENARIO.copy()
+JUST_ONE_CAR["players"] = 1
