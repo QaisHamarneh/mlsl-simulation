@@ -259,6 +259,8 @@ def brake_box(car: 'Car', debug: bool) -> List[Union[shapes.Line, shapes.Rectang
             else:
                 dis = abs(seg.end - car_y)
                 if dis > remaining_distance:
+                    if remaining_distance < car.size:
+                        remaining_distance = car.size
                     if last_dir == Direction.DOWN:
                         car_y -= remaining_distance
                         car_y2 -= remaining_distance
