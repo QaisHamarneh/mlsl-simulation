@@ -3,7 +3,7 @@ from typing import Tuple
 from game_model.game_model import TrafficEnv
 from game_model.helper_functions import reservation_check
 from game_model.road_network import LaneSegment, CrossingSegment
-from game_model.constants import max_acc_a, max_decc_b, LEFT_LANE_CHANGE, RIGHT_LANE_CHANGE, NO_LANE_CHANGE, \
+from game_model.constants import MAX_ACC, MAX_DEC, LEFT_LANE_CHANGE, RIGHT_LANE_CHANGE, NO_LANE_CHANGE, \
     JUMP_TIME_STEPS, LANECHANGE_TIME_STEPS
 
 
@@ -39,6 +39,7 @@ class AstarCarController:
                 if car != self and reservation_check(self.car):
                     self.car.changing_lane = False
                     self.car.reserved_segment = None
+                    break
 
         lane_change = NO_LANE_CHANGE
         acceleration = self.get_accelerate(self.car.res + self.car.parallel_res)
@@ -86,7 +87,7 @@ class AstarCarController:
         Returns:
             int: The optimal acceleration value
         """
-        max_acc, max_deceleration = max_acc_a, - max_decc_b
+        max_acc, max_deceleration = MAX_ACC, - MAX_DEC
         # limit max_acc to the max speed of the car
         max_acc = min(max_acc, self.car.max_speed - self.car.speed)
         # limit max_deceleration to 0
