@@ -47,6 +47,7 @@ class CarsWindow(pyglet.window.Window):
         self.road_shapes = []
         self.goal_shapes = []
         self.car_shapes = []
+
         self.debug: bool = debug
         self.test = test
         self.tester = SimulationTester(self.game, self.controllers, test_mode)
@@ -82,8 +83,6 @@ class CarsWindow(pyglet.window.Window):
             shape.draw()
         if self.test_shape is not None:
             self.test_shape.draw()
-
-
         if not self.pause:
             self.frames_count += int(1/TIME_PER_FRAME)
 
@@ -91,6 +90,7 @@ class CarsWindow(pyglet.window.Window):
     def _update_game(self) -> None:
         """
         Update the game state for each player.
+        Runs all wanted tests.
         Checks for game over state.
         """
         for player in range(self.game.players):
@@ -100,8 +100,7 @@ class CarsWindow(pyglet.window.Window):
         if self.test:
             test_results = self.tester.run()
             if test_results is not None:
-                test_shape = create_test_result_shape(test_results, *self.test_params)
-                self.test_shape = test_shape
+                self.test_shape = create_test_result_shape(test_results, *self.test_params)
 
         if all(self.game_over):
             print(f"Game Over:")

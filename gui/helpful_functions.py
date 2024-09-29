@@ -1,7 +1,5 @@
 import pyglet
 from pyglet import shapes
-from pyglet.text.document import FormattedDocument
-from pyglet.text.layout import TextLayout
 
 from game_model.constants import *
 from game_model.road_network import Direction, LaneSegment, CrossingSegment
@@ -145,7 +143,7 @@ def create_lines(*line_coords: int, color: Tuple[int, int, int], width: int = 2)
 
 def get_xy_crossingseg(seg: CrossingSegment) -> Tuple[int, int]:
     """
-    Gets the x and y coordinates of a crossing segment.
+    Gets the x and y coordinates of a crossing segment, using the connected segments to a lane segment.
 
     Args:
         seg (CrossingSegment): The crossing segment.
@@ -198,7 +196,7 @@ def get_xy_crossingseg(seg: CrossingSegment) -> Tuple[int, int]:
 
 def brake_box(car: 'Car', debug: bool) -> List[Union[shapes.Line, shapes.Rectangle]]:
     """
-    Creates a brake box for a car.
+    Creates a brake box for a car. This is done collecting all points of the brake box on the left and right side separately.
 
     Args:
         car (Car): The car object.
@@ -233,13 +231,17 @@ def brake_box(car: 'Car', debug: bool) -> List[Union[shapes.Line, shapes.Rectang
 
     remaining_distance = car.get_braking_distance()
     last_dir = car.res[0]["dir"]
-    tip_dir = car.res[0]["dir"]
 
+    # iterate over all segments of the car's path
     for i in range(0, len(car.res)):
         segment = car.res[i]
         seg = segment["seg"]
+
+        # case 1: LaneSegment
         if isinstance(seg, LaneSegment):
+
             if seg.lane.road.horizontal:
+
                 dis = abs(seg.end - car_x)
                 if dis > remaining_distance:
                     if remaining_distance < car.size:
@@ -256,6 +258,7 @@ def brake_box(car: 'Car', debug: bool) -> List[Union[shapes.Line, shapes.Rectang
                     remaining_distance -= dis
                 left_points.append((car_x, car_y))
                 right_points.append((car_x2, car_y2))
+
             else:
                 dis = abs(seg.end - car_y)
                 if dis > remaining_distance:
@@ -274,10 +277,12 @@ def brake_box(car: 'Car', debug: bool) -> List[Union[shapes.Line, shapes.Rectang
                 left_points.append((car_x, car_y))
                 right_points.append((car_x2, car_y2))
             last_dir = segment["dir"]
-            tip_dir = segment["dir"]
 
 
+
+        # case 2: CrossingSegment
         elif isinstance(seg, CrossingSegment):
+            # first segment is a crossing segment
             if i == 0:
                 x_anchor, y_anchor = get_xy_crossingseg(seg)
                 interesting_points.append((x_anchor, y_anchor))
@@ -325,7 +330,10 @@ def brake_box(car: 'Car', debug: bool) -> List[Union[shapes.Line, shapes.Rectang
                 left_points.append((car_x, car_y))
                 right_points.append((car_x2, car_y2))
                 last_dir = segment["dir"]
+
             else:
+
+                # going straight through a crossing segment
                 if last_dir.value == segment["dir"].value:
 
                     if remaining_distance > BLOCK_SIZE:
@@ -353,22 +361,18 @@ def brake_box(car: 'Car', debug: bool) -> List[Union[shapes.Line, shapes.Rectang
                         if car.res[i - 1]["dir"] == Direction.RIGHT:
                             car_x += BLOCK_SIZE
                             car_x2 += BLOCK_SIZE
-                            tip_dir = Direction.RIGHT
 
                         elif car.res[i - 1]["dir"] == Direction.LEFT:
                             car_x -= BLOCK_SIZE
                             car_x2 -= BLOCK_SIZE
-                            tip_dir = Direction.LEFT
 
                         elif car.res[i - 1]["dir"] == Direction.UP:
                             car_y += BLOCK_SIZE
                             car_y2 += BLOCK_SIZE
-                            tip_dir = Direction.UP
 
                         elif car.res[i - 1]["dir"] == Direction.DOWN:
                             car_y -= BLOCK_SIZE
                             car_y2 -= BLOCK_SIZE
-                            tip_dir = Direction.DOWN
 
                         remaining_distance = car.size
                         left_points.append((car_x, car_y))
