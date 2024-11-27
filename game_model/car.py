@@ -589,7 +589,6 @@ class Car:
                 path.insert(0, current)
             return path
 
-        goal = self.goal if goal is None else goal
         start_seg = self.res[-1]["seg"] if start_seg is None else start_seg
         goal_seg = self.goal.lane_segment if goal is None else goal.lane_segment
         # Initialize the open list with the start node and a cost of 0

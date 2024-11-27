@@ -40,6 +40,8 @@ class CarsWindow(pyglet.window.Window):
         self.frames_count: int = 0
         self.manual: bool = manual
 
+        self.batch = pyglet.graphics.Batch()
+
         self.game_over: List[bool]= [False] * self.game.players
         self.pause: bool = pause
         self.scores: List[int] = [0] * self.game.players
@@ -67,22 +69,22 @@ class CarsWindow(pyglet.window.Window):
         """
         Handle the draw event to update the window content.
         """
+        pyglet.gl.glClearColor(*[c / 255 for c in PALE_GREEN], 1)
         self.clear()
         if not self.pause and self.frames_count % (int(1/TIME_PER_FRAME)) == 0:
             self._update_game()
             self.frames_count = 0
         self._update_cars()
         self._update_goals()
-        background = shapes.Rectangle(x=0, y=0, width=WINDOW_WIDTH, height=WINDOW_HEIGHT, color=PALE_GREEN)
-        background.draw()
-        for shape in self.road_shapes:
-            shape.draw()
-        for shape in self.goal_shapes:
-            shape.draw()
-        for shape in self.car_shapes:
-            shape.draw()
+        for road in self.road_shapes:
+            road.batch = self.batch
+        for goal in self.goal_shapes:
+            goal.batch = self.batch
+        for car in self.car_shapes:
+            car.batch = self.batch
         if self.test_shape is not None:
-            self.test_shape.draw()
+            self.test_shape.batch = self.batch
+        self.batch.draw()
         if not self.pause:
             self.frames_count += int(1/TIME_PER_FRAME)
 
