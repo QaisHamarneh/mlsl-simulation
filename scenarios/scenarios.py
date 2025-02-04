@@ -25,21 +25,40 @@ UP_DOWN_OVERTAKE = {
     "players": 2
 }
 
+BIG_SCENARIO = {
+    "roads": [
+        Road("bottom", True, 0, 1, 0),
+        Road("right", False, WINDOW_WIDTH - 1 * BLOCK_SIZE, 0, 1),
+        Road("top", True, WINDOW_HEIGHT - 1 * BLOCK_SIZE, 0, 1),
+        Road("left", False, 0, 1, 0),
+        # Road("h1", True, WINDOW_HEIGHT // 2 - 2 * BLOCK_SIZE, 2, 2),
+        # Road("v1", False, WINDOW_WIDTH // 2 - 2 * BLOCK_SIZE, 2, 2)
+        Road("h1", True, WINDOW_HEIGHT // 4 - 1 * BLOCK_SIZE, 0, 2),
+        Road("h2", True, WINDOW_HEIGHT // 2 - 2 * BLOCK_SIZE, 2, 2),
+        Road("h3", True, 3 * WINDOW_HEIGHT // 4 - 1 * BLOCK_SIZE, 2, 0),
+        Road("v1", False, WINDOW_WIDTH // 4 - 1 * BLOCK_SIZE, 0, 2),
+        Road("v2", False, WINDOW_WIDTH // 2 - 2 * BLOCK_SIZE, 2, 2),
+        Road("v3", False, 3 * WINDOW_WIDTH // 4 - 1 * BLOCK_SIZE, 2, 0)
+    ],
+    "segmentation": False,
+    "players": 10
+}
+
 STARTING_SCENARIO = {
     "roads": [
         Road("bottom", True, 0, 1, 0),
         Road("right", False, WINDOW_WIDTH - BLOCK_SIZE, 0, 1),
         Road("top", True, WINDOW_HEIGHT - BLOCK_SIZE, 0, 1),
         Road("left", False, 0, 1, 0),
-        Road("h1", True, 145, 0, 2),
-        Road("h2", True, 330, 3, 3),
-        Road("h3", True, 675, 2, 0),
-        Road("v1", False, 320, 0, 2),
-        Road("v2", False, 680, 3, 3),
-        Road("v3", False, 1200, 2, 0)
+        Road("h1", True, WINDOW_HEIGHT // 4 - 1 * BLOCK_SIZE, 0, 2),
+        Road("h2", True, WINDOW_HEIGHT // 2 - 3 * BLOCK_SIZE, 3, 3),
+        Road("h3", True, 3 * WINDOW_HEIGHT // 4 - 1 * BLOCK_SIZE, 2, 0),
+        Road("v1", False, WINDOW_WIDTH // 4 - 1 * BLOCK_SIZE, 0, 2),
+        Road("v2", False, WINDOW_WIDTH // 2 - 3 * BLOCK_SIZE, 3, 3),
+        Road("v3", False, 3 * WINDOW_WIDTH // 4 - 1 * BLOCK_SIZE, 2, 0)
     ],
     "segmentation": False,
-    "players": 10
+    "players": 20
 }
 
 ONE_ROAD = {
