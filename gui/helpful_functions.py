@@ -137,7 +137,7 @@ def create_lines(*line_coords: int, color: Tuple[int, int, int], width: int = 2)
     for i in range(0, len(line_coords) - 2, 2):
         lines.append(
             shapes.Line(line_coords[i], line_coords[i + 1], line_coords[i + 2], line_coords[i + 3], color=color,
-                        width=width))
+                        thickness=width))
     return lines
 
 

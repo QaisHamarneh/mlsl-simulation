@@ -61,6 +61,19 @@ STARTING_SCENARIO = {
     "players": 20
 }
 
+ONE_CROSSING = {
+    "roads": [
+        Road("bottom", True, 0, 1, 0),
+        Road("right", False, WINDOW_WIDTH - BLOCK_SIZE, 0, 1),
+        Road("top", True, WINDOW_HEIGHT - BLOCK_SIZE, 0, 1),
+        Road("left", False, 0, 1, 0),
+        Road("v1", False, WINDOW_WIDTH // 2 - 3 * BLOCK_SIZE, 2, 2),
+        Road("h1", True, WINDOW_HEIGHT // 2 - 3 * BLOCK_SIZE, 2, 2),
+    ],
+    "segmentation": False,
+    "players": 10
+}
+
 ONE_ROAD = {
     "roads": [
         Road("bottom", True, 0, 1, 0),

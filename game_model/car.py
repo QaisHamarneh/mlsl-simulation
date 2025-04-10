@@ -77,25 +77,22 @@ class Car:
         self.time += 1
 
         # Cancel claimed lanes if the car enters a crossing
-        if len(self.res) > 1 and len(self.claimed_lane) > 0:
-            self.claimed_lane = {}
+        # if len(self.res) > 1 and len(self.claimed_lane) > 0:
+        #     self.claimed_lane = {}
 
         self.extend_res()
 
-        # stagnation check
-
-        if self.last_loc == self.loc:
-            self.stagnation += 1
-        else:
-            self.stagnation = 0
-            self.last_loc = self.loc
-        # stagnation removal
-        if self.stagnation > MAX_STAGNATION_TIME:
-            for seg in self.res[1:]:
-                seg["seg"].cars.remove(self)
-            self.res = [self.res[0]]
-
-
+        # # stagnation check
+        # if self.last_loc == self.loc:
+        #     self.stagnation += 1
+        # else:
+        #     self.stagnation = 0
+        #     self.last_loc = self.loc
+        # # stagnation removal
+        # if self.stagnation > MAX_STAGNATION_TIME:
+        #     for seg in self.res[1:]:
+        #         seg["seg"].cars.remove(self)
+        #     self.res = [self.res[0]]
 
         while abs(self.loc) > self.res[0]["seg"].length:
             self.loc = (1 if true_direction[self.res[1]["dir"]] else -1) * (abs(self.loc) - self.res[0]["seg"].length)
@@ -276,12 +273,12 @@ class Car:
             i += 1
             if accumulated_res > self.get_braking_distance():
                 break
-        while len(self.res) > i:
-            seg = self.res.pop(i)
-            seg["seg"].cars.remove(self)
-            if self.parallel_res:
-                seg = self.parallel_res.pop(i)
-                seg["seg"].cars.remove(self)
+        # while len(self.res) > i:
+        #     seg = self.res.pop(i)
+        #     seg["seg"].cars.remove(self)
+        #     if self.parallel_res:
+        #         seg = self.parallel_res.pop(i)
+        #         seg["seg"].cars.remove(self)
         return True
 
     def get_adjacent_lane_segment(self, lane_diff: int, lane_segment: LaneSegment = None) -> LaneSegment:
