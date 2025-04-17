@@ -62,6 +62,18 @@ class Car:
 
         self._update_position()
 
+    @property
+    def dead(self):
+        return self._dead
+    
+    @dead.setter
+    def dead(self, value):
+        if value:
+            for index in range(1, len(self.res)):
+                self.res[index]["seg"].cars.remove(self)
+
+        self._dead = value
+
     def move(self) -> bool:
         """
         Move the car within its lane and handle lane changes and reservations.
@@ -69,6 +81,9 @@ class Car:
         Returns:
             bool: True if the car moved successfully, False otherwise.
         """
+        if self.dead:
+            return False
+
         # Within the lane
         self.loc += (1 if true_direction[self.res[0]["dir"]] else -1) * self.speed
         self.check_right_lane()
@@ -76,23 +91,7 @@ class Car:
 
         self.time += 1
 
-        # Cancel claimed lanes if the car enters a crossing
-        # if len(self.res) > 1 and len(self.claimed_lane) > 0:
-        #     self.claimed_lane = {}
-
         self.extend_res()
-
-        # # stagnation check
-        # if self.last_loc == self.loc:
-        #     self.stagnation += 1
-        # else:
-        #     self.stagnation = 0
-        #     self.last_loc = self.loc
-        # # stagnation removal
-        # if self.stagnation > MAX_STAGNATION_TIME:
-        #     for seg in self.res[1:]:
-        #         seg["seg"].cars.remove(self)
-        #     self.res = [self.res[0]]
 
         while abs(self.loc) > self.res[0]["seg"].length:
             self.loc = (1 if true_direction[self.res[1]["dir"]] else -1) * (abs(self.loc) - self.res[0]["seg"].length)
