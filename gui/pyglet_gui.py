@@ -56,6 +56,7 @@ class CarsWindow(pyglet.window.Window):
         self.test_shape = None
         self.test_params = find_greatest_gap(self.game.roads)
 
+        self.flash_count = 0
 
         for road in self.game.roads:
             self._draw_road(road)
@@ -129,7 +130,11 @@ class CarsWindow(pyglet.window.Window):
         """
         self.car_shapes = []
         for car in self.game.cars:
-            car_rect = create_car_rect(car)
+            car_rect = create_car_rect(car, self.flash_count)
+
+            if not self.pause:
+                self.flash_count += TIME_PER_FRAME if not self.flash_count >= FLASH_CYCLE else -self.flash_count
+
             car_res_box = None
             if car.res[0]["dir"] == Direction.RIGHT:
 
