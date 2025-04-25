@@ -67,7 +67,7 @@ class Car:
         return self._dead
     
     @dead.setter
-    def dead(self, value):
+    def dead(self, value: bool):
         if value:
             for index in range(1, len(self.res)):
                 self.res[index]["seg"].cars.remove(self)
@@ -226,6 +226,12 @@ class Car:
                                  "end": extra if isinstance(next_seg, LaneSegment) else 1 * BLOCK_SIZE}
                 self.res.append(next_seg_info)
                 next_seg.cars.append(self)
+
+                # dead_cars = [car for car in next_seg.cars if car.dead]
+                # next_seg.cars = [car for car in next_seg.cars if not car.dead]
+                # next_seg.cars.append(self)
+                # next_seg.cars.extend(dead_cars)
+
             if parallel_next_seg is not None:
                 next_parallel_seg_info = {"seg": parallel_next_seg,
                                           "dir": self.direction,
@@ -234,6 +240,11 @@ class Car:
                                           "end": extra}
                 self.parallel_res.append(next_parallel_seg_info)
                 parallel_next_seg.cars.append(self)
+
+                # dead_cars = [car for car in parallel_next_seg.cars if car.dead]
+                # next_seg.cars = [car for car in parallel_next_seg.cars if not car.dead]
+                # parallel_next_seg.cars.append(self)
+                # parallel_next_seg.cars.extend(dead_cars)
 
     def turn(self, new_direction: int) -> bool:
         """
@@ -265,13 +276,13 @@ class Car:
             bool: True if the speed was changed successfully, False otherwise.
         """
         self.speed = max(min(self.speed + speed_diff, self.max_speed), 0)
-        accumulated_res = 0
-        i = 0
-        for seg in self.res:
-            accumulated_res += abs(seg["end"]) - abs(seg["begin"])
-            i += 1
-            if accumulated_res > self.get_braking_distance():
-                break
+        # accumulated_res = 0
+        # i = 0
+        # for seg in self.res:
+        #     accumulated_res += abs(seg["end"]) - abs(seg["begin"])
+        #     i += 1
+        #     if accumulated_res > self.get_braking_distance():
+        #         break
         # while len(self.res) > i:
         #     seg = self.res.pop(i)
         #     seg["seg"].cars.remove(self)
