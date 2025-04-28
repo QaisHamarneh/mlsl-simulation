@@ -135,53 +135,50 @@ class CarsWindow(pyglet.window.Window):
             if not self.pause:
                 self.flash_count += TIME_PER_FRAME if not self.flash_count >= FLASH_CYCLE else -self.flash_count
 
-            if not car.dead:
-                car_res_box = None
-                if car.res[0]["dir"] == Direction.RIGHT:
+            car_res_box = None
+            if car.res[0]["dir"] == Direction.RIGHT:
 
-                    if car.changing_lane:
-                        x, y, w, h = car.return_updated_position(car.reserved_segment[1])
-                        car_res_box = create_lines(x, y, x + car.get_braking_distance(), y,
-                                                x + car.get_braking_distance(), y + h,
-                                                x, y + h, x, y,
-                                                color=car.color, width=2)
+                if car.changing_lane:
+                    x, y, w, h = car.return_updated_position(car.reserved_segment[1])
+                    car_res_box = create_lines(x, y, x + car.get_braking_distance(), y,
+                                            x + car.get_braking_distance(), y + h,
+                                            x, y + h, x, y,
+                                            color=car.color, width=2)
 
-                elif car.res[0]["dir"] == Direction.LEFT:
+            elif car.res[0]["dir"] == Direction.LEFT:
 
-                    if car.changing_lane:
-                        x, y, w, h = car.return_updated_position(car.reserved_segment[1])
-                        car_res_box = create_lines(x + w, y, x + w - car.get_braking_distance(), y,
-                                                x + w - car.get_braking_distance(), y + h,
-                                                x + w, y + h, x + w, y,
-                                                color=car.color, width=2)
+                if car.changing_lane:
+                    x, y, w, h = car.return_updated_position(car.reserved_segment[1])
+                    car_res_box = create_lines(x + w, y, x + w - car.get_braking_distance(), y,
+                                            x + w - car.get_braking_distance(), y + h,
+                                            x + w, y + h, x + w, y,
+                                            color=car.color, width=2)
 
-                elif car.res[0]["dir"] == Direction.UP:
-                    if car.changing_lane:
-                        x, y, w, h = car.return_updated_position(car.reserved_segment[1])
-                        car_res_box = create_lines(x, y, x, y + car.get_braking_distance(),
-                                                x + w, y + car.get_braking_distance(),
-                                                x + w, y, x, y,
-                                                color=car.color, width=2)
+            elif car.res[0]["dir"] == Direction.UP:
+                if car.changing_lane:
+                    x, y, w, h = car.return_updated_position(car.reserved_segment[1])
+                    car_res_box = create_lines(x, y, x, y + car.get_braking_distance(),
+                                            x + w, y + car.get_braking_distance(),
+                                            x + w, y, x, y,
+                                            color=car.color, width=2)
 
-                elif car.res[0]["dir"] == Direction.DOWN:
-                    if car.changing_lane:
-                        x, y, w, h = car.return_updated_position(car.reserved_segment[1])
-                        car_res_box = create_lines(x, y + h, x, y - car.get_braking_distance() + h,
-                                                x + w, y - car.get_braking_distance() + h,
-                                                x + w, y + h, x, y + h,
-                                                color=car.color, width=2)
+            elif car.res[0]["dir"] == Direction.DOWN:
+                if car.changing_lane:
+                    x, y, w, h = car.return_updated_position(car.reserved_segment[1])
+                    car_res_box = create_lines(x, y + h, x, y - car.get_braking_distance() + h,
+                                            x + w, y - car.get_braking_distance() + h,
+                                            x + w, y + h, x, y + h,
+                                            color=car.color, width=2)
 
-                if self.debug and car.changing_lane:
-                    self.pause = True
+            if self.debug and car.changing_lane:
+                self.pause = True
 
-                self.car_shapes.append(car_rect)
+            self.car_shapes.append(car_rect)
 
-                brake_box_points = brake_box(car, self.debug)
-                self.car_shapes += brake_box_points
-                if car_res_box is not None:
-                    self.car_shapes += car_res_box
-            else:
-                self.car_shapes.append(car_rect)
+            brake_box_points = brake_box(car, self.debug)
+            self.car_shapes += brake_box_points
+            if car_res_box is not None:
+                self.car_shapes += car_res_box
 
     def _update_goals(self) -> None:
         """

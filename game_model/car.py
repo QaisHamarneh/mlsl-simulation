@@ -67,12 +67,19 @@ class Car:
         return self._dead
     
     @dead.setter
-    def dead(self, value: bool):
-        if value:
-            for index in range(1, len(self.res)):
+    def dead(self, _dead: bool):
+        if _dead:
+            occupied_segments = self.get_size_segments()
+            index = len(occupied_segments)
+            while index < len(self.res):
                 self.res[index]["seg"].cars.remove(self)
+                self.res.remove(self.res[index])
+                index += 1
 
-        self._dead = value
+            self.res = occupied_segments
+            self.speed = 0
+
+        self._dead = _dead
 
     def move(self) -> bool:
         """
@@ -226,12 +233,6 @@ class Car:
                                  "end": extra if isinstance(next_seg, LaneSegment) else 1 * BLOCK_SIZE}
                 self.res.append(next_seg_info)
                 next_seg.cars.append(self)
-
-                # dead_cars = [car for car in next_seg.cars if car.dead]
-                # next_seg.cars = [car for car in next_seg.cars if not car.dead]
-                # next_seg.cars.append(self)
-                # next_seg.cars.extend(dead_cars)
-
             if parallel_next_seg is not None:
                 next_parallel_seg_info = {"seg": parallel_next_seg,
                                           "dir": self.direction,
@@ -240,11 +241,6 @@ class Car:
                                           "end": extra}
                 self.parallel_res.append(next_parallel_seg_info)
                 parallel_next_seg.cars.append(self)
-
-                # dead_cars = [car for car in parallel_next_seg.cars if car.dead]
-                # next_seg.cars = [car for car in parallel_next_seg.cars if not car.dead]
-                # parallel_next_seg.cars.append(self)
-                # parallel_next_seg.cars.extend(dead_cars)
 
     def turn(self, new_direction: int) -> bool:
         """
@@ -476,6 +472,9 @@ class Car:
         Returns:
             int: The braking distance of the car.
         """
+        if self.dead:
+            return self.speed
+
         if speed is None:
             speed = self.speed
         # braking = (speed * (speed + 1)) // 2
