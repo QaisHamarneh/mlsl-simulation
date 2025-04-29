@@ -2,7 +2,7 @@ from typing import Tuple
 
 from game_model.game_model import TrafficEnv
 from game_model.helper_functions import reservation_check
-from game_model.road_network import LaneSegment, CrossingSegment
+from game_model.road_network import LaneSegment, CrossingSegment, true_direction
 from game_model.constants import MAX_ACC, MAX_DEC, LEFT_LANE_CHANGE, RIGHT_LANE_CHANGE, NO_LANE_CHANGE, \
     JUMP_TIME_STEPS, LANECHANGE_TIME_STEPS
 
@@ -32,7 +32,7 @@ class AstarCarController:
         if self.first_go:
             self.first_go = False
             return 0, 0
-        # savety check for changing lanes:
+        # safety check for changing lanes:
         if self.car.changing_lane:
             for car in self.car.reserved_segment[1].cars:
 
@@ -42,11 +42,26 @@ class AstarCarController:
                     break
 
         lane_change = NO_LANE_CHANGE
-        acceleration = self.get_accelerate(self.car.res + self.car.parallel_res)
+        # This should be changed to check res and parallel_res separately.
+        max_possible_acc = min(self.get_accelerate(self.car.res), self.get_accelerate(self.car.parallel_res))
         if isinstance(self.car.res[0]["seg"], LaneSegment) \
-                and acceleration < 1 and len(self.car.res) == 1 \
+                and max_possible_acc < MAX_ACC and len(self.car.res) == 1 \
                 and self.car.res[0]["seg"] != self.game.goals[self.player].lane_segment \
                 and not self.car.changing_lane:
+            # try left lane
+            left_lane = self.car.get_adjacent_lane_segment(1)
+            if left_lane is not None:
+                left_lane_acceleration = self.get_accelerate([{
+                    "seg": left_lane,
+                    "dir": self.car.direction,
+                    "turn": False,
+                    "begin": self.car.res[0]["begin"],
+                    "end": self.car.res[0]["end"]
+                }])
+                if left_lane_acceleration > max_possible_acc:
+                    lane_change = LEFT_LANE_CHANGE
+                    max_possible_acc = left_lane_acceleration   
+                
             # try right lane
             right_lane = self.car.get_adjacent_lane_segment(-1)
             if right_lane is not None:
@@ -57,22 +72,10 @@ class AstarCarController:
                     "begin": self.car.res[0]["begin"],
                     "end": self.car.res[0]["end"]
                 }])
-                if right_lane_acceleration > acceleration:
+                if right_lane_acceleration >= max_possible_acc:
                     lane_change = RIGHT_LANE_CHANGE
-                else:
-                    # try left lane
-                    left_lane = self.car.get_adjacent_lane_segment(1)
-                    if left_lane is not None:
-                        left_lane_acceleration = self.get_accelerate([{
-                            "seg": left_lane,
-                            "dir": self.car.direction,
-                            "turn": False,
-                            "begin": self.car.res[0]["begin"],
-                            "end": self.car.res[0]["end"]
-                        }])
-                        if left_lane_acceleration > acceleration:
-                            lane_change = LEFT_LANE_CHANGE
-        return acceleration, lane_change
+                    max_possible_acc = right_lane_acceleration
+        return max_possible_acc, lane_change
 
     def get_accelerate(self, segments: list[dict]) -> int:
         """
@@ -85,46 +88,22 @@ class AstarCarController:
         Returns:
             int: The optimal acceleration value
         """
-        max_acc, max_deceleration = MAX_ACC, - MAX_DEC
+        if len(segments) == 0:
+            return MAX_ACC
+        
         # limit max_acc to the max speed of the car
-        max_acc = min(max_acc, self.car.max_speed - self.car.speed)
-        # limit max_deceleration to 0
-        max_deceleration = max(max_deceleration, -self.car.speed)
+        max_acc, max_dec = min(MAX_ACC, self.car.max_speed - self.car.speed), - max(abs(MAX_DEC), self.car.speed)
 
-        extended_segments = segments
-        max_jump = segments[-1]["end"] + JUMP_TIME_STEPS * (self.car.speed + max_acc)
-        if max_jump > extended_segments[-1]["seg"].length:
-            max_jump -= extended_segments[-1]["seg"].length
-            next_segments = self.car.get_next_segment(extended_segments[-1])
-            if not next_segments:
-                print("NO next segments in get_accelerate - Bug?")
-                print("min acceleration")
-                print(self.car.name)
-                return max_deceleration
-            for next_seg in next_segments[:-1]:
-                max_jump -= next_seg.length
-                extended_segments = extended_segments + [{
-                    "seg": next_seg,
-                    "dir": self.car.direction,
-                    "turn": False,
-                    "begin": 0,
-                    "end": next_seg.length
-                }]
-            extended_segments = extended_segments + [{
-                "seg": next_segments[-1],
-                "dir": self.car.direction,
-                "turn": False,
-                "begin": 0,
-                "end": max(self.car.size, max_jump)
-            }]
-
-        # iterate over all acceleration values between max_acc and max_deceleration
-        for acceleration in range(max_acc, max_deceleration - 1, -1):
+        # iterate over all acceleration values between max_acc and max_dec
+        for acceleration in range(max_acc, max_dec - 1, -1):
+            
             # check if car extends max speed of the current segment
-            if self.car.speed + acceleration > self.car.res[0]["seg"].max_speed:
+            new_speed = self.car.speed + acceleration
+
+            if self.car.speed + acceleration > min([seg["seg"].max_speed for seg in segments]):
                 continue
 
-            # check if car is changing
+            # check if car is changing lane
             if self.car.changing_lane:
                 remaining_time = LANECHANGE_TIME_STEPS - (self.car.time - self.car.reserved_segment[0])
                 required_space_in_segment = (self.car.speed + acceleration) * remaining_time
@@ -132,33 +111,86 @@ class AstarCarController:
                 if remaining_space_in_segment < required_space_in_segment:
                     continue
 
-            # for each segment in the extended segments
+            added_segments = [segments[-1]]
+            jump = JUMP_TIME_STEPS * new_speed
+            reserved_len = sum([abs(seg["end"] - seg["begin"]) for seg in segments]) - self.car.size
+            new_brk_dist = self.car.get_braking_distance(new_speed)
+
+            if new_brk_dist > reserved_len:
+                potential_jump = new_brk_dist - reserved_len
+                if potential_jump + segments[-1]["end"] > segments[-1]["seg"].length:
+                # potential_jump -= extended_segments[-1]["seg"].length
+                    next_segments = self.car.get_next_segment(segments[-1])
+                    if not next_segments:
+                        print("NO next segments in get_accelerate - Bug?")
+                        print("min acceleration")
+                        print(self.car.name)
+                        return max_dec
+                    
+                    for next_seg in next_segments[:-1]:
+                        potential_jump -= next_seg.length
+                        added_segments = added_segments + [{
+                            "seg": next_seg,
+                            "dir": self.car.direction,
+                            "turn": False,
+                            "begin": 0,
+                            "end": next_seg.length
+                        }]
+                        # reserved_len += next_seg.length
+                    added_segments = added_segments + [{
+                        "seg": next_segments[-1],
+                        "dir": self.car.direction,
+                        "turn": False,
+                        "begin": 0,
+                        "end": (1 if true_direction[next_segments[-1].lane.direction] else -1) * max(self.car.size, potential_jump + self.car.size)
+                    }]
+                    # reserved_len += max(self.car.size, potential_jump)
+
             collision = False
-            for seg in extended_segments:
-                priority = seg["seg"].cars.index(self.car) if self.car in seg["seg"].cars else len(seg["seg"].cars)
-                match seg["seg"]:
-                    case LaneSegment():
-                        if priority > 0:
-                            if len(seg["seg"].cars) > 0:
-                                #Todo error message
-                                print()
-                            #todo: check only priority before our car
-                            for i in range(priority):
-                                other_car = seg["seg"].cars[i]
-                                other_car_seg_info = other_car.get_segment_info(seg["seg"])
-                                end = abs(seg["end"])
-                                o_begin = abs(other_car_seg_info["begin"])
-                                o_end = abs(other_car_seg_info["end"])
-                                if o_begin <= end <= o_end or o_end <= end <= o_begin:
-                                    collision = True
-                                    break
-                                elif end + JUMP_TIME_STEPS * (self.car.speed + acceleration) < o_begin:
-                                    collision = False
-                                    break
-                    case CrossingSegment():
-                        if priority > 0 and len(seg["seg"].cars) > 0:
+            # Case 1: Enter a crossing
+            if len(added_segments) > 1:
+                # print(f"len added segs = {len(added_segments)}")
+                for added_seg in added_segments:
+                    seg = added_seg["seg"]
+                    if isinstance(seg, CrossingSegment):
+                        # print(f"seg = {seg}")
+                        if len(seg.cars) > 0:
                             collision = True
                             break
+
+            # Case 2: Extension within a lane segment
+            last_seg = added_segments[-1]
+            for other_car in last_seg["seg"].cars:
+                if other_car != self.car:
+                    other_car_seg_info = other_car.get_segment_info(last_seg["seg"])
+                    end = abs(last_seg["end"])
+                    o_begin = abs(other_car_seg_info["begin"])
+                    o_end = abs(other_car_seg_info["end"])
+                    if o_begin <= end <= o_end or o_end <= end <= o_begin:
+                        collision = True
+                        break
+
+            # for seg in extended_segments:
+            #     priority = seg["seg"].cars.index(self.car) if self.car in seg["seg"].cars else len(seg["seg"].cars)
+            #     match seg["seg"]:
+            #         case LaneSegment():
+            #             if priority > 0 and len(seg["seg"].cars) > 0:
+            #                 for i in range(priority):
+            #                     other_car = seg["seg"].cars[i]
+            #                     other_car_seg_info = other_car.get_segment_info(seg["seg"])
+            #                     end = abs(seg["end"])
+            #                     o_begin = abs(other_car_seg_info["begin"])
+            #                     o_end = abs(other_car_seg_info["end"])
+            #                     if o_begin <= end <= o_end or o_end <= end <= o_begin:
+            #                         collision = True
+            #                         break
+            #                     elif end + JUMP_TIME_STEPS * (self.car.speed + 1) < o_begin:
+            #                         collision = False
+            #                         break
+            #         case CrossingSegment():
+            #             if priority > 0 and len(seg["seg"].cars) > 0:
+            #                 collision = True
+            #                 break
 
             if collision:
                 continue

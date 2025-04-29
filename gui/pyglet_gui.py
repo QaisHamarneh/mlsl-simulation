@@ -64,7 +64,7 @@ class CarsWindow(pyglet.window.Window):
             self._draw_lane_lines(road)
 
         self.event_loop = pyglet.app.EventLoop()
-        pyglet.app.run(TIME_PER_FRAME)
+        pyglet.app.run(1 / TIME_PER_FRAME)
 
     def on_draw(self) -> None:
         """
@@ -72,7 +72,7 @@ class CarsWindow(pyglet.window.Window):
         """
         pyglet.gl.glClearColor(*[c / 255 for c in PALE_GREEN], 1)
         self.clear()
-        if not self.pause and self.frames_count % (int(1/TIME_PER_FRAME)) == 0:
+        if not self.pause and self.frames_count % TIME_PER_FRAME == 0:
             self._update_game()
             self.frames_count = 0
         self._update_cars()
@@ -87,7 +87,7 @@ class CarsWindow(pyglet.window.Window):
             self.test_shape.batch = self.batch
         self.batch.draw()
         if not self.pause:
-            self.frames_count += int(1/TIME_PER_FRAME)
+            self.frames_count += TIME_PER_FRAME
 
 
     def _update_game(self) -> None:
@@ -133,7 +133,7 @@ class CarsWindow(pyglet.window.Window):
             car_rect = create_car_rect(car, self.flash_count)
 
             if not self.pause:
-                self.flash_count += TIME_PER_FRAME if not self.flash_count >= FLASH_CYCLE else -self.flash_count
+                self.flash_count += (1//TIME_PER_FRAME) if not self.flash_count >= FLASH_CYCLE else -self.flash_count
 
             car_res_box = None
             if car.res[0]["dir"] == Direction.RIGHT:

@@ -49,7 +49,10 @@ class TrafficEnv:
         # init display
         self.gui = None
         self.moved = True
+        
         self.time = 0
+
+        self.crashes = 0
 
         if cars is None or goals is None:
             self.reset()
@@ -138,7 +141,9 @@ class TrafficEnv:
                 # if overlap(car.pos, car.w, car.h,
                 #            other_car.pos, other_car.w, other_car.h):
                 if collision_check(car):
-                    print("Crash:")
+                    self.crashes += 1
+                    print("___________________________________________________________________________")
+                    print(f"Frame = {self.time // len(self.cars)},  Crash: {self.crashes}")
                     print(f"First car {car.name} loc {car.loc} speed {car.speed}")
                     for seg in car.res:
                         print(f"{seg['seg']} {seg['begin']} {seg['end']}")

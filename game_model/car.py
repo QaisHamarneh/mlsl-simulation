@@ -131,9 +131,7 @@ class Car:
         self._update_position()
         return True
 
-
-    #Todo: look at
-    def get_next_segment(self, last_seg: dict = None, direction: int = None) -> List[Segment]:
+    def get_next_segment(self, last_seg: dict = None) -> List[Segment]:
         """
         Get the next segment for the car to move to.
 
@@ -157,20 +155,22 @@ class Car:
         else:
             #case 2: cur seg != goal seg -> plan path to first goal(e.g. for alternative lanes (right, left)
             segs = self.astar(last_seg["seg"])
+        
+
 
         if len(segs) == 0:
-            print("error")
+            print("Astar Error: No segments found by the astar function.")
 
         if len(segs) == 1:
             return segs
 
         i = 1
 
-        for i in range(len(segs)):
+        for i in range(1, len(segs)):
             if isinstance(segs[i], LaneSegment):
-                break
+                return segs[0:i + 1]
 
-        return segs[0:i + 1]
+        return None
 
 
 
