@@ -86,7 +86,6 @@ class Car:
 
         # Within the lane
         self.loc += (1 if true_direction[self.res[0]["dir"]] else -1) * self.speed
-        self.check_right_lane()
         self.check_reservation()
 
         self.time += 1
@@ -624,23 +623,3 @@ class Car:
 
         return None  # No path found
 
-    def check_right_lane(self) -> bool:
-        """
-        Check if the car should change to the right lane and initiate the lane change if possible.
-
-        Returns:
-            bool: True if the car initiates a lane change to the right, False otherwise.
-        """
-        if self.changing_lane:
-            return False
-        if isinstance(self.res[0]["seg"], LaneSegment) and len(self.res) == 1:
-            # check if goal is on this segment
-            if self.goal.lane_segment == self.res[0]["seg"]:
-                return False
-
-            right_lane = self.get_adjacent_lane_segment(1)
-            if right_lane is not None:
-                self.change_lane(1)
-                return True
-        else:
-            return False
