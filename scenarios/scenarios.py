@@ -72,7 +72,7 @@ TWO_CROSSING = {
         Road("v2", False, 23 * BLOCK_SIZE, 3, 4)
     ],
     "segmentation": False,
-    "players": 20
+    "players": 30
 }
 
 ONE_CROSSING = {
