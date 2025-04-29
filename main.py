@@ -1,7 +1,7 @@
 from controller.astar_car_controller import AstarCarController
 from game_model.game_model import TrafficEnv
 from gui.pyglet_gui import CarsWindow
-from scenarios.scenarios import STARTING_SCENARIO, JUST_ONE_CAR, BIG_SCENARIO, ONE_CROSSING
+from scenarios.scenarios import STARTING_SCENARIO, JUST_ONE_CAR, BIG_SCENARIO, TWO_CROSSING
 
 
 def main(players, roads, segmentation, debug=False, test=False, test_mode=None):
@@ -12,4 +12,4 @@ def main(players, roads, segmentation, debug=False, test=False, test_mode=None):
 
 
 if __name__ == '__main__':
-    main(**STARTING_SCENARIO, debug=False, test=True, test_mode=["all"])
+    main(**TWO_CROSSING, debug=False, test=True, test_mode=["all"])
