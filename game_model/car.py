@@ -165,7 +165,7 @@ class Car:
             if isinstance(segs[i], LaneSegment):
                 return segs[0:i + 1]
 
-        return None
+        return []
 
 
 
@@ -468,7 +468,6 @@ class Car:
         """
         if speed is None:
             speed = self.speed
-        # braking = (speed * (speed + 1)) // 2
         braking = speed**2  // (2 * MAX_DEC)
         # BLOCK_SIZE // 2 additional distance when speed = 0
         return self.size + braking + BUFFER

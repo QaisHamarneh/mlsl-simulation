@@ -7,6 +7,7 @@ from game_model.car import Car
 from game_model.constants import *
 from game_model.road_network import Direction, Road, true_direction, Goal, Point
 from game_model.road_network import LaneSegment, CrossingSegment, Segment
+from gui.selected_colors import selected_colors
 from gui.colors import colors
 
 
@@ -79,9 +80,21 @@ def create_random_car(segments: List[Segment], cars: List[Car]) -> Car:
     Returns:
         Car: The randomly created car.
     """
-    name = random.choice([color for color in colors.keys()
-                          if not any([car.name == color for car in cars])])
-    color = colors[name]
+    name = ""
+    color = (0, 0, 0)
+    for c in selected_colors:
+        if not any([car.name == c for car in cars]):
+            name = c
+            color = selected_colors[name]
+    if name == "":
+        for c in colors:
+            if not any([car.name == c for car in cars]):
+                name = c
+                color = selected_colors[name]
+        
+    # name = random.choice([color for color in colors.keys()
+    #                       if not any([car.name == color for car in cars])])
+    # color = colors[name]
 
     lane_segment = random.choice([seg for seg in segments
                                   if isinstance(seg, LaneSegment) and
