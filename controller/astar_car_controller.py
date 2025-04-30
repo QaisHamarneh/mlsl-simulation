@@ -90,16 +90,18 @@ class AstarCarController:
         """
         if len(segments) == 0:
             return MAX_ACC
-        
+
+        reserved_length = sum([abs(seg["end"] - seg["begin"]) for seg in segments])
         # limit max_acc to the max speed of the car
-        max_acc, max_dec = min(MAX_ACC, self.car.max_speed - self.car.speed), - max(abs(MAX_DEC), self.car.speed)
+        max_acc,  = min(MAX_ACC, self.car.max_speed - self.car.speed), 
+        max_dec = - max(abs(MAX_DEC), self.car.speed)
 
         # iterate over all acceleration values between max_acc and max_dec
         for acceleration in range(max_acc, max_dec - 1, -1):
-            
-            # check if car extends max speed of the current segment
+
             new_speed = self.car.speed + acceleration
 
+            # check if car exceeds max speed of the current segment
             if self.car.speed + acceleration > min([seg["seg"].max_speed for seg in segments]):
                 continue
 
@@ -112,20 +114,19 @@ class AstarCarController:
                     continue
 
             added_segments = [segments[-1]]
-            jump = JUMP_TIME_STEPS * new_speed
-            reserved_len = sum([abs(seg["end"] - seg["begin"]) for seg in segments]) - self.car.size
-            new_brk_dist = self.car.get_braking_distance(new_speed)
+            new_brk_dist = self.car.get_braking_distance(new_speed) + new_speed
 
-            if new_brk_dist > reserved_len:
-                potential_jump = new_brk_dist - reserved_len
-                if potential_jump + segments[-1]["end"] > segments[-1]["seg"].length:
+
+            if new_brk_dist > reserved_length:
+                potential_jump = new_brk_dist - reserved_length
+                if potential_jump + abs(segments[-1]["end"]) >= segments[-1]["seg"].length:
                 # potential_jump -= extended_segments[-1]["seg"].length
                     next_segments = self.car.get_next_segment(segments[-1])
                     if not next_segments:
                         print("NO next segments in get_accelerate - Bug?")
-                        print("min acceleration")
                         print(self.car.name)
                         return max_dec
+                    
                     
                     for next_seg in next_segments[:-1]:
                         potential_jump -= next_seg.length
@@ -136,24 +137,24 @@ class AstarCarController:
                             "begin": 0,
                             "end": next_seg.length
                         }]
-                        # reserved_len += next_seg.length
+                        # reserved_length += next_seg.length
                     added_segments = added_segments + [{
                         "seg": next_segments[-1],
                         "dir": self.car.direction,
                         "turn": False,
                         "begin": 0,
-                        "end": (1 if true_direction[next_segments[-1].lane.direction] else -1) * max(self.car.size, potential_jump + self.car.size)
+                        "end": (1 if true_direction[next_segments[-1].lane.direction] else -1) * 
+                                max(self.car.size, potential_jump + self.car.size)
                     }]
-                    # reserved_len += max(self.car.size, potential_jump)
+                    # reserved_length += max(self.car.size, potential_jump)
 
             collision = False
             # Case 1: Enter a crossing
             if len(added_segments) > 1:
-                # print(f"len added segs = {len(added_segments)}")
+                
                 for added_seg in added_segments:
                     seg = added_seg["seg"]
                     if isinstance(seg, CrossingSegment):
-                        # print(f"seg = {seg}")
                         if len(seg.cars) > 0:
                             collision = True
                             break
@@ -170,31 +171,8 @@ class AstarCarController:
                         collision = True
                         break
 
-            # for seg in extended_segments:
-            #     priority = seg["seg"].cars.index(self.car) if self.car in seg["seg"].cars else len(seg["seg"].cars)
-            #     match seg["seg"]:
-            #         case LaneSegment():
-            #             if priority > 0 and len(seg["seg"].cars) > 0:
-            #                 for i in range(priority):
-            #                     other_car = seg["seg"].cars[i]
-            #                     other_car_seg_info = other_car.get_segment_info(seg["seg"])
-            #                     end = abs(seg["end"])
-            #                     o_begin = abs(other_car_seg_info["begin"])
-            #                     o_end = abs(other_car_seg_info["end"])
-            #                     if o_begin <= end <= o_end or o_end <= end <= o_begin:
-            #                         collision = True
-            #                         break
-            #                     elif end + JUMP_TIME_STEPS * (self.car.speed + 1) < o_begin:
-            #                         collision = False
-            #                         break
-            #         case CrossingSegment():
-            #             if priority > 0 and len(seg["seg"].cars) > 0:
-            #                 collision = True
-            #                 break
-
-            if collision:
-                continue
-        # if no collision is detected return the acceleration
-            else:
+            # if no collision is detected return the acceleration
+            if not collision:
                 return acceleration
-        return acceleration
+        
+        return max_dec
