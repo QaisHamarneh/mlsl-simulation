@@ -32,7 +32,7 @@ class AstarCarController:
         if self.first_go:
             self.first_go = False
             return 0, 0
-        # savety check for changing cars:
+        # savety check for changing lanes:
         if self.car.changing_lane:
             for car in self.car.reserved_segment[1].cars:
 
@@ -140,7 +140,11 @@ class AstarCarController:
                 priority = seg["seg"].cars.index(self.car) if self.car in seg["seg"].cars else len(seg["seg"].cars)
                 match seg["seg"]:
                     case LaneSegment():
-                        if priority > 0 and len(seg["seg"].cars) > 0:
+                        if priority > 0:
+                            if len(seg["seg"].cars) > 0:
+                                #Todo error message
+                                print()
+                            #todo: check only priority before our car
                             for i in range(priority):
                                 other_car = seg["seg"].cars[i]
                                 other_car_seg_info = other_car.get_segment_info(seg["seg"])
@@ -150,7 +154,7 @@ class AstarCarController:
                                 if o_begin <= end <= o_end or o_end <= end <= o_begin:
                                     collision = True
                                     break
-                                elif end + JUMP_TIME_STEPS * (self.car.speed + 1) < o_begin:
+                                elif end + JUMP_TIME_STEPS * (self.car.speed + acceleration) < o_begin:
                                     collision = False
                                     break
                     case CrossingSegment():

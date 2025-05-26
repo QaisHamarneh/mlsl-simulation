@@ -69,14 +69,12 @@ class Car:
     @dead.setter
     def dead(self, _dead: bool):
         if _dead:
-            occupied_segments = self.get_size_segments()
-            index = len(occupied_segments)
+            index = len(self.get_size_segments())
             while index < len(self.res):
                 self.res[index]["seg"].cars.remove(self)
                 self.res.remove(self.res[index])
                 index += 1
 
-            self.res = occupied_segments
             self.speed = 0
 
         self._dead = _dead
@@ -134,6 +132,8 @@ class Car:
         self._update_position()
         return True
 
+
+    #Todo: look at
     def get_next_segment(self, last_seg: dict = None, direction: int = None) -> List[Segment]:
         """
         Get the next segment for the car to move to.
