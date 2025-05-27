@@ -58,7 +58,21 @@ STARTING_SCENARIO = {
         Road("v3", False, 3 * WINDOW_WIDTH // 4 - 1 * BLOCK_SIZE, 2, 0)
     ],
     "segmentation": False,
-    "players": 20
+    "players": 30
+}
+TWO_CROSSING = {
+    "roads": [
+        Road("bottom", True, 0, 1, 0),
+        Road("right", False, WINDOW_WIDTH - BLOCK_SIZE, 0, 1),
+        Road("top", True, WINDOW_HEIGHT - BLOCK_SIZE, 0, 1),
+        Road("left", False, 0, 1, 0),
+        Road("h1", True, 5 * BLOCK_SIZE, 2, 2),
+        Road("h2", True, 14 * BLOCK_SIZE, 2, 2),
+        Road("v1", False, 9 * BLOCK_SIZE, 3, 3),
+        Road("v2", False, 23 * BLOCK_SIZE, 3, 4)
+    ],
+    "segmentation": False,
+    "players": 22
 }
 TWO_CROSSING = {
     "roads": [
@@ -81,11 +95,11 @@ ONE_CROSSING = {
         Road("right", False, WINDOW_WIDTH - BLOCK_SIZE, 0, 1),
         Road("top", True, WINDOW_HEIGHT - BLOCK_SIZE, 0, 1),
         Road("left", False, 0, 1, 0),
-        Road("v1", False, WINDOW_WIDTH // 2 - 3 * BLOCK_SIZE, 2, 2),
-        Road("h1", True, WINDOW_HEIGHT // 2 - 3 * BLOCK_SIZE, 2, 2),
+        Road("v1", False, WINDOW_WIDTH // 2 - 3 * BLOCK_SIZE, 1, 1),
+        Road("h1", True, WINDOW_HEIGHT // 2 - 3 * BLOCK_SIZE, 1, 1),
     ],
     "segmentation": False,
-    "players": 10
+    "players": 16
 }
 
 ONE_ROAD = {

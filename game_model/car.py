@@ -67,12 +67,17 @@ class Car:
         return self._dead
     
     @dead.setter
-    def dead(self, value):
-        if value:
-            for index in range(1, len(self.res)):
+    def dead(self, _dead: bool):
+        if _dead:
+            index = len(self.get_size_segments())
+            while index < len(self.res):
                 self.res[index]["seg"].cars.remove(self)
+                self.res.remove(self.res[index])
+                index += 1
 
-        self._dead = value
+            self.speed = 0
+
+        self._dead = _dead
 
     def move(self) -> bool:
         """
@@ -266,13 +271,13 @@ class Car:
             bool: True if the speed was changed successfully, False otherwise.
         """
         self.speed = max(min(self.speed + speed_diff, self.max_speed), 0)
-        accumulated_res = 0
-        i = 0
-        for seg in self.res:
-            accumulated_res += abs(seg["end"]) - abs(seg["begin"])
-            i += 1
-            if accumulated_res > self.get_braking_distance():
-                break
+        # accumulated_res = 0
+        # i = 0
+        # for seg in self.res:
+        #     accumulated_res += abs(seg["end"]) - abs(seg["begin"])
+        #     i += 1
+        #     if accumulated_res > self.get_braking_distance():
+        #         break
         # while len(self.res) > i:
         #     seg = self.res.pop(i)
         #     seg["seg"].cars.remove(self)
@@ -466,6 +471,9 @@ class Car:
         Returns:
             int: The braking distance of the car.
         """
+        if self.dead:
+            return self.speed
+
         if speed is None:
             speed = self.speed
         braking = speed**2  // (2 * MAX_DEC)
