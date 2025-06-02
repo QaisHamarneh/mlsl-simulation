@@ -133,7 +133,7 @@ class CarsWindow(pyglet.window.Window):
             car_rect = create_car_rect(car, self.flash_count)
 
             if not self.pause:
-                self.flash_count += (1//TIME_PER_FRAME) if not self.flash_count >= FLASH_CYCLE else -self.flash_count
+                self.flash_count += (1/TIME_PER_FRAME) if not self.flash_count >= FLASH_CYCLE else -self.flash_count
 
             car_res_box = None
             if car.res[0]["dir"] == Direction.RIGHT:

@@ -147,6 +147,17 @@ class AstarCarController:
                                 max(self.car.size, potential_jump + self.car.size)
                     }]
                     # reserved_length += max(self.car.size, potential_jump)
+            else:
+                added_segments = [{
+                    "seg": segments[-1]["seg"],
+                    "dir": segments[-1]["dir"],
+                    "turn": segments[-1]["turn"],
+                    "begin": segments[-1]["begin"],
+                    "end": (1 if true_direction[segments[-1]["dir"]] else -1) * 
+                                new_brk_dist
+                }]
+                #"end": (1 if true_direction[segments[-1]["dir"]] else -1) * self.car.size + new_brk_dist
+
 
             collision = False
             # Case 1: Enter a crossing
@@ -164,10 +175,13 @@ class AstarCarController:
             for other_car in last_seg["seg"].cars:
                 if other_car != self.car:
                     other_car_seg_info = other_car.get_segment_info(last_seg["seg"])
+                    begin = abs(last_seg["begin"])
                     end = abs(last_seg["end"])
                     o_begin = abs(other_car_seg_info["begin"])
                     o_end = abs(other_car_seg_info["end"])
-                    if o_begin <= end <= o_end or o_end <= end <= o_begin:
+                    if o_begin <= begin <= o_end or o_end <= begin <= o_begin:
+                        continue
+                    elif o_begin <= end <= o_end or o_end <= end <= o_begin:
                         collision = True
                         break
 
