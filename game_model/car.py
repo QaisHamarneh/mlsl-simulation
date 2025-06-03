@@ -111,12 +111,12 @@ class Car:
         if self.parallel_res:
             self.parallel_res[0].begin = self.loc
 
-        for i, seg in enumerate(self.res):
+        for i, seg_info in enumerate(self.res):
             if i < len(self.res) - 1:
-                seg.end = (1 if true_direction[seg.direction] else -1) * seg.segment.length
+                seg_info.end = (1 if true_direction[seg_info.direction] else -1) * seg_info.segment.length
         for i, seg in enumerate(self.parallel_res):
             if i < len(self.parallel_res) - 1:
-                seg.end = (1 if true_direction[seg.direction] else -1) * seg.segment.length
+                seg_info.end = (1 if true_direction[seg_info.direction] else -1) * seg_info.segment.length
 
         # Update the "end" of the last reserved segment
         end = self.get_braking_distance() - sum([abs(self.res[i].end - self.res[i].begin) for i in
@@ -128,7 +128,7 @@ class Car:
         self._update_position()
         return True
 
-    def get_next_segment(self, last_seg: SegmentInfo = None) -> List[Segment]:
+    def get_next_segment(self, last_seg_info: SegmentInfo = None) -> List[Segment]:
         """
         Get the next segment for the car to move to.
 
@@ -139,8 +139,8 @@ class Car:
         Returns:
              List[Segment]: The next segments for the car to move to, up to the next Lanesegment
         """
-        if last_seg is None:
-            last_seg = self.res[-1]
+        if last_seg_info is None:
+            last_seg_info = self.res[-1]
 
         if self.res[0].segment == self.goal.lane_segment:
             #case 1: cur seg == goal seg -> preplan path to second goal
@@ -149,7 +149,7 @@ class Car:
 
         else:
             #case 2: cur seg != goal seg -> plan path to first goal(e.g. for alternative lanes (right, left)
-            segs = self.astar(last_seg.segment)
+            segs = self.astar(last_seg_info.segment)
         
 
 
@@ -175,7 +175,7 @@ class Car:
         """
         next_segs = None
         while self.goal is not None and (
-                abs(self.loc) + self.get_braking_distance() >= sum([seg.segment.length for seg in self.res]) or
+                abs(self.loc) + self.get_braking_distance() >= sum([seg_info.segment.length for seg_info in self.res]) or
                 isinstance(self.res[-1].segment, CrossingSegment)):
             if next_segs is None:
                 next_segs = self.astar()
@@ -205,7 +205,7 @@ class Car:
                     break
             else:
                 extra = (1 if true_direction[self.direction] else -1) * (
-                        abs(self.loc) + self.get_braking_distance() - sum([seg.segment.length for seg in self.res]))
+                        abs(self.loc) + self.get_braking_distance() - sum([seg_info.segment.length for seg_info in self.res]))
                 next_dir = None
                 if isinstance(next_seg, LaneSegment):
                     next_dir = next_seg.lane.direction
@@ -334,8 +334,8 @@ class Car:
 
         if self.time - self.reserved_segment[0] == LANECHANGE_TIME_STEPS:
             self.changing_lane = False
-            for seg in self.res:
-                seg.segment.cars.remove(self)
+            for seg_info in self.res:
+                seg_info.segment.cars.remove(self)
             self.res = [
                 SegmentInfo(self.reserved_segment[1],
                             self.res[0].begin,
@@ -357,28 +357,29 @@ class Car:
         Update the position of the car, based on the current lane segment, location, direction and speed.
         """
         """ Returns the bottom left corner of the car """
-        seg, direction = self.res[0].segment, self.res[0].direction
-        lane_seg = isinstance(seg, LaneSegment)
-        road = seg.lane.road if lane_seg \
-            else (seg.horiz_lane.road if horiz_direction[direction] else seg.vert_lane.road)
+        # seg, direction = self.res[0].segment, self.res[0].direction
+        seg_info = self.res[0]
+        lane_seg = isinstance(seg_info.segment, LaneSegment)
+        road = seg_info.segment.lane.road if lane_seg \
+            else (seg_info.segment.horiz_lane.road if horiz_direction[seg_info.direction] else seg_info.segment.vert_lane.road)
 
         if lane_seg:
-            seg_begin = seg.begin
+            seg_begin = seg_info.segment.begin
         if road.horizontal:
             if not lane_seg:
-                seg_begin = seg.vert_lane.top if true_direction[direction] else seg.vert_lane.top + BLOCK_SIZE
-            self.pos.y = seg.lane.top + self.lane_change_counter * (BLOCK_SIZE // LANE_CHANGE_STEPS) \
-                if lane_seg else seg.horiz_lane.top
-            self.pos.x = seg_begin + self.loc - (0 if true_direction[direction] else self.size)
+                seg_begin = seg_info.segment.vert_lane.top if true_direction[seg_info.direction] else seg_info.segment.vert_lane.top + BLOCK_SIZE
+            self.pos.y = seg_info.segment.lane.top + self.lane_change_counter * (BLOCK_SIZE // LANE_CHANGE_STEPS) \
+                if lane_seg else seg_info.segment.horiz_lane.top
+            self.pos.x = seg_begin + self.loc - (0 if true_direction[seg_info.direction] else self.size)
             # BLOCK_SIZE // 6 for the triangle
             self.w = self.size - BLOCK_SIZE // 6
             self.h = BLOCK_SIZE
         else:
             if not lane_seg:
-                seg_begin = seg.horiz_lane.top if true_direction[direction] else seg.horiz_lane.top + BLOCK_SIZE
-            self.pos.x = seg.lane.top + self.lane_change_counter * (BLOCK_SIZE // LANE_CHANGE_STEPS) \
-                if lane_seg else seg.vert_lane.top
-            self.pos.y = seg_begin + self.loc - (0 if true_direction[direction] else self.size)
+                seg_begin = seg_info.segment.horiz_lane.top if true_direction[seg_info.direction] else seg_info.segment.horiz_lane.top + BLOCK_SIZE
+            self.pos.x = seg_info.segment.lane.top + self.lane_change_counter * (BLOCK_SIZE // LANE_CHANGE_STEPS) \
+                if lane_seg else seg_info.segment.vert_lane.top
+            self.pos.y = seg_begin + self.loc - (0 if true_direction[seg_info.direction] else self.size)
             # BLOCK_SIZE // 6 for the triangle
             self.w = BLOCK_SIZE
             self.h = self.size - BLOCK_SIZE // 6

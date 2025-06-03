@@ -91,7 +91,7 @@ class AstarCarController:
         if len(segments) == 0:
             return MAX_ACC
 
-        reserved_length = sum([abs(seg.end - seg.begin) for seg in segments])
+        reserved_length = sum([abs(seg_info.end - seg_info.begin) for seg_info in segments])
         # limit max_acc to the max speed of the car
         max_acc  = min(MAX_ACC, self.car.max_speed - self.car.speed)
         max_dec = - max(abs(MAX_DEC), self.car.speed)
@@ -102,7 +102,7 @@ class AstarCarController:
             new_speed = self.car.speed + acceleration
 
             # check if car exceeds max speed of the current segment
-            if self.car.speed + acceleration > min([seg.segment.max_speed for seg in segments]):
+            if self.car.speed + acceleration > min([seg_info.segment.max_speed for seg_info in segments]):
                 continue
 
             # check if car is changing lane
@@ -172,7 +172,7 @@ class AstarCarController:
             last_seg = added_segments[-1]
             for other_car in last_seg.segment.cars:
                 if other_car != self.car:
-                    other_car_seg_info = next(seg for seg in other_car.res if seg.segment == last_seg.segment)
+                    other_car_seg_info = next(seg_info for seg_info in other_car.res if seg_info.segment == last_seg.segment)
                     begin = abs(last_seg.begin)
                     end = abs(last_seg.end)
                     o_begin = abs(other_car_seg_info.begin)
