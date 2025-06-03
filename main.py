@@ -12,4 +12,4 @@ def main(players, roads, segmentation, debug=False, test=False, test_mode=None):
 
 
 if __name__ == '__main__':
-    main(**TWO_CROSSING, debug=False, test=True, test_mode=["all"])
+    main(**TWO_CROSSING, debug=False, test=False, test_mode=["all"])

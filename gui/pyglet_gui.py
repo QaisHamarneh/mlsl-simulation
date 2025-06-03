@@ -52,9 +52,10 @@ class CarsWindow(pyglet.window.Window):
 
         self.debug: bool = debug
         self.test = test
-        self.tester = SimulationTester(self.game, self.controllers, test_mode)
-        self.test_shape = None
-        self.test_params = find_greatest_gap(self.game.roads)
+        if self.test:
+            self.tester = SimulationTester(self.game, self.controllers, test_mode)
+            self.test_shape = None
+            self.test_params = find_greatest_gap(self.game.roads)
 
         self.flash_count = 0
 
@@ -83,7 +84,7 @@ class CarsWindow(pyglet.window.Window):
             goal.batch = self.batch
         for car in self.car_shapes:
             car.batch = self.batch
-        if self.test_shape is not None:
+        if self.test and self.test_shape is not None:
             self.test_shape.batch = self.batch
         self.batch.draw()
         if not self.pause:

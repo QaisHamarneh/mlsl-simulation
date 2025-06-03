@@ -213,7 +213,7 @@ def create_segments(roads: List[Road]) -> Optional[List[Segment]]:
     return segments
 
 
-def collision_check(car: Car) -> bool:
+def collision_check(car1: Car, car2:Car) -> bool:
     """
     Check if a car is in collision with any other car.
 
@@ -223,19 +223,25 @@ def collision_check(car: Car) -> bool:
     Returns:
         bool: True if there is a collision, False otherwise.
     """
-    for segment in car.get_size_segments():
-        begin = abs(segment["begin"])
-        end = abs(segment["end"])
-        for other_car in segment["seg"].cars:
-            if other_car != car:
-                for other_seg in other_car.get_size_segments():
-                    if other_seg["seg"] == segment["seg"]:
-                        o_begin = abs(other_seg["begin"])
-                        o_end = abs(other_seg["end"])
-                        if begin < o_begin < end:
-                            return True
-                        elif begin < o_end < end:
-                            return True
+    car1_segments = car1.get_size_segments()
+    car2_segments = car2.get_size_segments()
+    for segment_car1 in car1_segments:
+        if segment_car1["seg"] in [seg["seg"] for seg in car2_segments]:
+            begin1 = abs(segment_car1["begin"])
+            end1 = abs(segment_car1["end"])
+            segment_car2 = next(seg for seg in car2_segments if segment_car1["seg"] == seg["seg"])
+            begin2 = abs(segment_car2["begin"])
+            end2 = abs(segment_car2["end"])
+
+            if begin2 < begin1 < end2:
+                return True
+            elif begin2 < end1 < end2:
+                return True
+            
+            elif begin1 < begin2 < end1:
+                return True
+            elif begin1 < end2 < end1:
+                return True
 
     return False
 

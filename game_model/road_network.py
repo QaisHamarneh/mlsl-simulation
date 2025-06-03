@@ -153,7 +153,7 @@ class LaneSegment(Segment):
         self.end_crossing: Optional[CrossingSegment] = None
         self.length: int = abs(self.end - self.begin)
         self.num: Optional[int] = None
-        self.max_speed: int = BLOCK_SIZE // 3
+        self.max_speed: int = LANE_MAX_SPEED
 
     def __str__(self) -> str:
         """
@@ -186,7 +186,7 @@ class CrossingSegment(Segment):
         self.length: int = BLOCK_SIZE
         self.horiz_num: Optional[int] = None
         self.vert_num: Optional[int] = None
-        self.max_speed: int = BLOCK_SIZE // 5
+        self.max_speed: int = CROSSING_MAX_SPEED
 
     def get_road(self, direction: Direction, opposite: bool = False) -> Road:
         """

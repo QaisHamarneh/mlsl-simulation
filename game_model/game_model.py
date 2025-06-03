@@ -47,7 +47,6 @@ class TrafficEnv:
         self.cars = cars
         self.n_actions = N_ACTIONS
         # init display
-        self.gui = None
         self.moved = True
         
         self.time = 0
@@ -140,7 +139,7 @@ class TrafficEnv:
             if other_car != car:
                 # if overlap(car.pos, car.w, car.h,
                 #            other_car.pos, other_car.w, other_car.h):
-                if collision_check(car):
+                if collision_check(car, other_car):
                     self.crashes += 1
                     print("___________________________________________________________________________")
                     print(f"Frame = {self.time // len(self.cars)},  Crash: {self.crashes}")

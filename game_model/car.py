@@ -271,19 +271,6 @@ class Car:
             bool: True if the speed was changed successfully, False otherwise.
         """
         self.speed = max(min(self.speed + speed_diff, self.max_speed), 0)
-        # accumulated_res = 0
-        # i = 0
-        # for seg in self.res:
-        #     accumulated_res += abs(seg["end"]) - abs(seg["begin"])
-        #     i += 1
-        #     if accumulated_res > self.get_braking_distance():
-        #         break
-        # while len(self.res) > i:
-        #     seg = self.res.pop(i)
-        #     seg["seg"].cars.remove(self)
-        #     if self.parallel_res:
-        #         seg = self.parallel_res.pop(i)
-        #         seg["seg"].cars.remove(self)
         return True
 
     def get_adjacent_lane_segment(self, lane_diff: int, lane_segment: LaneSegment = None) -> LaneSegment:
@@ -479,21 +466,7 @@ class Car:
         braking = speed**2  // (2 * MAX_DEC)
         # BLOCK_SIZE // 2 additional distance when speed = 0
         return self.size + braking + BUFFER
-
-    def get_segment_info(self, segment: Segment) -> dict:
-        """
-        Get the information of a segment.
-
-        Args:
-            segment (Segment): The segment to get information for.
-
-        Returns:
-            dict: standard information of the segment.
-        """
-        for seg in self.res:
-            if seg["seg"] == segment:
-                return seg
-
+    
     def get_size_segments(self) -> list[dict]:
         """
         Get the segments occupied by the car.

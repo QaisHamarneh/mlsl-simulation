@@ -557,8 +557,6 @@ def find_greatest_gap(roads: List['Road']) -> Tuple[int, int, int, int]:
     x = vertical_roads[vertical_index].bottom
     y = horizontal_roads[horizontal_index].bottom
 
-    print(x, y, max_horizontal_gap, max_vertical_gap)
-
     return x, y, max_vertical_gap, max_horizontal_gap
 
 

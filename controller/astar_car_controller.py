@@ -174,7 +174,7 @@ class AstarCarController:
             last_seg = added_segments[-1]
             for other_car in last_seg["seg"].cars:
                 if other_car != self.car:
-                    other_car_seg_info = other_car.get_segment_info(last_seg["seg"])
+                    other_car_seg_info = next(seg for seg in other_car.res if seg["seg"] == last_seg["seg"])
                     begin = abs(last_seg["begin"])
                     end = abs(last_seg["end"])
                     o_begin = abs(other_car_seg_info["begin"])
