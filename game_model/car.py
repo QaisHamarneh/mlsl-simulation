@@ -1,7 +1,7 @@
 import numpy as np
 
 from game_model.constants import *
-from game_model.road_network import Color, LaneSegment, true_direction, Problem, CrossingSegment, Point, \
+from game_model.road_network import Color, Goal, LaneSegment, SegmentInfo, true_direction, Problem, CrossingSegment, Point, \
     horiz_direction, right_direction, Segment
 from typing import Optional, List, Dict
 
@@ -40,18 +40,16 @@ class Car:
         self.loc = loc
         self.max_speed = max_speed
         self.claimed_lane: dict = {}
-        self.parallel_res: list = []
+        self.parallel_res: list[SegmentInfo] = []
         self.lane_change_counter: int = 0
-        self.crossing_counter: int = 0
         self.time: int = 0
         self.stagnation: int = 0
         self.last_loc: Point = loc
 
-        self.res: list = [{"seg": segment,
-                           "dir": self.direction,
-                           "turn": False,
-                           "begin": self.loc,
-                           "end": (1 if true_direction[self.direction] else -1) * self.get_braking_distance()}]
+        self.res: list[SegmentInfo] = [SegmentInfo(segment,
+                                                   self.loc, 
+                                                   (1 if true_direction[self.direction] else -1) * self.get_braking_distance(),
+                                                   self.direction)]
         segment.cars.append(self)
         self.extend_res()
 
@@ -71,10 +69,9 @@ class Car:
         if _dead:
             index = len(self.get_size_segments())
             while index < len(self.res):
-                self.res[index]["seg"].cars.remove(self)
+                self.res[index].segment.cars.remove(self)
                 self.res.remove(self.res[index])
                 index += 1
-
             self.speed = 0
 
         self._dead = _dead
@@ -90,48 +87,48 @@ class Car:
             return False
 
         # Within the lane
-        self.loc += (1 if true_direction[self.res[0]["dir"]] else -1) * self.speed
+        self.loc += (1 if true_direction[self.res[0].direction] else -1) * self.speed
         self.check_reservation()
 
         self.time += 1
 
         self.extend_res()
 
-        while abs(self.loc) > self.res[0]["seg"].length:
-            self.loc = (1 if true_direction[self.res[1]["dir"]] else -1) * (abs(self.loc) - self.res[0]["seg"].length)
+        while abs(self.loc) > self.res[0].segment.length:
+            self.loc = (1 if true_direction[self.res[1].direction] else -1) * (abs(self.loc) - self.res[0].segment.length)
             seg_info = self.res.pop(0)
-            seg_info["seg"].cars.remove(self)
+            seg_info.segment.cars.remove(self)
             if self.parallel_res:
                 parallel_seg_info = self.parallel_res.pop(0)
-                parallel_seg_info["seg"].cars.remove(self)
-        if self.res[0]["turn"]:
+                parallel_seg_info.segment.cars.remove(self)
+        if self.res[0].turn:
             # self.loc = 0
-            self.res[0]["turn"] = False
+            self.res[0].turn = False
             if self.parallel_res:
-                self.parallel_res[0]["turn"] = False
+                self.parallel_res[0].turn = False
 
-        self.res[0]["begin"] = self.loc
+        self.res[0].begin = self.loc
         if self.parallel_res:
-            self.parallel_res[0]["begin"] = self.loc
+            self.parallel_res[0].begin = self.loc
 
         for i, seg in enumerate(self.res):
             if i < len(self.res) - 1:
-                seg["end"] = (1 if true_direction[seg["dir"]] else -1) * seg["seg"].length
+                seg.end = (1 if true_direction[seg.direction] else -1) * seg.segment.length
         for i, seg in enumerate(self.parallel_res):
             if i < len(self.parallel_res) - 1:
-                seg["end"] = (1 if true_direction[seg["dir"]] else -1) * seg["seg"].length
+                seg.end = (1 if true_direction[seg.direction] else -1) * seg.segment.length
 
         # Update the "end" of the last reserved segment
-        end = self.get_braking_distance() - sum([abs(self.res[i]["end"] - self.res[i]["begin"]) for i in
+        end = self.get_braking_distance() - sum([abs(self.res[i].end - self.res[i].begin) for i in
                                                  range(len(self.res) - 1)])
-        self.res[-1]["end"] = (1 if true_direction[self.res[-1]["dir"]] else -1) * end + self.res[-1]["begin"]
+        self.res[-1].end = (1 if true_direction[self.res[-1].direction] else -1) * end + self.res[-1].begin
         if self.parallel_res:
-            self.parallel_res[-1]["end"] = end + self.parallel_res[-1]["begin"]
+            self.parallel_res[-1].end = end + self.parallel_res[-1].begin
 
         self._update_position()
         return True
 
-    def get_next_segment(self, last_seg: dict = None) -> List[Segment]:
+    def get_next_segment(self, last_seg: SegmentInfo = None) -> List[Segment]:
         """
         Get the next segment for the car to move to.
 
@@ -144,17 +141,15 @@ class Car:
         """
         if last_seg is None:
             last_seg = self.res[-1]
-        # if direction is None:
-        #     direction = self.res[-1]["dir"]
 
-        if self.res[0]["seg"] == self.goal.lane_segment:
+        if self.res[0].segment == self.goal.lane_segment:
             #case 1: cur seg == goal seg -> preplan path to second goal
             # segs = self.astar()
             segs = self.astar(goal=self.second_goal)
 
         else:
             #case 2: cur seg != goal seg -> plan path to first goal(e.g. for alternative lanes (right, left)
-            segs = self.astar(last_seg["seg"])
+            segs = self.astar(last_seg.segment)
         
 
 
@@ -180,8 +175,8 @@ class Car:
         """
         next_segs = None
         while self.goal is not None and (
-                abs(self.loc) + self.get_braking_distance() >= sum([seg["seg"].length for seg in self.res]) or
-                isinstance(self.res[-1]["seg"], CrossingSegment)):
+                abs(self.loc) + self.get_braking_distance() >= sum([seg.segment.length for seg in self.res]) or
+                isinstance(self.res[-1].segment, CrossingSegment)):
             if next_segs is None:
                 next_segs = self.astar()
             if len(next_segs) < 2:
@@ -190,7 +185,7 @@ class Car:
                 print(Problem.NO_NEXT_SEGMENT)
                 print(f"Problem car {self.name} loc {self.loc} speed {self.speed}")
                 for seg in self.res:
-                    print(f"{seg['seg']} {seg['begin']} {seg['end']}")
+                    print(seg)
                 break
 
             next_seg = next_segs.pop(1)
@@ -202,15 +197,15 @@ class Car:
 
             if next_seg is None and parallel_next_seg is None:
                 #check if car is on the goal segment
-                if self.goal.lane_segment != self.res[-1]["seg"]:
+                if self.goal.lane_segment != self.res[-1].segment:
                     print(Problem.NO_NEXT_SEGMENT)
                     print(f"Problem car {self.name} loc {self.loc} speed {self.speed}")
                     for seg in self.res:
-                        print(f"{seg['seg']} {seg['begin']} {seg['end']}")
+                        print(seg)
                     break
             else:
                 extra = (1 if true_direction[self.direction] else -1) * (
-                        abs(self.loc) + self.get_braking_distance() - sum([seg["seg"].length for seg in self.res]))
+                        abs(self.loc) + self.get_braking_distance() - sum([seg.segment.length for seg in self.res]))
                 next_dir = None
                 if isinstance(next_seg, LaneSegment):
                     next_dir = next_seg.lane.direction
@@ -225,19 +220,18 @@ class Car:
                             if v == next_next_seg:
                                 next_dir = k
                                 break
-                next_seg_info = {"seg": next_seg,
-                                 "dir": next_dir,
-                                 "turn": next_dir != self.res[-1]["dir"],
-                                 "begin": 0,
-                                 "end": extra if isinstance(next_seg, LaneSegment) else 1 * BLOCK_SIZE}
+                next_seg_info = SegmentInfo(next_seg, 
+                                            0,
+                                            extra if isinstance(next_seg, LaneSegment) else 1 * BLOCK_SIZE,
+                                            next_dir,
+                                            next_dir != self.res[-1].direction)
                 self.res.append(next_seg_info)
                 next_seg.cars.append(self)
             if parallel_next_seg is not None:
-                next_parallel_seg_info = {"seg": parallel_next_seg,
-                                          "dir": self.direction,
-                                          "turn": False,
-                                          "begin": 0,
-                                          "end": extra}
+                next_parallel_seg_info = SegmentInfo(parallel_next_seg, 
+                                                    0,
+                                                    extra,
+                                                    self.direction)
                 self.parallel_res.append(next_parallel_seg_info)
                 parallel_next_seg.cars.append(self)
 
@@ -252,12 +246,12 @@ class Car:
             bool: True if the car turned successfully, False otherwise.
         """
 
-        if isinstance(self.res[-1]["seg"], CrossingSegment):
+        if isinstance(self.res[-1].segment, CrossingSegment):
             self.direction = new_direction
-            self.res[-1]["dir"] = self.direction
-            self.res[-1]["turn"] = True
+            self.res[-1].direction = self.direction
+            self.res[-1].turn = True
             if self.parallel_res:
-                self.parallel_res[-1]["turn"] = True
+                self.parallel_res[-1].turn = True
             return True
 
     def change_speed(self, speed_diff: int) -> bool:
@@ -285,14 +279,14 @@ class Car:
             LaneSegment: The adjacent lane segment.
         """
         if lane_segment is None:
-            lane_segment = self.res[0]["seg"]
+            lane_segment = self.res[0].segment
         actual_lane_diff = (-1 if right_direction[self.direction] else 1) * lane_diff
         num = lane_segment.lane.num
         lanes = lane_segment.lane.road.right_lanes if right_direction[self.direction] \
             else lane_segment.lane.road.left_lanes
         if 0 <= num + actual_lane_diff < len(lanes):
-            current_seg_num = self.res[0]["seg"].num
-            if self.res[0]["dir"] != lanes[num + actual_lane_diff].direction:
+            current_seg_num = self.res[0].segment.num
+            if self.res[0].direction != lanes[num + actual_lane_diff].direction:
                 return None
             return lanes[num + actual_lane_diff].segments[current_seg_num]
         return None
@@ -308,11 +302,11 @@ class Car:
             bool: True if the lane was changed successfully, False otherwise.
         """
         # case 1: car is not in a lane segment -> return problem
-        if not (isinstance(self.res[0]["seg"], LaneSegment) and \
+        if not (isinstance(self.res[0].segment, LaneSegment) and \
                 len(self.res) == 1):
             return Problem.CHANGE_LANE_WHILE_CROSSING
         # case 2: car is not in lane segment in LANECHANGE time steps -> return problem
-        if abs(self.loc) + self.get_braking_distance() + LANECHANGE_TIME_STEPS * self.speed > self.res[0]["seg"].length:
+        if abs(self.loc) + self.get_braking_distance() + LANECHANGE_TIME_STEPS * self.speed > self.res[0].segment.length:
             return False
 
         if lane_diff == 0:
@@ -325,7 +319,6 @@ class Car:
             return Problem.NO_ADJACENT_LANE
 
         self.changing_lane = True
-        self.last_segment = (self.pos.x, self.pos.y)
         self.reserved_segment = (self.time, next_lane_seg)
         return True
 
@@ -342,13 +335,14 @@ class Car:
         if self.time - self.reserved_segment[0] == LANECHANGE_TIME_STEPS:
             self.changing_lane = False
             for seg in self.res:
-                seg["seg"].cars.remove(self)
-            self.res = [{"seg": self.reserved_segment[1],
-                         "dir": self.res[0]["dir"],
-                         "turn": False,
-                         "begin": self.res[0]["begin"],
-                         "end": self.res[0]["end"]}]
-            self.res[0]["seg"].cars.append(self)
+                seg.segment.cars.remove(self)
+            self.res = [
+                SegmentInfo(self.reserved_segment[1],
+                            self.res[0].begin,
+                            self.res[0].end,
+                            self.res[0].direction)
+            ]
+            self.res[0].segment.cars.append(self)
             self.extend_res()
             self._update_position()
             return True
@@ -358,31 +352,12 @@ class Car:
             self.reserved_segment = None
             return False
 
-    def claim_lane(self, lane_diff: int) -> None:
-        """
-        Claim the adjacent lane segment.
-
-        Args:
-            lane_diff (int): The difference in lane number.
-        """
-        # check that only in one (lane) segment
-        if len(self.res) == 1 and isinstance(self.res[0]["seg"], LaneSegment):
-            # check that car is still only in one lane segment in CLAIMTIME time steps
-            if self.loc + (1 if true_direction[self.direction] else -1) * self.speed * CLAIMTIME > self.res[0][
-                "seg"].length:
-                return
-
-            next_lane_seg = self.get_adjacent_lane_segment(lane_diff)
-            if next_lane_seg is not None:
-                return
-                # todo
-
     def _update_position(self) -> None:
         """
         Update the position of the car, based on the current lane segment, location, direction and speed.
         """
         """ Returns the bottom left corner of the car """
-        seg, direction = self.res[0]["seg"], self.res[0]["dir"]
+        seg, direction = self.res[0].segment, self.res[0].direction
         lane_seg = isinstance(seg, LaneSegment)
         road = seg.lane.road if lane_seg \
             else (seg.horiz_lane.road if horiz_direction[direction] else seg.vert_lane.road)
@@ -408,34 +383,6 @@ class Car:
             self.w = BLOCK_SIZE
             self.h = self.size - BLOCK_SIZE // 6
 
-    def return_updated_position(self, seg: Segment) -> tuple[int, int, int, int]:
-        """
-        Return the updated position of the car.
-
-        Args:
-            seg (Segment): The segment the car is on.
-
-        Returns:
-            tuple[int, int, int, int]: The updated position (x, y, w, h) of the car.
-        """
-        """ Returns the bottom left corner of the car """
-        seg, direction = seg, self.res[0]["dir"]
-        road = seg.lane.road
-        seg_begin = seg.begin
-        if road.horizontal:
-            y = seg.lane.top + self.lane_change_counter * (BLOCK_SIZE // LANE_CHANGE_STEPS)
-            x = seg_begin + self.loc - (0 if true_direction[direction] else self.size)
-            # BLOCK_SIZE // 6 for the triangle
-            w = self.size - BLOCK_SIZE // 6
-            h = BLOCK_SIZE
-        else:
-            x = seg.lane.top + self.lane_change_counter * (BLOCK_SIZE // LANE_CHANGE_STEPS)
-            y = seg_begin + self.loc - (0 if true_direction[direction] else self.size)
-            # BLOCK_SIZE // 6 for the triangle
-            w = BLOCK_SIZE
-            h = self.size - BLOCK_SIZE // 6
-        return x, y, w, h
-
     def get_center(self) -> Point:
         """
         Get the center point of the car.
@@ -443,7 +390,7 @@ class Car:
         Returns:
             Point: The center point of the car.
         """
-        if horiz_direction[self.res[0]["dir"]]:
+        if horiz_direction[self.res[0].direction]:
             return Point(self.pos.x + self.size // 2, self.pos.y + BLOCK_SIZE // 2)
         else:
             return Point(self.pos.x + BLOCK_SIZE // 2, self.pos.y + self.size // 2)
@@ -474,26 +421,24 @@ class Car:
         Returns:
             list[dict]: The list of segments occupied by the car.
         """
-        segments = []
+        segments: list[SegmentInfo] = []
         accumulated_size = 0
         i = 0
         while accumulated_size < self.size:
             seg_info = self.res[i]
-            begin = abs(seg_info["begin"])
-            end = abs(seg_info["end"])
+            begin = abs(seg_info.begin)
+            end = abs(seg_info.end)
             diff = end - begin
             remaining = min(diff, self.size - accumulated_size)
-            segments.append({
-                "seg": seg_info["seg"],
-                "begin": seg_info["begin"],
-                "end": seg_info["begin"] + (1 if true_direction[seg_info["dir"]] else -1) * remaining,
-                "dir": seg_info["dir"]
-            })
+            segments.append(SegmentInfo(seg_info.segment, 
+                                        seg_info.begin, 
+                                        seg_info.begin + (1 if true_direction[seg_info.direction] else -1) * remaining, 
+                                        seg_info.direction))
             accumulated_size += diff
             i += 1
         return segments
 
-    def astar(self, start_seg = None, goal = None) -> Optional[List[Segment]]:
+    def astar(self, start_seg:SegmentInfo = None, goal:Goal = None) -> Optional[List[Segment]]:
         """
         Perform the A* search algorithm to find the shortest path from the car's current segment to the goal segment.
 
@@ -566,7 +511,7 @@ class Car:
                 path.insert(0, current)
             return path
 
-        start_seg = self.res[-1]["seg"] if start_seg is None else start_seg
+        start_seg = self.res[-1].segment if start_seg is None else start_seg
         goal_seg = self.goal.lane_segment if goal is None else goal.lane_segment
         # Initialize the open list with the start node and a cost of 0
         open_list = [(0, start_seg)]

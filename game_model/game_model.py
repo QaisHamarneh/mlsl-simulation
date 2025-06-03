@@ -145,10 +145,10 @@ class TrafficEnv:
                     print(f"Frame = {self.time // len(self.cars)},  Crash: {self.crashes}")
                     print(f"First car {car.name} loc {car.loc} speed {car.speed}")
                     for seg in car.res:
-                        print(f"{seg['seg']} {seg['begin']} {seg['end']}")
+                        print(seg)
                     print(f"Second car {other_car.name} loc {other_car.loc} speed {other_car.speed}")
                     for seg in other_car.res:
-                        print(f"{seg['seg']} {seg['begin']} {seg['end']}")
+                        print(seg)
                     print("___________________________________________________________________________")
                     game_over = True
                     car.dead = True

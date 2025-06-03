@@ -2,7 +2,8 @@ import pyglet
 from pyglet import shapes
 
 from game_model.constants import *
-from game_model.road_network import Direction, LaneSegment, CrossingSegment
+from game_model.road_network import Direction, Segment, LaneSegment, CrossingSegment, true_direction
+from game_model.car import Car
 from typing import List, Tuple, Union
 
 
@@ -210,32 +211,32 @@ def brake_box(car: 'Car', debug: bool) -> List[Union[shapes.Line, shapes.Rectang
     interesting_points = []
     (car_x, car_y) = car.pos.x, car.pos.y
 
-    w = car.w if car.res[0]["dir"] == Direction.UP or car.res[0]["dir"] == Direction.DOWN else car.h
+    w = car.w if car.res[0].direction == Direction.UP or car.res[0].direction == Direction.DOWN else car.h
 
     # left back corner of car based on direction, append points as starting points for the brake box
-    if car.res[0]["dir"] == Direction.RIGHT:
+    if car.res[0].direction == Direction.RIGHT:
         car_y = car_y + car.h
         car_x2, car_y2 = (car_x, car_y - car.h)
-    if car.res[0]["dir"] == Direction.DOWN:
+    if car.res[0].direction == Direction.DOWN:
         car_x = car_x + car.w
         car_y = car_y + car.h
         car_x2, car_y2 = (car_x - car.w, car_y)
-    if car.res[0]["dir"] == Direction.LEFT:
+    if car.res[0].direction == Direction.LEFT:
         car_x = car_x + car.w
         car_x2, car_y2 = (car_x, car_y + car.h)
-    if car.res[0]["dir"] == Direction.UP:
+    if car.res[0].direction == Direction.UP:
         car_x2, car_y2 = (car_x + car.w, car_y)
 
     left_points.append((car_x, car_y))
     right_points.append((car_x2, car_y2))
 
     remaining_distance = car.get_braking_distance()
-    last_dir = car.res[0]["dir"]
+    last_dir = car.res[0].direction
 
     # iterate over all segments of the car's path
     for i in range(0, len(car.res)):
         segment = car.res[i]
-        seg = segment["seg"]
+        seg = segment.segment
 
         # case 1: LaneSegment
         if isinstance(seg, LaneSegment):
@@ -276,7 +277,7 @@ def brake_box(car: 'Car', debug: bool) -> List[Union[shapes.Line, shapes.Rectang
                     remaining_distance -= dis
                 left_points.append((car_x, car_y))
                 right_points.append((car_x2, car_y2))
-            last_dir = segment["dir"]
+            last_dir = segment.direction
 
 
 
@@ -287,7 +288,7 @@ def brake_box(car: 'Car', debug: bool) -> List[Union[shapes.Line, shapes.Rectang
                 x_anchor, y_anchor = get_xy_crossingseg(seg)
                 interesting_points.append((x_anchor, y_anchor))
 
-                if segment["dir"] == Direction.RIGHT:
+                if segment.direction == Direction.RIGHT:
                     dist = abs(car_x - (x_anchor + BLOCK_SIZE))
                     if dist > remaining_distance:
                         car_x = car_x + remaining_distance
@@ -297,7 +298,7 @@ def brake_box(car: 'Car', debug: bool) -> List[Union[shapes.Line, shapes.Rectang
                         car_x2 = x_anchor + BLOCK_SIZE
                         remaining_distance -= dist
 
-                elif segment["dir"] == Direction.LEFT:
+                elif segment.direction == Direction.LEFT:
                     dist = abs(car_x - (x_anchor - BLOCK_SIZE))
                     if dist > remaining_distance:
                         car_x = car_x - remaining_distance
@@ -307,7 +308,7 @@ def brake_box(car: 'Car', debug: bool) -> List[Union[shapes.Line, shapes.Rectang
                         car_x2 = x_anchor - BLOCK_SIZE
                         remaining_distance -= dist
 
-                elif segment["dir"] == Direction.UP:
+                elif segment.direction == Direction.UP:
                     dist = abs(car_y - (y_anchor + BLOCK_SIZE))
                     if dist > remaining_distance:
                         car_y = car_y + remaining_distance
@@ -317,7 +318,7 @@ def brake_box(car: 'Car', debug: bool) -> List[Union[shapes.Line, shapes.Rectang
                         car_y2 = y_anchor + BLOCK_SIZE
                         remaining_distance -= dist
 
-                elif segment["dir"] == Direction.DOWN:
+                elif segment.direction == Direction.DOWN:
                     dist = abs(car_y - (y_anchor - BLOCK_SIZE))
                     if dist > remaining_distance:
                         car_y = car_y - remaining_distance
@@ -329,24 +330,24 @@ def brake_box(car: 'Car', debug: bool) -> List[Union[shapes.Line, shapes.Rectang
 
                 left_points.append((car_x, car_y))
                 right_points.append((car_x2, car_y2))
-                last_dir = segment["dir"]
+                last_dir = segment.direction
 
             else:
 
                 # going straight through a crossing segment
-                if last_dir.value == segment["dir"].value:
+                if last_dir.value == segment.direction.value:
 
                     if remaining_distance > BLOCK_SIZE:
-                        if segment["dir"] == Direction.RIGHT:
+                        if segment.direction == Direction.RIGHT:
                             car_x += BLOCK_SIZE + LANE_DISPLACEMENT
                             car_x2 += BLOCK_SIZE + LANE_DISPLACEMENT
-                        elif segment["dir"] == Direction.LEFT:
+                        elif segment.direction == Direction.LEFT:
                             car_x -= BLOCK_SIZE + LANE_DISPLACEMENT
                             car_x2 -= BLOCK_SIZE + LANE_DISPLACEMENT
-                        elif segment["dir"] == Direction.UP:
+                        elif segment.direction == Direction.UP:
                             car_y += BLOCK_SIZE + LANE_DISPLACEMENT
                             car_y2 += BLOCK_SIZE + LANE_DISPLACEMENT
-                        elif segment["dir"] == Direction.DOWN:
+                        elif segment.direction == Direction.DOWN:
                             car_y -= BLOCK_SIZE + LANE_DISPLACEMENT
                             car_y2 -= BLOCK_SIZE + LANE_DISPLACEMENT
 
@@ -354,35 +355,35 @@ def brake_box(car: 'Car', debug: bool) -> List[Union[shapes.Line, shapes.Rectang
                         remaining_distance -= LANE_DISPLACEMENT
                         left_points.append((car_x, car_y))
                         right_points.append((car_x2, car_y2))
-                        last_dir = segment["dir"]
+                        last_dir = segment.direction
 
                     else:
 
-                        if car.res[i - 1]["dir"] == Direction.RIGHT:
+                        if car.res[i - 1].direction == Direction.RIGHT:
                             car_x += BLOCK_SIZE
                             car_x2 += BLOCK_SIZE
 
-                        elif car.res[i - 1]["dir"] == Direction.LEFT:
+                        elif car.res[i - 1].direction == Direction.LEFT:
                             car_x -= BLOCK_SIZE
                             car_x2 -= BLOCK_SIZE
 
-                        elif car.res[i - 1]["dir"] == Direction.UP:
+                        elif car.res[i - 1].direction == Direction.UP:
                             car_y += BLOCK_SIZE
                             car_y2 += BLOCK_SIZE
 
-                        elif car.res[i - 1]["dir"] == Direction.DOWN:
+                        elif car.res[i - 1].direction == Direction.DOWN:
                             car_y -= BLOCK_SIZE
                             car_y2 -= BLOCK_SIZE
 
                         remaining_distance = car.size
                         left_points.append((car_x, car_y))
                         right_points.append((car_x2, car_y2))
-                        last_dir = segment["dir"]
+                        last_dir = segment.direction
 
-                elif car.res[i - 1]["dir"].value - segment["dir"].value == 1 or car.res[i - 1]["dir"].value - \
-                        segment["dir"].value == -3:  # left turn
+                elif car.res[i - 1].direction.value - segment.direction.value == 1 or car.res[i - 1].direction.value - \
+                        segment.direction.value == -3:  # left turn
 
-                    if car.res[i - 1]["dir"] == Direction.RIGHT:
+                    if car.res[i - 1].direction == Direction.RIGHT:
                         car_x2 = car_x2 + BLOCK_SIZE + LANE_DISPLACEMENT
                         right_points.append((car_x2, car_y2))
                         car_y2 = car_y2 + BLOCK_SIZE + LANE_DISPLACEMENT
@@ -394,7 +395,7 @@ def brake_box(car: 'Car', debug: bool) -> List[Union[shapes.Line, shapes.Rectang
                         left_points.append((car_x, car_y))
 
 
-                    if car.res[i - 1]["dir"] == Direction.DOWN:
+                    if car.res[i - 1].direction == Direction.DOWN:
                         car_y2 = car_y2 - BLOCK_SIZE - LANE_DISPLACEMENT
                         right_points.append((car_x2, car_y2))
                         car_x2 = car_x2 + BLOCK_SIZE + LANE_DISPLACEMENT
@@ -406,7 +407,7 @@ def brake_box(car: 'Car', debug: bool) -> List[Union[shapes.Line, shapes.Rectang
                         left_points.append((car_x, car_y))
 
 
-                    if car.res[i - 1]["dir"] == Direction.LEFT:
+                    if car.res[i - 1].direction == Direction.LEFT:
                         car_x2 = car_x2 - BLOCK_SIZE - LANE_DISPLACEMENT
                         right_points.append((car_x2, car_y2))
                         car_y2 = car_y2 - BLOCK_SIZE - LANE_DISPLACEMENT
@@ -419,7 +420,7 @@ def brake_box(car: 'Car', debug: bool) -> List[Union[shapes.Line, shapes.Rectang
                         left_points.append((car_x, car_y))
 
 
-                    if car.res[i - 1]["dir"] == Direction.UP:
+                    if car.res[i - 1].direction == Direction.UP:
                         car_y2 = car_y2 + BLOCK_SIZE + LANE_DISPLACEMENT
                         right_points.append((car_x2, car_y2))
                         car_x2 = car_x2 - BLOCK_SIZE - LANE_DISPLACEMENT
@@ -434,11 +435,11 @@ def brake_box(car: 'Car', debug: bool) -> List[Union[shapes.Line, shapes.Rectang
 
                     remaining_distance -= BLOCK_SIZE
                     remaining_distance -= LANE_DISPLACEMENT
-                    last_dir = segment["dir"]
+                    last_dir = segment.direction
 
-                elif car.res[i - 1]["dir"].value - segment["dir"].value == -1 or car.res[i - 1]["dir"].value - \
-                        segment["dir"].value == +3:  # right turn
-                    if car.res[i - 1]["dir"] == Direction.RIGHT:
+                elif car.res[i - 1].direction.value - segment.direction.value == -1 or car.res[i - 1].direction.value - \
+                        segment.direction.value == +3:  # right turn
+                    if car.res[i - 1].direction == Direction.RIGHT:
                         car_x = car_x + BLOCK_SIZE + LANE_DISPLACEMENT
                         left_points.append((car_x, car_y))
                         car_y = car_y - BLOCK_SIZE - LANE_DISPLACEMENT
@@ -449,7 +450,7 @@ def brake_box(car: 'Car', debug: bool) -> List[Union[shapes.Line, shapes.Rectang
                         car_y2 = car_y2 - LANE_DISPLACEMENT
                         right_points.append((car_x2, car_y2))
 
-                    if car.res[i - 1]["dir"] == Direction.DOWN:
+                    if car.res[i - 1].direction == Direction.DOWN:
                         car_y = car_y - BLOCK_SIZE - LANE_DISPLACEMENT
                         left_points.append((car_x, car_y))
                         car_x = car_x - BLOCK_SIZE - LANE_DISPLACEMENT
@@ -461,7 +462,7 @@ def brake_box(car: 'Car', debug: bool) -> List[Union[shapes.Line, shapes.Rectang
                         right_points.append((car_x2, car_y2))
 
 
-                    if car.res[i - 1]["dir"] == Direction.LEFT:
+                    if car.res[i - 1].direction == Direction.LEFT:
                         car_x = car_x - BLOCK_SIZE - LANE_DISPLACEMENT
                         left_points.append((car_x, car_y))
                         car_y = car_y + BLOCK_SIZE + LANE_DISPLACEMENT
@@ -472,7 +473,7 @@ def brake_box(car: 'Car', debug: bool) -> List[Union[shapes.Line, shapes.Rectang
                         car_y2 = car_y2 + LANE_DISPLACEMENT
                         right_points.append((car_x2, car_y2))
 
-                    if car.res[i - 1]["dir"] == Direction.UP:
+                    if car.res[i - 1].direction == Direction.UP:
                         car_y = car_y + BLOCK_SIZE + LANE_DISPLACEMENT
                         left_points.append((car_x, car_y))
                         car_x = car_x + BLOCK_SIZE + LANE_DISPLACEMENT
@@ -485,10 +486,10 @@ def brake_box(car: 'Car', debug: bool) -> List[Union[shapes.Line, shapes.Rectang
 
                     remaining_distance -= BLOCK_SIZE
                     remaining_distance -= LANE_DISPLACEMENT
-                    last_dir = segment["dir"]
+                    last_dir = segment.direction
 
                 else:
-                    print("error, not a valid turn", car.res[i - 1]["dir"], segment["dir"])
+                    print("error, not a valid turn", car.res[i - 1].direction, segment.direction)
 
     left_points.append((car_x, car_y))
 
@@ -597,3 +598,35 @@ def create_test_result_shape(res, x, y, width, height):
         font_size -= 1
 
     return layout
+
+
+
+
+def return_updated_position(car: Car) -> tuple[int, int, int, int]:
+    """
+    Return the updated position of the car.
+
+    Args:
+        seg (Segment): The segment the car is on.
+
+    Returns:
+        tuple[int, int, int, int]: The updated position (x, y, w, h) of the car.
+    """
+    """ Returns the bottom left corner of the car """
+    direction = car.res[0].direction
+    seg = car.reserved_segment[1]
+    road = seg.lane.road
+    seg_begin = seg.begin
+    if road.horizontal:
+        y = seg.lane.top + car.lane_change_counter * (BLOCK_SIZE // LANE_CHANGE_STEPS)
+        x = seg_begin + car.loc - (0 if true_direction[direction] else car.size)
+        # BLOCK_SIZE // 6 for the triangle
+        w = car.size - BLOCK_SIZE // 6
+        h = BLOCK_SIZE
+    else:
+        x = seg.lane.top + car.lane_change_counter * (BLOCK_SIZE // LANE_CHANGE_STEPS)
+        y = seg_begin + car.loc - (0 if true_direction[direction] else car.size)
+        # BLOCK_SIZE // 6 for the triangle
+        w = BLOCK_SIZE
+        h = car.size - BLOCK_SIZE // 6
+    return x, y, w, h

@@ -209,6 +209,18 @@ class CrossingSegment(Segment):
                f"{self.vert_lane.road.name}:{self.vert_lane.direction.name}:{self.vert_lane.num})"
 
 
+class SegmentInfo:
+    def __init__(self, segment: Segment, begin: int, end:int, direction: Direction, turn:bool=False) -> None:
+        self.segment = segment
+        self.begin = begin
+        self.end = end
+        self.direction = direction
+        self.turn = turn
+        
+    def __str__(self):
+        return f"{self.segment} -- begin = {self.begin}, end = {self.end}"
+
+
 class Goal:
     def __init__(self, lane_segment: LaneSegment, color: Color) -> None:
         """

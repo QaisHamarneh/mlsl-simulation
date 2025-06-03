@@ -62,7 +62,7 @@ def reached_goal(car: Car, goal: Goal) -> bool:
     Returns:
         bool: True if the car has reached the goal, False otherwise.
     """
-    if car.res[0]["seg"] == goal.lane_segment:
+    if car.res[0].segment == goal.lane_segment:
         if dist(car.get_center(), goal.pos) < car.size // 2 + BLOCK_SIZE // 2:
             return True
     return False
@@ -98,7 +98,7 @@ def create_random_car(segments: List[Segment], cars: List[Car]) -> Car:
 
     lane_segment = random.choice([seg for seg in segments
                                   if isinstance(seg, LaneSegment) and
-                                  not any([seg == car.res[0]["seg"] for car in cars])])
+                                  not any([seg == car.res[0].segment for car in cars])])
 
     max_speed = random.randint(BLOCK_SIZE // 4, BLOCK_SIZE // 3)
     speed = random.randint(BLOCK_SIZE // 10, max_speed)
@@ -226,12 +226,12 @@ def collision_check(car1: Car, car2:Car) -> bool:
     car1_segments = car1.get_size_segments()
     car2_segments = car2.get_size_segments()
     for segment_car1 in car1_segments:
-        if segment_car1["seg"] in [seg["seg"] for seg in car2_segments]:
-            begin1 = abs(segment_car1["begin"])
-            end1 = abs(segment_car1["end"])
-            segment_car2 = next(seg for seg in car2_segments if segment_car1["seg"] == seg["seg"])
-            begin2 = abs(segment_car2["begin"])
-            end2 = abs(segment_car2["end"])
+        segment_car2 = next((seg for seg in car2_segments if segment_car1.segment == seg.segment), None)
+        if segment_car2 is not None:
+            begin1 = abs(segment_car1.begin)
+            end1 = abs(segment_car1.end)
+            begin2 = abs(segment_car2.begin)
+            end2 = abs(segment_car2.end)
 
             if begin2 < begin1 < end2:
                 return True
@@ -261,7 +261,7 @@ def reservation_check(car: Car) -> bool:
     for other_car in seg.cars:
         if other_car != car:
             other_seg = other_car.get_size_segments()
-            o_begin = abs(other_seg[0]["begin"])
+            o_begin = abs(other_seg[0].begin)
             o_end = o_begin + other_car.get_braking_distance()
             if o_begin <= car_loc <= o_end or o_begin <= car_loc + car.get_braking_distance() <= \
                     o_end or car_loc <= o_begin <= car_loc + car.get_braking_distance() or car_loc <= o_end <= car_loc + car.get_braking_distance():
