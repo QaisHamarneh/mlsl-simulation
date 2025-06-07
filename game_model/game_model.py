@@ -152,6 +152,7 @@ class TrafficEnv:
                     print("___________________________________________________________________________")
                     game_over = True
                     car.dead = True
+                    other_car.dead = True
                     return game_over, self.scores[player]
 
         # Place new goal if the goal is reached

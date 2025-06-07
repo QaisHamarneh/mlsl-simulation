@@ -360,8 +360,13 @@ class Car:
         # seg, direction = self.res[0].segment, self.res[0].direction
         seg_info = self.res[0]
         lane_seg = isinstance(seg_info.segment, LaneSegment)
-        road = seg_info.segment.lane.road if lane_seg \
-            else (seg_info.segment.horiz_lane.road if horiz_direction[seg_info.direction] else seg_info.segment.vert_lane.road)
+        if lane_seg:
+            road = seg_info.segment.lane.road
+        else:
+            if horiz_direction[seg_info.direction]:
+                road = seg_info.segment.horiz_lane.road 
+            else:
+                road = seg_info.segment.vert_lane.road
 
         if lane_seg:
             seg_begin = seg_info.segment.begin
