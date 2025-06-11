@@ -421,7 +421,12 @@ class Car:
         if speed is None:
             speed = self.speed
         assert speed >= 0, f"Speed must be positive {self.name} - {speed}"
-        braking = math.ceil(speed**2  // (2 * MAX_DEC))
+        # braking = math.ceil(speed**2  // (2 * MAX_DEC))
+
+        braking = 0
+        while speed > 0:
+            braking += speed
+            speed -= MAX_DEC
         # BLOCK_SIZE // 2 additional distance when speed = 0
         return self.size + braking + BUFFER
     

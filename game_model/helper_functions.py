@@ -90,7 +90,7 @@ def create_random_car(segments: List[Segment], cars: List[Car]) -> Car:
         for c in colors:
             if not any([car.name == c for car in cars]):
                 name = c
-                color = selected_colors[name]
+                color = colors[name]
         
     # name = random.choice([color for color in colors.keys()
     #                       if not any([car.name == color for car in cars])])
@@ -267,6 +267,4 @@ def reservation_check(car: Car) -> bool:
                     o_end or car_loc <= o_begin <= car_loc + car.get_braking_distance() or car_loc <= o_end <= car_loc + car.get_braking_distance():
                 return True
     return False
-
-
 

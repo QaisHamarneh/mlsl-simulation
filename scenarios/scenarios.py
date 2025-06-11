@@ -87,20 +87,6 @@ TWO_CROSSING = {
     "segmentation": False,
     "players": 22
 }
-TWO_CROSSING = {
-    "roads": [
-        Road("bottom", True, 0, 1, 0),
-        Road("right", False, WINDOW_WIDTH - BLOCK_SIZE, 0, 1),
-        Road("top", True, WINDOW_HEIGHT - BLOCK_SIZE, 0, 1),
-        Road("left", False, 0, 1, 0),
-        Road("h1", True, 5 * BLOCK_SIZE, 2, 2),
-        Road("h2", True, 14 * BLOCK_SIZE, 2, 2),
-        Road("v1", False, 9 * BLOCK_SIZE, 3, 3),
-        Road("v2", False, 23 * BLOCK_SIZE, 3, 4)
-    ],
-    "segmentation": False,
-    "players": 22
-}
 
 ONE_CROSSING = {
     "roads": [

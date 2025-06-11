@@ -43,7 +43,7 @@ class AstarCarController:
 
         lane_change = NO_LANE_CHANGE
         # This should be changed to check res and parallel_res separately.
-        current_lane_acc = min(self.get_accelerate(self.car.res, False), self.get_accelerate(self.car.parallel_res, False))
+        current_lane_acc = min(self.get_accelerate(self.car.res), self.get_accelerate(self.car.parallel_res))
         max_possible_acc = current_lane_acc
         if isinstance(self.car.res[0].segment, LaneSegment) \
                 and max_possible_acc < MAX_ACC and len(self.car.res) == 1 \
@@ -59,7 +59,7 @@ class AstarCarController:
                         self.car.direction
                     )
                 if not self.check_collision(left_segment):
-                    left_lane_acceleration = self.get_accelerate([left_segment], True)
+                    left_lane_acceleration = self.get_accelerate([left_segment])
                     if left_lane_acceleration > max_possible_acc:
                         lane_change = LEFT_LANE_CHANGE
                         max_possible_acc = left_lane_acceleration
@@ -74,13 +74,13 @@ class AstarCarController:
                         self.car.direction
                     )
                 if not self.check_collision(right_segment):
-                    right_lane_acceleration = self.get_accelerate([right_segment], True)
+                    right_lane_acceleration = self.get_accelerate([right_segment])
                     if right_lane_acceleration >= max_possible_acc:
                         lane_change = RIGHT_LANE_CHANGE
                         max_possible_acc = right_lane_acceleration
         return min(max_possible_acc, max_possible_acc), lane_change
 
-    def get_accelerate(self, segments: list[SegmentInfo], changing_lanes) -> int:
+    def get_accelerate(self, segments: list[SegmentInfo]) -> int:
         """
         Calculate the optimal acceleration for the car based on the given segments, the car's speed and other cars on the
         road. The value is limited by the car's maximum speed and the maximum acceleration and deceleration values.
