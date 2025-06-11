@@ -98,7 +98,7 @@ class CarsWindow(pyglet.window.Window):
         Checks for game over state.
         """
         for player in range(self.game.players):
-            if not self.game_over[player]:
+            if not self.game.cars[player].dead:
                 self.game_over[player], self.scores[player] = self.game.play_step(player,
                                                                                   self.controllers[player].get_action())
         if self.test:

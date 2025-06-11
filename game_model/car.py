@@ -1,3 +1,4 @@
+import math
 import numpy as np
 
 from game_model.constants import *
@@ -250,6 +251,7 @@ class Car:
             self.direction = new_direction
             self.res[-1].direction = self.direction
             self.res[-1].turn = True
+            assert not self.parallel_res, "Should not turn while changing lanes"
             if self.parallel_res:
                 self.parallel_res[-1].turn = True
             return True
@@ -373,7 +375,8 @@ class Car:
         if road.horizontal:
             if not lane_seg:
                 seg_begin = seg_info.segment.vert_lane.top if true_direction[seg_info.direction] else seg_info.segment.vert_lane.top + BLOCK_SIZE
-            self.pos.y = seg_info.segment.lane.top + self.lane_change_counter * (BLOCK_SIZE // LANE_CHANGE_STEPS) \
+            # self.pos.y = seg_info.segment.lane.top  + self.lane_change_counter * (BLOCK_SIZE // LANE_CHANGE_STEPS) \
+            self.pos.y = seg_info.segment.lane.top \
                 if lane_seg else seg_info.segment.horiz_lane.top
             self.pos.x = seg_begin + self.loc - (0 if true_direction[seg_info.direction] else self.size)
             # BLOCK_SIZE // 6 for the triangle
@@ -382,7 +385,8 @@ class Car:
         else:
             if not lane_seg:
                 seg_begin = seg_info.segment.horiz_lane.top if true_direction[seg_info.direction] else seg_info.segment.horiz_lane.top + BLOCK_SIZE
-            self.pos.x = seg_info.segment.lane.top + self.lane_change_counter * (BLOCK_SIZE // LANE_CHANGE_STEPS) \
+            # self.pos.x = seg_info.segment.lane.top + self.lane_change_counter * (BLOCK_SIZE // LANE_CHANGE_STEPS) \
+            self.pos.x = seg_info.segment.lane.top \
                 if lane_seg else seg_info.segment.vert_lane.top
             self.pos.y = seg_begin + self.loc - (0 if true_direction[seg_info.direction] else self.size)
             # BLOCK_SIZE // 6 for the triangle
@@ -416,7 +420,8 @@ class Car:
 
         if speed is None:
             speed = self.speed
-        braking = speed**2  // (2 * MAX_DEC)
+        assert speed >= 0, f"Speed must be positive {self.name} - {speed}"
+        braking = math.ceil(speed**2  // (2 * MAX_DEC))
         # BLOCK_SIZE // 2 additional distance when speed = 0
         return self.size + braking + BUFFER
     

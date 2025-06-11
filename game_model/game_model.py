@@ -2,7 +2,7 @@ import random
 from typing import Optional, Tuple, List
 
 from game_model.car import Car
-from game_model.road_network import Goal, Road, CrossingSegment, LaneSegment, Problem, clock_wise, Point
+from game_model.road_network import Direction, Goal, Road, CrossingSegment, LaneSegment, Problem, clock_wise, Point
 from game_model.helper_functions import create_random_car, overlap, create_segments, reached_goal, collision_check
 from game_model.constants import *
 
@@ -51,7 +51,12 @@ class TrafficEnv:
         
         self.time = 0
 
-        self.crashes = 0
+        self.total_crashes = 0
+        self.crashes: dict = {}
+        self.crashes[Direction.RIGHT] = 0
+        self.crashes[Direction.UP] = 0
+        self.crashes[Direction.LEFT] = 0
+        self.crashes[Direction.DOWN] = 0
 
         if cars is None or goals is None:
             self.reset()
@@ -140,9 +145,11 @@ class TrafficEnv:
                 # if overlap(car.pos, car.w, car.h,
                 #            other_car.pos, other_car.w, other_car.h):
                 if collision_check(car, other_car):
-                    self.crashes += 1
+                    self.total_crashes += 1
+                    self.crashes[car.direction] += 1
                     print("___________________________________________________________________________")
-                    print(f"Frame = {self.time // len(self.cars)},  Crash: {self.crashes}")
+                    print(f"Frame = {self.time // len(self.cars)},  Crash: {self.total_crashes}")
+                    print(f"Direction = {car.direction},  Crash: {self.crashes[car.direction]}")
                     print(f"First car {car.name} loc {car.loc} speed {car.speed}")
                     for seg in car.res:
                         print(seg)

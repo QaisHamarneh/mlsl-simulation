@@ -43,7 +43,7 @@ class AstarCarController:
 
         lane_change = NO_LANE_CHANGE
         # This should be changed to check res and parallel_res separately.
-        current_lane_acc = min(self.get_accelerate(self.car.res), self.get_accelerate(self.car.parallel_res))
+        current_lane_acc = min(self.get_accelerate(self.car.res, False), self.get_accelerate(self.car.parallel_res, False))
         max_possible_acc = current_lane_acc
         if isinstance(self.car.res[0].segment, LaneSegment) \
                 and max_possible_acc < MAX_ACC and len(self.car.res) == 1 \
@@ -59,7 +59,7 @@ class AstarCarController:
                         self.car.direction
                     )
                 if not self.check_collision(left_segment):
-                    left_lane_acceleration = self.get_accelerate([left_segment])
+                    left_lane_acceleration = self.get_accelerate([left_segment], True)
                     if left_lane_acceleration > max_possible_acc:
                         lane_change = LEFT_LANE_CHANGE
                         max_possible_acc = left_lane_acceleration
@@ -74,13 +74,13 @@ class AstarCarController:
                         self.car.direction
                     )
                 if not self.check_collision(right_segment):
-                    right_lane_acceleration = self.get_accelerate([right_segment])
+                    right_lane_acceleration = self.get_accelerate([right_segment], True)
                     if right_lane_acceleration >= max_possible_acc:
                         lane_change = RIGHT_LANE_CHANGE
                         max_possible_acc = right_lane_acceleration
         return min(max_possible_acc, max_possible_acc), lane_change
 
-    def get_accelerate(self, segments: list[SegmentInfo]) -> int:
+    def get_accelerate(self, segments: list[SegmentInfo], changing_lanes) -> int:
         """
         Calculate the optimal acceleration for the car based on the given segments, the car's speed and other cars on the
         road. The value is limited by the car's maximum speed and the maximum acceleration and deceleration values.
@@ -97,7 +97,7 @@ class AstarCarController:
         reserved_length = sum([abs(seg_info.end - seg_info.begin) for seg_info in segments])
         # limit max_acc to the max speed of the car
         max_acc  = min(MAX_ACC, self.car.max_speed - self.car.speed)
-        max_dec = - max(abs(MAX_DEC), self.car.speed)
+        max_dec = - min(MAX_DEC, self.car.speed)
 
         # iterate over all acceleration values between max_acc and max_dec
         for acceleration in range(max_acc, max_dec - 1, -1):
@@ -186,19 +186,11 @@ class AstarCarController:
                         if o_begin <= end <= o_end or o_end <= end <= o_begin:
                             collision = True
                             break
-                        # if begin <= o_end <= end or end <= o_end <= begin:
-                        #     return True
 
             # if no collision is detected return the acceleration
             if not collision:
                 return acceleration
-        
-        if not collision:
-            print("****************************")
-            print("****************************")
-            print(f"Collision Unavoidable {self.car}")
-            print("****************************")
-            print("****************************")
+                    
         return max_dec
     
     def check_collision(self, seg_info: SegmentInfo):
@@ -211,15 +203,8 @@ class AstarCarController:
                 o_end = abs(other_car_seg_info.end)
                 if self.getOverlap(min(begin, end), max(begin, end), 
                                min(o_begin, end), max(o_begin, o_end)) > 0: 
-                    return True
-                # if o_begin <= begin <= o_end or o_end <= begin <= o_begin:
-                #     continue
-                # # TODO: Check if we need this part: or o_end <= end <= o_begin
-                # if o_begin <= end <= o_end or o_end <= end <= o_begin:
-                #     return True
-                # if begin <= o_end <= end or end <= o_end <= begin:
-                #     return True
-
+                    return True, other_car
+        return None, None
     
     def getOverlap(self, begin_1, end_1, begin_2, end_2):
         return max(0, min(end_1, end_2) - max(begin_1, begin_2))

@@ -13,6 +13,19 @@ LEFT_RIGHT_OVERTAKE = {
     "players": 2
 }
 
+LEFT_RIGHT_OVERTAKE_2 = {
+    "roads": [
+        Road("bottom", True, 0, 1, 0),
+        Road("right", False, WINDOW_WIDTH - BLOCK_SIZE, 0, 1),
+        Road("top", True, WINDOW_HEIGHT - BLOCK_SIZE, 0, 1),
+        Road("left", False, 0, 1, 0),
+        Road("v1", False, 330, 1, 1),
+        Road("h1", True, 330, 3, 3),
+    ],
+    "segmentation": False,
+    "players": 6
+}
+
 UP_DOWN_OVERTAKE = {
     "roads": [
         Road("bottom", True, 0, 1, 0),
@@ -41,7 +54,7 @@ BIG_SCENARIO = {
         Road("v3", False, 3 * WINDOW_WIDTH // 4 - 1 * BLOCK_SIZE, 2, 0)
     ],
     "segmentation": False,
-    "players": 10
+    "players": 22
 }
 
 STARTING_SCENARIO = {
