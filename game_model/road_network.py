@@ -111,7 +111,7 @@ class Intersection:
         self.horizontal_road: Road = horizontal_road
         self.vertical_road: Road = vertical_road
         self.segments: list[CrossingSegment] = []
-        self.priority: list['Car'] = []
+        self.priority: dict['Car', int] = {}
     
     def __str__(self):
         return f"Horizontal: {self.horizontal_road.name} - Vertical: {self.vertical_road.name} - Crossing Segments {len(self.segments)}"
