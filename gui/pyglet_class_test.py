@@ -2,7 +2,7 @@ import pyglet
 from pyglet import shapes
 
 from game_model.constants import *
-from game_model.helper_functions import create_segments
+from game_model.create_game import create_segments
 from game_model.road_network import Direction, Point, LaneSegment, CrossingSegment, true_direction, Road
 from gui.colors import colors
 from gui.helpful_functions import draw_dash_line, draw_arrow

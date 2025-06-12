@@ -4,7 +4,8 @@ from typing import Optional, Tuple, List
 from controller.astar_car_controller import AstarCarController
 from game_model.car import Car
 from game_model.road_network import Direction, Goal, Road, CrossingSegment, LaneSegment, Problem, clock_wise, Point
-from game_model.helper_functions import create_random_car, overlap, create_segments, reached_goal, collision_check
+from game_model.helper_functions import create_random_car, overlap, reached_goal, collision_check
+from game_model.create_game import create_segments
 from game_model.constants import *
 
 
@@ -44,7 +45,7 @@ class TrafficEnv:
         self.second_goals = None
         self.scores = None
         self.roads = roads
-        self.segments = create_segments(roads)
+        self.segments, self.intersections = create_segments(roads)
         self.players = players
 
         self.cars = cars

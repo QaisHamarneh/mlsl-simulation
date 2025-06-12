@@ -106,6 +106,15 @@ class Road:
         else:
             return self.left_lanes[-1].segments[segment.num] if len(self.left_lanes) > 0 else None
 
+class Intersection:
+    def __init__(self, horizontal_road: Road, vertical_road: Road):
+        self.horizontal_road: Road = horizontal_road
+        self.vertical_road: Road = vertical_road
+        self.segments: list[CrossingSegment] = []
+        self.priority: list['Car'] = []
+    
+    def __str__(self):
+        return f"Horizontal: {self.horizontal_road.name} - Vertical: {self.vertical_road.name} - Crossing Segments {len(self.segments)}"
 
 class Lane:
     def __init__(self, road: Road, num: int, direction: Direction, top: int) -> None:
@@ -166,7 +175,7 @@ class LaneSegment(Segment):
 
 
 class CrossingSegment(Segment):
-    def __init__(self, horiz_lane: Lane, vert_lane: Lane) -> None:
+    def __init__(self, horiz_lane: Lane, vert_lane: Lane, intersection: Intersection) -> None:
         """
         Initialize a CrossingSegment object.
 
@@ -177,6 +186,7 @@ class CrossingSegment(Segment):
         super().__init__()
         self.horiz_lane: Lane = horiz_lane
         self.vert_lane: Lane = vert_lane
+        self.intersection: Intersection = intersection
         self.connected_segments: Dict[Direction, Optional[Segment]] = {
             Direction.RIGHT: None,
             Direction.LEFT: None,
