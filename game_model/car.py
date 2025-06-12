@@ -167,8 +167,6 @@ class Car:
 
         return []
 
-
-
     def extend_res(self) -> None:
         """
         Extend the reservation of the car to the next segments.
@@ -222,7 +220,7 @@ class Car:
                                 break
                 next_seg_info = SegmentInfo(next_seg, 
                                             0,
-                                            extra if isinstance(next_seg, LaneSegment) else 1 * BLOCK_SIZE,
+                                            extra if isinstance(next_seg, LaneSegment) else BLOCK_SIZE,
                                             next_dir,
                                             next_dir != self.res[-1].direction)
                 self.res.append(next_seg_info)
@@ -453,7 +451,7 @@ class Car:
             i += 1
         return segments
 
-    def astar(self, start_seg:SegmentInfo = None, goal:Goal = None) -> Optional[List[Segment]]:
+    def astar(self, start_seg:Segment = None, goal:Goal = None) -> Optional[List[Segment]]:
         """
         Perform the A* search algorithm to find the shortest path from the car's current segment to the goal segment.
 
