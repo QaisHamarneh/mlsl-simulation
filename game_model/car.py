@@ -1,7 +1,7 @@
 import numpy as np
 
 from game_model.constants import *
-from game_model.road_network import Color, Goal, LaneSegment, SegmentInfo, true_direction, Problem, CrossingSegment, Point, \
+from game_model.road_network import Color, Goal, Intersection, LaneSegment, SegmentInfo, true_direction, Problem, CrossingSegment, Point, \
     horiz_direction, right_direction, Segment
 from typing import Optional, List, Dict
 
@@ -93,14 +93,20 @@ class Car:
         self.time += 1
 
         self.extend_res()
+        intersection: Intersection = None
 
         while abs(self.loc) > self.res[0].segment.length:
             self.loc = (1 if true_direction[self.res[1].direction] else -1) * (abs(self.loc) - self.res[0].segment.length)
+            if isinstance(self.res[0].segment, CrossingSegment):
+                intersection = self.res[0].segment.intersection
             seg_info = self.res.pop(0)
             seg_info.segment.cars.remove(self)
             if self.parallel_res:
                 parallel_seg_info = self.parallel_res.pop(0)
                 parallel_seg_info.segment.cars.remove(self)
+
+        if intersection is not None and all(isinstance(seg_info.segment, LaneSegment) for seg_info in self.res):
+            intersection.priority.pop(self)
 
         self.res[0].begin = self.loc
 
@@ -213,6 +219,9 @@ class Car:
                                                 next_dir != self.res[-1].direction)
                     self.res.append(next_seg_info)
                     next_seg.cars.append(self)
+                    if isinstance(next_seg, CrossingSegment):
+                        next_seg.intersection.priority[self] = self.time
+
 
     def turn(self, new_direction: int) -> bool:
         """

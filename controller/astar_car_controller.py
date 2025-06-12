@@ -172,7 +172,16 @@ class AstarCarController:
                     if isinstance(seg, CrossingSegment):
                         if len(seg.cars) > 0:
                             collision = True
+                            intersection = seg.intersection
+                            if self.car not in intersection.priority:
+                                intersection.priority[self.car] = self.car.time
                             break
+                if not collision:
+                    if isinstance(added_segments[1].segment, CrossingSegment):
+                        intersection = added_seg[1].segment.intersection
+                        for car, time in intersection.priority.items():
+                            if car != self.car and time < intersection.priority[self.car]:
+                                collision = True
 
             # Case 2: Extension within a lane segment
             if not collision:
