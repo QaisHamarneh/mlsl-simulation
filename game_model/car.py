@@ -101,29 +101,33 @@ class Car:
             if self.parallel_res:
                 parallel_seg_info = self.parallel_res.pop(0)
                 parallel_seg_info.segment.cars.remove(self)
+
+        self.res[0].begin = self.loc
+
+        if self.parallel_res:
+            self.parallel_res[0].begin = self.loc
+        
         if self.res[0].turn:
-            # self.loc = 0
             self.res[0].turn = False
             if self.parallel_res:
                 self.parallel_res[0].turn = False
 
-        self.res[0].begin = self.loc
-        if self.parallel_res:
-            self.parallel_res[0].begin = self.loc
-
         for i, seg_info in enumerate(self.res):
             if i < len(self.res) - 1:
                 seg_info.end = (1 if true_direction[seg_info.direction] else -1) * seg_info.segment.length
-        for i, seg in enumerate(self.parallel_res):
-            if i < len(self.parallel_res) - 1:
-                seg_info.end = (1 if true_direction[seg_info.direction] else -1) * seg_info.segment.length
 
-        # Update the "end" of the last reserved segment
-        end = self.get_braking_distance() - sum([abs(self.res[i].end - self.res[i].begin) for i in
-                                                 range(len(self.res) - 1)])
-        self.res[-1].end = (1 if true_direction[self.res[-1].direction] else -1) * end + self.res[-1].begin
+        for i, paral_seg_info in enumerate(self.parallel_res):
+            if i < len(self.parallel_res) - 1:
+                paral_seg_info.end = (1 if true_direction[paral_seg_info.direction] else -1) * paral_seg_info.segment.length
+
+        # Update the "end" of the last reserved segment (last reserved segment is always a lane segment)
+        end = max (self.size, 
+                   self.get_braking_distance() - sum([abs(self.res[i].end - self.res[i].begin) for i in range(len(self.res) - 1)]))
+        
+        self.res[-1].end = (1 if true_direction[self.res[-1].direction] else -1) * (end + abs(self.res[-1].begin))
         if self.parallel_res:
-            self.parallel_res[-1].end = end + self.parallel_res[-1].begin
+            self.parallel_res[-1].end = (1 if true_direction[self.parallel_res[-1].direction] else -1) * (end + abs(self.parallel_res[-1].begin))
+            # self.parallel_res[-1].end = end + self.parallel_res[-1].begin
 
         self._update_position()
         return True
@@ -167,16 +171,13 @@ class Car:
 
         return []
 
-    def extend_res(self) -> None:
+    def extend_res(self) -> bool:
         """
         Extend the reservation of the car to the next segments.
         """
-        next_segs = None
-        while self.goal is not None and (
-                abs(self.loc) + self.get_braking_distance() >= sum([seg_info.segment.length for seg_info in self.res]) or
-                isinstance(self.res[-1].segment, CrossingSegment)):
-            if next_segs is None:
-                next_segs = self.astar()
+        if abs(self.loc) + self.get_braking_distance() >= sum([seg_info.segment.length for seg_info in self.res]):
+
+            next_segs = self.astar()
             if len(next_segs) < 2:
                 next_segs = self.astar(goal=self.second_goal)
             if len(next_segs) < 2:
@@ -184,54 +185,34 @@ class Car:
                 print(f"Problem car {self.name} loc {self.loc} speed {self.speed}")
                 for seg in self.res:
                     print(seg)
-                break
+                return False
 
-            next_seg = next_segs.pop(1)
+            for i in range(1, len(next_segs)):
+                if isinstance(next_segs[i], LaneSegment):
+                    next_segs = next_segs[1:i + 1]
+                    break 
 
-            parallel_next_seg = None
-
-            # if self.parallel_res:
-            #    parallel_next_seg = self.get_next_segment(self.parallel_res[-1])
-
-            if next_seg is None and parallel_next_seg is None:
-                #check if car is on the goal segment
-                if self.goal.lane_segment != self.res[-1].segment:
-                    print(Problem.NO_NEXT_SEGMENT)
-                    print(f"Problem car {self.name} loc {self.loc} speed {self.speed}")
-                    for seg in self.res:
-                        print(seg)
-                    break
-            else:
-                extra = (1 if true_direction[self.direction] else -1) * (
-                        abs(self.loc) + self.get_braking_distance() - sum([seg_info.segment.length for seg_info in self.res]))
-                next_dir = None
-                if isinstance(next_seg, LaneSegment):
-                    next_dir = next_seg.lane.direction
-                elif isinstance(next_seg, CrossingSegment):
-                    next_next_seg = next_segs[1] if next_segs else None
-                    if next_next_seg is None:
-                        print(Problem.NO_NEXT_SEGMENT)
-                    if isinstance(next_next_seg, LaneSegment):
-                        next_dir = next_next_seg.lane.direction
-                    else:
-                        for k, v in next_seg.connected_segments.items():
-                            if v == next_next_seg:
-                                next_dir = k
+            for i, next_seg in enumerate(next_segs):
+                    extra = abs(self.loc) + self.get_braking_distance() - sum([seg_info.segment.length for seg_info in self.res])
+                    next_dir = None
+                    if isinstance(next_seg, LaneSegment):
+                        next_dir = next_seg.lane.direction
+                    elif isinstance(next_seg, CrossingSegment):
+                        next_next_seg = next_segs[i + 1] if len(next_segs) > i + 1 else None
+                        if next_next_seg is None:
+                            print(Problem.NO_NEXT_SEGMENT)
+                        for dir, seg in next_seg.connected_segments.items():
+                            if seg == next_next_seg:
+                                next_dir = dir
                                 break
-                next_seg_info = SegmentInfo(next_seg, 
-                                            0,
-                                            extra if isinstance(next_seg, LaneSegment) else BLOCK_SIZE,
-                                            next_dir,
-                                            next_dir != self.res[-1].direction)
-                self.res.append(next_seg_info)
-                next_seg.cars.append(self)
-            if parallel_next_seg is not None:
-                next_parallel_seg_info = SegmentInfo(parallel_next_seg, 
-                                                    0,
-                                                    extra,
-                                                    self.direction)
-                self.parallel_res.append(next_parallel_seg_info)
-                parallel_next_seg.cars.append(self)
+                    next_seg_info = SegmentInfo(next_seg, 
+                                                0,
+                                                min((1 if true_direction[next_dir] else -1) * extra, next_seg.length) if 
+                                                isinstance(next_seg, LaneSegment) else BLOCK_SIZE,
+                                                next_dir,
+                                                next_dir != self.res[-1].direction)
+                    self.res.append(next_seg_info)
+                    next_seg.cars.append(self)
 
     def turn(self, new_direction: int) -> bool:
         """
