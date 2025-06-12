@@ -5,6 +5,7 @@ from game_model.constants import *
 from game_model.game_model import TrafficEnv
 from game_model.road_network import Direction, Point, LaneSegment, Road
 from gui.helpful_functions import draw_arrow, draw_dash_line
+from gui.map_colors import *
 
 
 class CarsWindowManual(pyglet.window.Window):
@@ -34,11 +35,11 @@ class CarsWindowManual(pyglet.window.Window):
             self._draw_lane_lines(road)
 
         self.event_loop = pyglet.app.EventLoop()
-        pyglet.app.run(1 / FRAME_RATE)
+        pyglet.app.run(1 / TIME_PER_FRAME)
 
     def on_draw(self):
         self.clear()
-        if not self.pause and self.frames_count % FRAME_RATE == 0:
+        if not self.pause and self.frames_count % TIME_PER_FRAME == 0:
             self._update_game()
             self.frames_count = 0
         self._update_cars()
@@ -52,7 +53,7 @@ class CarsWindowManual(pyglet.window.Window):
         for shape in self.car_shapes:
             shape.draw()
         if not self.pause:
-            self.frames_count += FRAME_RATE // 10
+            self.frames_count += TIME_PER_FRAME // 10
         self.actions = {"turn": 0, "accelerate": 0, "lane-change": 0}
 
     def _update_game(self):

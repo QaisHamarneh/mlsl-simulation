@@ -2,9 +2,11 @@ import pyglet
 from pyglet import shapes
 
 from game_model.constants import *
-from game_model.road_network import Direction, Segment, LaneSegment, CrossingSegment, true_direction
+from game_model.road_network import Direction, Road, LaneSegment, CrossingSegment, true_direction
 from game_model.car import Car
 from typing import List, Tuple, Union
+
+from gui.map_colors import *
 
 
 def draw_dash_line(start, end, width: int = LANE_DISPLACEMENT,
@@ -514,7 +516,7 @@ def brake_box(car: 'Car', debug: bool) -> List[Union[shapes.Line, shapes.Rectang
         return line
 
 
-def find_greatest_gap(roads: List['Road']) -> Tuple[int, int, int, int]:
+def find_greatest_gap(roads: List[Road]) -> Tuple[int, int, int, int]:
     """
     Finds the greatest gap between two roads. Iterate over all roads and find the greatest gap between two roads,
     returning the x,y coordinates of the top left corner and the width and height of the gap.

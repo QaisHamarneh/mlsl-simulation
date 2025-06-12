@@ -6,6 +6,7 @@ from game_model.helper_functions import create_segments
 from game_model.road_network import Direction, Point, LaneSegment, CrossingSegment, true_direction, Road
 from gui.colors import colors
 from gui.helpful_functions import draw_dash_line, draw_arrow
+from gui.map_colors import *
 
 
 class CarsWindowTest(pyglet.window.Window):
@@ -37,7 +38,7 @@ class CarsWindowTest(pyglet.window.Window):
             self._draw_lane_lines(road)
 
         self.event_loop = pyglet.app.EventLoop()
-        pyglet.app.run(1 / FRAME_RATE)
+        pyglet.app.run(1 / TIME_PER_FRAME)
 
     def on_draw(self):
         self.clear()

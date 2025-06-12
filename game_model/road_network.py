@@ -162,7 +162,7 @@ class LaneSegment(Segment):
         Returns:
             str: The string representation of the LaneSegment.
         """
-        return f"{self.lane.road.name}:{self.lane.direction.name}:{self.lane.num}"
+        return f"{self.lane.road.name}:{self.lane.direction.name}:{self.lane.num}:{self.num}"
 
 
 class CrossingSegment(Segment):

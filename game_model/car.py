@@ -1,4 +1,3 @@
-import math
 import numpy as np
 
 from game_model.constants import *
