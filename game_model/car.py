@@ -1,3 +1,4 @@
+import math
 import numpy as np
 
 from game_model.constants import *
@@ -51,7 +52,7 @@ class Car:
                                                    (1 if true_direction[self.direction] else -1) * self.get_braking_distance(),
                                                    self.direction)]
         segment.cars.append(self)
-        self.extend_res()
+        # self.extend_res()
 
         # For gui only
         self.pos = Point(0, 0)
@@ -96,23 +97,30 @@ class Car:
         intersection: Intersection = None
 
         while abs(self.loc) > self.res[0].segment.length:
-            self.loc = (1 if true_direction[self.res[1].direction] else -1) * (abs(self.loc) - self.res[0].segment.length)
-            if isinstance(self.res[0].segment, CrossingSegment):
-                intersection = self.res[0].segment.intersection
             seg_info = self.res.pop(0)
+            self.loc = (1 if true_direction[self.res[0].direction] else -1) * (abs(self.loc) - seg_info.segment.length)
+            if isinstance(seg_info.segment, CrossingSegment):
+                intersection = seg_info.segment.intersection
+                seg_info.segment.time_to_leave.pop(self)
             seg_info.segment.cars.remove(self)
             if self.parallel_res:
                 parallel_seg_info = self.parallel_res.pop(0)
                 parallel_seg_info.segment.cars.remove(self)
 
-        if intersection is not None and all(isinstance(seg_info.segment, LaneSegment) for seg_info in self.res):
-            intersection.priority.pop(self)
+        # if intersection is not None and isinstance(self.res[0].segment, LaneSegment):
+        #     intersection.priority.pop(self)
 
         self.res[0].begin = self.loc
 
         if self.parallel_res:
             self.parallel_res[0].begin = self.loc
-        
+
+        for i, seg_info in enumerate(self.res):
+            if isinstance(seg_info.segment, CrossingSegment):
+                seg_info.segment.time_to_leave[self] = \
+                    math.ceil(sum([abs(seg.end - seg.begin) for seg in self.res[0:i+1]]) /
+                                      max(1, min(self.speed, CROSSING_MAX_SPEED)))
+
         if self.res[0].turn:
             self.res[0].turn = False
             if self.parallel_res:
@@ -220,7 +228,12 @@ class Car:
                     self.res.append(next_seg_info)
                     next_seg.cars.append(self)
                     if isinstance(next_seg, CrossingSegment):
-                        next_seg.intersection.priority[self] = self.time
+                        if self in next_seg.intersection.priority:
+                            next_seg.intersection.priority.pop(self)
+                        next_seg.time_to_leave[self] = \
+                            math.ceil(sum([abs(seg_info.end - seg_info.begin) for seg_info in self.res]) / 
+                                      max(1, min(self.speed, CROSSING_MAX_SPEED)))
+
 
 
     def turn(self, new_direction: int) -> bool:

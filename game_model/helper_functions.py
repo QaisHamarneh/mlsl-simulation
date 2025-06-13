@@ -168,4 +168,3 @@ def reservation_check(car: Car) -> bool:
                     o_end or car_loc <= o_begin <= car_loc + car.get_braking_distance() or car_loc <= o_end <= car_loc + car.get_braking_distance():
                 return True
     return False
-

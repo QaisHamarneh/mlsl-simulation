@@ -1,3 +1,4 @@
+import math
 from typing import Tuple
 
 from game_model.car import Car 
@@ -163,22 +164,53 @@ class AstarCarController:
 
 
             collision = False
+
+            # Case 0: Already in a crossing
+            for i, seg_info in enumerate(segments):
+                seg = seg_info.segment
+                if isinstance(seg, CrossingSegment):
+                    if len(seg.cars) > 1:
+                        # collision = True
+                        # break
+                        for other_car in seg.cars[0:seg.cars.index(self.car)]:
+                            if new_speed > other_car.speed:
+                                collision = True
+                                break
+
+                            time_to_enter = \
+                                math.ceil((sum([abs(seg_info.end - seg_info.begin) 
+                                                for seg_info in segments[0:i]]) / max(new_speed, CROSSING_MAX_SPEED)))
+                            if time_to_enter <= seg.time_to_leave[other_car]:
+                                collision = True
+                                break
+
             # Case 1: Enter a crossing
             if len(added_segments) > 1:
-                for added_seg in added_segments:
+                for i, added_seg in enumerate(added_segments):
                     seg = added_seg.segment
                     if isinstance(seg, CrossingSegment):
+                        intersection = seg.intersection
+                        if self.car not in intersection.priority:
+                            intersection.priority[self.car] = self.car.time
                         if len(seg.cars) > 0:
-                            collision = True
-                            intersection = seg.intersection
-                            if self.car not in intersection.priority:
-                                intersection.priority[self.car] = self.car.time
-                            break
+                            # collision = True
+                            # break
+                            for other_car in seg.cars:
+                                if new_speed > other_car.speed:
+                                    collision = True
+                                    break
+
+                                time_to_enter = \
+                                    math.ceil((sum([abs(seg_info.end - seg_info.begin) 
+                                                    for seg_info in added_segments[0:i]]) / max(new_speed, CROSSING_MAX_SPEED)))
+                                if time_to_enter <= seg.time_to_leave[other_car]:
+                                    collision = True
+                                    break
                 if not collision:
                     if isinstance(added_segments[1].segment, CrossingSegment):
                         intersection = added_seg[1].segment.intersection
-                        for car, time in intersection.priority.items():
-                            if car != self.car and time < intersection.priority[self.car]:
+                        for other_car, time in intersection.priority.items():
+                            if other_car != self.car and time < intersection.priority[self.car]:
                                 collision = True
 
             # Case 2: Extension within a lane segment
