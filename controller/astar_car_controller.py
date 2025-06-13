@@ -173,15 +173,18 @@ class AstarCarController:
                     if len(seg.cars) > 1:
                         # collision = True
                         # break
+                        time_to_enter = \
+                            math.ceil((sum([abs(seg_info.end - seg_info.begin) 
+                                            for seg_info in segments[0:i]]) / max(new_speed, CROSSING_MAX_SPEED)))
+                        time_to_leave = \
+                            math.ceil((sum([abs(seg_info.end - seg_info.begin) 
+                                            for seg_info in segments[0:i+1]]) / max(new_speed, CROSSING_MAX_SPEED)))
                         for other_car in seg.cars[0:seg.cars.index(self.car)]:
                             if new_speed > other_car.speed:
                                 collision = True
                                 break
-
-                            time_to_enter = \
-                                math.ceil((sum([abs(seg_info.end - seg_info.begin) 
-                                                for seg_info in segments[0:i]]) / max(new_speed, CROSSING_MAX_SPEED)))
-                            if time_to_enter <= seg.time_to_leave[other_car]:
+                            if  time_to_enter <= seg.time_to_leave[other_car]: #and \
+                                # time_to_leave >= seg.time_to_enter[other_car]:
                                 collision = True
                                 break
 
@@ -196,15 +199,19 @@ class AstarCarController:
                         if len(seg.cars) > 0:
                             # collision = True
                             # break
+
+                            time_to_enter = \
+                                math.ceil((sum([abs(added_seg.end - added_seg.begin) 
+                                                for seg_info in added_segments[0:i]]) / max(new_speed, CROSSING_MAX_SPEED)))
+                            time_to_leave = \
+                                math.ceil((sum([abs(added_seg.end - added_seg.begin) 
+                                                for added_seg in added_segments[0:i+1]]) / max(new_speed, CROSSING_MAX_SPEED)))
                             for other_car in seg.cars:
                                 if new_speed > other_car.speed:
                                     collision = True
                                     break
-
-                                time_to_enter = \
-                                    math.ceil((sum([abs(seg_info.end - seg_info.begin) 
-                                                    for seg_info in added_segments[0:i]]) / max(new_speed, CROSSING_MAX_SPEED)))
-                                if time_to_enter <= seg.time_to_leave[other_car]:
+                                if  time_to_enter <= seg.time_to_leave[other_car]: #and \
+                                    # time_to_leave >= seg.time_to_enter[other_car]:
                                     collision = True
                                     break
                 if not collision:

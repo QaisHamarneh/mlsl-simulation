@@ -100,15 +100,14 @@ class Car:
             seg_info = self.res.pop(0)
             self.loc = (1 if true_direction[self.res[0].direction] else -1) * (abs(self.loc) - seg_info.segment.length)
             if isinstance(seg_info.segment, CrossingSegment):
-                intersection = seg_info.segment.intersection
                 seg_info.segment.time_to_leave.pop(self)
+                seg_info.segment.time_to_enter.pop(self)
+            if isinstance(self.res[0].segment, CrossingSegment):
+                self.res[0].segment.time_to_enter[self] = 0
             seg_info.segment.cars.remove(self)
             if self.parallel_res:
                 parallel_seg_info = self.parallel_res.pop(0)
                 parallel_seg_info.segment.cars.remove(self)
-
-        # if intersection is not None and isinstance(self.res[0].segment, LaneSegment):
-        #     intersection.priority.pop(self)
 
         self.res[0].begin = self.loc
 
@@ -119,6 +118,9 @@ class Car:
             if isinstance(seg_info.segment, CrossingSegment):
                 seg_info.segment.time_to_leave[self] = \
                     math.ceil(sum([abs(seg.end - seg.begin) for seg in self.res[0:i+1]]) /
+                                      max(1, min(self.speed, CROSSING_MAX_SPEED)))
+                seg_info.segment.time_to_enter[self] = \
+                    math.ceil(sum([abs(seg_info.end - seg_info.begin) for seg_info in self.res[0:i]]) / 
                                       max(1, min(self.speed, CROSSING_MAX_SPEED)))
 
         if self.res[0].turn:
@@ -233,6 +235,9 @@ class Car:
                         next_seg.time_to_leave[self] = \
                             math.ceil(sum([abs(seg_info.end - seg_info.begin) for seg_info in self.res]) / 
                                       max(1, min(self.speed, CROSSING_MAX_SPEED)))
+                        next_seg.time_to_enter[self] = \
+                            math.ceil(sum([abs(seg_info.end - seg_info.begin) for seg_info in self.res[0:-1]]) / 
+                                      max(self.speed, CROSSING_MAX_SPEED))
 
 
 
