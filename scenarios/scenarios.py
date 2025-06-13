@@ -71,7 +71,7 @@ STARTING_SCENARIO = {
         Road("v3", False, 3 * WINDOW_WIDTH // 4 - 1 * BLOCK_SIZE, 2, 0)
     ],
     "segmentation": False,
-    "players": 30
+    "players": 22
 }
 TWO_CROSSING = {
     "roads": [

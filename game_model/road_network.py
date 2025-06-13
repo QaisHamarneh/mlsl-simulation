@@ -197,6 +197,7 @@ class CrossingSegment(Segment):
         self.horiz_num: Optional[int] = None
         self.vert_num: Optional[int] = None
         self.max_speed: int = CROSSING_MAX_SPEED
+        self.time_to_leave: dict['Car', int] = {}
 
     def get_road(self, direction: Direction, opposite: bool = False) -> Road:
         """
