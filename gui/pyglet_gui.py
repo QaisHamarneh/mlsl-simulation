@@ -12,14 +12,13 @@ from gui.helpful_functions import *
 
 
 class CarsWindow(pyglet.window.Window):
-    def __init__(self, game: 'TrafficEnv', controllers: List['AstarCarController'], segmentation: bool = False, manual: bool = False, debug: bool = False, pause: bool = False,
+    def __init__(self, game: 'TrafficEnv', segmentation: bool = False, manual: bool = False, debug: bool = False, pause: bool = False,
                  test:bool = False, test_mode: List[str] = None ) -> None:
         """
         Initialize the CarsWindow.
 
         Args:
             game (TrafficEnv): The game environment.
-            controllers (List[AstarCarController]): List of car controllers.
             segmentation (bool, optional): Flag for segmentation. Defaults to False.
             manual (bool, optional): Flag for manual control. Defaults to False.
             debug (bool, optional): Flag for debug mode. Defaults to False.
@@ -35,7 +34,6 @@ class CarsWindow(pyglet.window.Window):
         self.set_location(self.pos.x - 300, self.pos.y - 200)
 
         self.game: TrafficEnv = game
-        self.controllers: List[AstarCarController] = controllers
         self.segmentation: bool = segmentation
         self.frames_count: int = 0
         self.manual: bool = manual
@@ -53,7 +51,7 @@ class CarsWindow(pyglet.window.Window):
         self.debug: bool = debug
         self.test = test
         if self.test:
-            self.tester = SimulationTester(self.game, self.controllers, test_mode)
+            self.tester = SimulationTester(self.game, test_mode)
             self.test_shape = None
             self.test_params = find_greatest_gap(self.game.roads)
 
@@ -97,10 +95,8 @@ class CarsWindow(pyglet.window.Window):
         Runs all wanted tests.
         Checks for game over state.
         """
-        for player in range(self.game.players):
-            if not self.game.cars[player].dead:
-                self.game_over[player], self.scores[player] = self.game.play_step(player,
-                                                                                  self.controllers[player].get_action())
+        self.game_over, self.scores = self.game.play_step()
+        
         if self.test:
             test_results = self.tester.run()
             if test_results is not None:

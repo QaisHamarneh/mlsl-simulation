@@ -7,20 +7,19 @@ from game_model.road_network import LaneSegment, CrossingSegment
 
 
 class SimulationTester:
-    def __init__(self, game_model: TrafficEnv, controllers: List[AstarCarController], debug_mode: List[str],
+    def __init__(self, game_model: TrafficEnv, debug_mode: List[str],
                  rate: int = 100) -> None:
         """
         Initialize the SimulationTester.
 
         Args:
             game_model (TrafficEnv): The game environment.
-            controllers (List[AstarCarController]): The list of controllers.
             debug_mode (List[str]): The list of debug modes to run.
             rate (int): The rate at which to run the debug modes.
         """
 
         self.game_model = game_model
-        self.controllers = controllers
+        self.controllers = game_model.controllers
 
         self.modes = {
             "reserved_check": self.reserved_check,

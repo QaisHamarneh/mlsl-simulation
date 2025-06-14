@@ -1,14 +1,14 @@
 from typing import Tuple
 
-from game_model.game_model import TrafficEnv
+from game_model.car import Car 
 from game_model.helper_functions import reservation_check
-from game_model.road_network import LaneSegment, CrossingSegment, SegmentInfo, true_direction
+from game_model.road_network import LaneSegment, CrossingSegment, SegmentInfo, Goal, true_direction
 from game_model.constants import MAX_ACC, MAX_DEC, LEFT_LANE_CHANGE, RIGHT_LANE_CHANGE, NO_LANE_CHANGE, \
     JUMP_TIME_STEPS, LANECHANGE_TIME_STEPS
 
 
 class AstarCarController:
-    def __init__(self, game: TrafficEnv, player: int) -> None:
+    def __init__(self, car: Car, goal: Goal) -> None:
         """
         Initialize the AstarCarController.
 
@@ -16,10 +16,8 @@ class AstarCarController:
             game (TrafficEnv): The game environment.
             player (int): The player index.
         """
-        self.game = game
-        self.player = player
-        self.car = self.game.cars[player]
-        self.goal = self.game.goals[player]
+        self.car = car
+        self.goal = goal
         self.first_go = True
 
     def get_action(self) -> Tuple[int, int]:
@@ -48,7 +46,7 @@ class AstarCarController:
         max_possible_acc = current_lane_acc
         if isinstance(self.car.res[0].segment, LaneSegment) \
                 and max_possible_acc < MAX_ACC and len(self.car.res) == 1 \
-                and self.car.res[0].segment != self.game.goals[self.player].lane_segment \
+                and self.car.res[0].segment != self.goal.lane_segment \
                 and not self.car.changing_lane:
             # try left lane
             left_lane = self.car.get_adjacent_lane_segment(1)
