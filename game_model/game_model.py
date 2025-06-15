@@ -134,7 +134,7 @@ class TrafficEnv:
         actions = [self.controllers[player].get_action() if not self.cars[player].dead else None for player in range(self.players)]
 
         # execute all actions
-        game_over = [False for player in range(self.players)]
+        game_over = [False] * self.players
 
         for player in range(self.players):
             if self.cars[player].dead:
