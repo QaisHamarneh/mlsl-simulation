@@ -3,17 +3,14 @@ from game_model.Tester import SimulationTester
 import pyglet
 from typing import List
 
-from controller.astar_car_controller import AstarCarController
 from game_model.game_model import TrafficEnv
 from game_model.road_network import Point, Road
 from gui.helpful_functions import *
 
 
-
-
 class CarsWindow(pyglet.window.Window):
     def __init__(self, game: 'TrafficEnv', segmentation: bool = False, manual: bool = False, debug: bool = False, pause: bool = False,
-                 test:bool = False, test_mode: List[str] = None ) -> None:
+                 test:bool = False, test_mode: List[str] = None) -> None:
         """
         Initialize the CarsWindow.
 

@@ -17,6 +17,7 @@ class TrafficEnv:
         segments (List[Segment]): List of segments created from the roads.
         players (int): Number of players in the environment.
         cars (List[Car]): List of cars in the environment.
+        controllers (List[AstarCarController]): List of car controllers.
         n_actions (int): Number of possible actions.
         gui (Optional[GUI]): GUI for the environment.
         moved (bool): Flag to indicate if a car has moved.
@@ -72,6 +73,7 @@ class TrafficEnv:
         self.goals: list[Goal] = [None] * self.players
         self.second_goals: list[Goal] = [None] * self.players
         self.useless_iterations: list[int] = [0] * self.players
+        self.controllers: list[AstarCarController] = [None] * self.players
         self.cars = []
         for i in range(self.players):
             self.cars.append(create_random_car(self.segments, self.cars))
@@ -80,10 +82,8 @@ class TrafficEnv:
         for i in range(self.players):
             self.cars[i].goal = self.goals[i]
             self.cars[i].second_goal = self.second_goals[i]
-
-        self.controllers = []
-        for car in self.cars:
-            self.controllers.append(AstarCarController(car, car.goal))
+        for i in range(self.players):
+            self.controllers[i] = AstarCarController(self.cars[i], self.cars[i].goal)
         self.time = 0
 
     def _place_goal(self, player: int) -> None:
@@ -122,12 +122,9 @@ class TrafficEnv:
         """
         Execute a step in the environment for the specified player.
 
-        Args:
-            player (int): The index of the player.
-            action (Tuple[int, int]): The action to be executed.
-
         Returns:
-            Tuple[bool, int]: A tuple containing a boolean indicating if the game is over and the player's score.
+            Tuple[List[bool], List[int]]: A tuple containing a list of booleans indicating for which players 
+            the game is over and the score of each player in the game.
         """
 
         # receive the planned action of each vehicle
