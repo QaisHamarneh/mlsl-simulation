@@ -127,9 +127,6 @@ class TrafficEnv:
             the game is over and the score of each player in the game.
         """
 
-        # receive the planned action of each vehicle
-        actions = [self.controllers[player].get_action() if not self.cars[player].dead else None for player in range(self.players)]
-
         # execute all actions
         game_over = [False] * self.players
 
@@ -140,7 +137,8 @@ class TrafficEnv:
             self.useless_iterations[player] += 1
             car = self.cars[player]
 
-            moved = self._move(player, actions[player])  # update the head
+            action = self.controllers[player].get_action()
+            moved = self._move(player, action)  # update the head
 
             # increment time
             self.time += 1
