@@ -9,34 +9,36 @@ from gui.pyglet_gui import CarsWindow
 
 class GameController:
     def __init__(self, roads: List[Road], players: int, cars: Optional[List[Car]] = None, controllers: Optional[List[AstarCarController]] = None, 
-                 goals: Optional[List[Goal]] = None, segmentation: bool = False, manual: bool = False, debug: bool = False, pause: bool = False, test:bool = False, test_mode: List[str] = None):
+                 segmentation: bool = False, manual: bool = False, debug: bool = False, pause: bool = False, test:bool = False, test_mode: List[str] = None):
         
-        self.game = TrafficEnv(roads=roads, players=players, cars=cars, controllers=controllers, goals=goals)
+        self.game = TrafficEnv(roads=roads, players=players, cars=cars, controllers=controllers)
+        self.game_over = False
 
-        def start(self):
-            pass
+    def start(self):
+        pass
+
+    def check_deadlock(self):
+        deadlock = [True if car.speed == 0 else False for car in self.game.cars]
+        return all(deadlock)
 
 class GameControllerCLI(GameController):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
     def start(self):
-        self.game_over = [False] * self.game.players
-        self.scores = [0] * self.game.players
-        
-        while not all(self.game_over):
-            self.game_over, self.scores = self.game.play_step()
+        while not self.game_over:
+            self.game_over = self.game.play_step()
+            if not self.game_over:
+                self.game_over = self.check_deadlock()
 
         print(f"Game Over:")
-        for player in range(self.game.players):
-            print(f"player {player} score {self.scores[player]}")
-        self.game_over = [False] * self.game.players
-        self.game.reset()
+        for car in self.game.cars:
+            print(f"car {car.name} score {car.score}")
 
 class GameControllerGUI(GameController):
     def __init__(self, roads: List[Road], players: int, cars: Optional[List[Car]] = None, controllers: Optional[List[AstarCarController]] = None, 
-                 goals: Optional[List[Goal]] = None, segmentation: bool = False, manual: bool = False, debug: bool = False, pause: bool = False, test:bool = False, test_mode: List[str] = None):
-        super().__init__(roads, players, cars, controllers, goals, segmentation, manual, debug, pause, test, test_mode)
+                 segmentation: bool = False, manual: bool = False, debug: bool = False, pause: bool = False, test:bool = False, test_mode: List[str] = None):
+        super().__init__(roads, players, cars, controllers, segmentation, manual, debug, pause, test, test_mode)
         self.segmentation = segmentation
         self.manual = manual
         self.debug = debug

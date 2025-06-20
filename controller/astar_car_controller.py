@@ -4,8 +4,8 @@ from typing import Tuple
 from game_model.car import Car 
 from game_model.helper_functions import reservation_check
 from game_model.road_network import LaneSegment, CrossingSegment, SegmentInfo, Goal, true_direction
-from game_model.constants import MAX_ACC, MAX_DEC, LEFT_LANE_CHANGE, RIGHT_LANE_CHANGE, NO_LANE_CHANGE, \
-    JUMP_TIME_STEPS, LANECHANGE_TIME_STEPS
+from game_model.constants import MAX_ACC, MAX_DEC, LANE_MAX_SPEED, CROSSING_MAX_SPEED, LEFT_LANE_CHANGE, \
+      RIGHT_LANE_CHANGE, NO_LANE_CHANGE, JUMP_TIME_STEPS, LANECHANGE_TIME_STEPS
 
 
 class AstarCarController:

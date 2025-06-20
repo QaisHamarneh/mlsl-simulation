@@ -44,7 +44,7 @@ class Car:
         self.parallel_res: list[SegmentInfo] = []
         self.lane_change_counter: int = 0
         self.time: int = 0
-        self.stagnation: int = 0
+        self.score: int = 0
         self.last_loc: Point = loc
 
         self.res: list[SegmentInfo] = [SegmentInfo(segment,

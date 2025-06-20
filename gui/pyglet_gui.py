@@ -37,7 +37,7 @@ class CarsWindow(pyglet.window.Window):
 
         self.batch = pyglet.graphics.Batch()
 
-        self.game_over: List[bool]= [False] * self.game.players
+        self.game_over: bool = False
         self.pause: bool = pause
         self.scores: List[int] = [0] * self.game.players
 
@@ -92,18 +92,18 @@ class CarsWindow(pyglet.window.Window):
         Runs all wanted tests.
         Checks for game over state.
         """
-        self.game_over, self.scores = self.game.play_step()
+        self.game_over = self.game.play_step()
         
         if self.test:
             test_results = self.tester.run()
             if test_results is not None:
                 self.test_shape = create_test_result_shape(test_results, *self.test_params)
 
-        if all(self.game_over):
+        if self.game_over:
             print(f"Game Over:")
-            for player in range(self.game.players):
-                print(f"player {player} score {self.scores[player]}")
-            self.game_over = [False] * self.game.players
+            for car in self.game.cars:
+                print(f"car {car.name} score {car.score}")
+            self.game_over = False
             self.game.reset()
 
     def on_key_press(self, symbol: int, modifiers: int) -> None:
