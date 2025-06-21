@@ -1,15 +1,14 @@
 from typing import Optional, List
-from multipledispatch import dispatch
 
 from controller.astar_car_controller import AstarCarController
 from game_model.game_model import TrafficEnv
 from game_model.car import Car
-from game_model.road_network import Goal, Road
+from game_model.road_network import Road
 from gui.pyglet_gui import CarsWindow
 
 class GameController:
     def __init__(self, roads: List[Road], players: int, cars: Optional[List[Car]] = None, controllers: Optional[List[AstarCarController]] = None, 
-                 segmentation: bool = False, manual: bool = False, debug: bool = False, pause: bool = False, test:bool = False, test_mode: List[str] = None):
+                 debug: bool = False, test_mode: List[str] = None):
         
         self.game = TrafficEnv(roads=roads, players=players, cars=cars, controllers=controllers)
         self.game_over = False
@@ -37,14 +36,10 @@ class GameControllerCLI(GameController):
 
 class GameControllerGUI(GameController):
     def __init__(self, roads: List[Road], players: int, cars: Optional[List[Car]] = None, controllers: Optional[List[AstarCarController]] = None, 
-                 segmentation: bool = False, manual: bool = False, debug: bool = False, pause: bool = False, test:bool = False, test_mode: List[str] = None):
-        super().__init__(roads, players, cars, controllers, segmentation, manual, debug, pause, test, test_mode)
-        self.segmentation = segmentation
-        self.manual = manual
+                 debug: bool = False, test_mode: List[str] = None):
+        super().__init__(roads, players, cars, controllers, debug, test_mode)
         self.debug = debug
-        self.pause = pause
-        self.test = test
         self.test_mode = test_mode
 
     def start(self):
-        CarsWindow(game=self.game, segmentation=self.segmentation, manual=self.manual, debug=self.debug, pause=self.pause, test=self.test, test_mode=self.test_mode)
+        CarsWindow(game=self.game, debug=self.debug, test_mode=self.test_mode)

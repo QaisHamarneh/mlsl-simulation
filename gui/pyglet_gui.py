@@ -9,18 +9,13 @@ from gui.helpful_functions import *
 
 
 class CarsWindow(pyglet.window.Window):
-    def __init__(self, game: 'TrafficEnv', segmentation: bool = False, manual: bool = False, debug: bool = False, pause: bool = False,
-                 test:bool = False, test_mode: List[str] = None) -> None:
+    def __init__(self, game: 'TrafficEnv', debug: bool = False, test_mode: List[str] = None) -> None:
         """
         Initialize the CarsWindow.
 
         Args:
             game (TrafficEnv): The game environment.
-            segmentation (bool, optional): Flag for segmentation. Defaults to False.
-            manual (bool, optional): Flag for manual control. Defaults to False.
             debug (bool, optional): Flag for debug mode. Defaults to False.
-            pause (bool, optional): Flag for pause state. Defaults to False.
-            test (bool, optional): Flag for test mode. Defaults to False.
             test_mode (List[str], optional): List of debug modes. Defaults to None.
         """
         super().__init__()
@@ -31,25 +26,22 @@ class CarsWindow(pyglet.window.Window):
         self.set_location(self.pos.x - 300, self.pos.y - 200)
 
         self.game: TrafficEnv = game
-        self.segmentation: bool = segmentation
         self.frames_count: int = 0
-        self.manual: bool = manual
 
         self.batch = pyglet.graphics.Batch()
 
         self.game_over: bool = False
-        self.pause: bool = pause
-        self.scores: List[int] = [0] * self.game.players
+        self.pause: bool = False
 
         self.road_shapes = []
         self.goal_shapes = []
         self.car_shapes = []
 
         self.debug: bool = debug
-        self.test = test
-        if self.test:
-            self.tester = SimulationTester(self.game, test_mode)
-            self.test_shape = None
+        self.test_mode = test_mode
+        if test_mode is not None:
+            self.sim_tester = SimulationTester(self.game, self.test_mode)
+            self.test_shape_batch = None
             self.test_params = find_greatest_gap(self.game.roads)
 
         self.flash_count = 0
@@ -79,8 +71,8 @@ class CarsWindow(pyglet.window.Window):
             goal.batch = self.batch
         for car in self.car_shapes:
             car.batch = self.batch
-        if self.test and self.test_shape is not None:
-            self.test_shape.batch = self.batch
+        if self.test_mode is not None:
+            self.test_shape_batch = self.batch
         self.batch.draw()
         if not self.pause:
             self.frames_count += TIME_PER_FRAME
@@ -94,8 +86,8 @@ class CarsWindow(pyglet.window.Window):
         """
         self.game_over = self.game.play_step()
         
-        if self.test:
-            test_results = self.tester.run()
+        if self.test_mode is not None:
+            test_results = self.sim_tester.run()
             if test_results is not None:
                 self.test_shape = create_test_result_shape(test_results, *self.test_params)
 
@@ -103,8 +95,7 @@ class CarsWindow(pyglet.window.Window):
             print(f"Game Over:")
             for car in self.game.cars:
                 print(f"car {car.name} score {car.score}")
-            self.game_over = False
-            self.game.reset()
+            self.pause = not self.pause
 
     def on_key_press(self, symbol: int, modifiers: int) -> None:
         """
@@ -179,7 +170,8 @@ class CarsWindow(pyglet.window.Window):
         Update the goal shapes for rendering.
         """
         self.goal_shapes = []
-        for goal in self.game.goals:
+        game_goals = [car.goal for car in self.game.cars]
+        for goal in game_goals:
             self.goal_shapes.append(shapes.Circle(goal.pos.x, goal.pos.y, BLOCK_SIZE // 2, color=goal.color))
             self.goal_shapes.append(shapes.Circle(goal.pos.x, goal.pos.y, BLOCK_SIZE // 3, color=ROAD_BLUE))
             self.goal_shapes.append(shapes.Circle(goal.pos.x, goal.pos.y, BLOCK_SIZE // 4, color=goal.color))

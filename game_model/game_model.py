@@ -23,7 +23,7 @@ class TrafficEnv:
         time (int): Current time in the environment.
     """
 
-    def __init__(self, roads: List[Road], players: int, cars: Optional[List[Car]] = None, controllers: Optional[List['AstarCarController']] = None):
+    def __init__(self, roads: List[Road], players: int, cars: Optional[List[Car]] = None, controllers: Optional[List[AstarCarController]] = None):
         """
         Initialize the TrafficEnv.
 
@@ -38,8 +38,8 @@ class TrafficEnv:
         self.roads = roads
         self.segments, self.intersections = create_segments(roads)
         self.players = players
-
-        self.cars_controllers: Dict[Car, Optional[AstarCarController]] = {}
+        self.cars = cars
+        self.controllers = controllers
         self.n_actions = N_ACTIONS
         # init display
         self.moved = True
@@ -55,37 +55,18 @@ class TrafficEnv:
 
         if cars is None or controllers is None:
             self.reset()
-        else:
-            self._map_cars(cars, controllers)
-
-    @property
-    def cars(self):
-        return self.cars_controllers.keys()
-    
-    @property
-    def goals(self):
-        return [car.goal for car in self.cars_controllers.keys()]
-
-    def _map_cars(self, cars: List[Car], controllers: List[AstarCarController]) -> dict[Car, AstarCarController]:
-        if not len(cars) == len(self.controllers):
-            print("___________________________________________________________________________")
-            print(f"The number of cars ({len(cars)}) does not match the number of controllers ({len(controllers)})")
-            print("___________________________________________________________________________")
-            return None
-
-        for player in range(self.players):
-            self.cars_controllers[cars[player]] = controllers[player]
 
     def reset(self) -> None:
         """
         Reset the environment to its initial state.
         """
-        cars = []
+        self.cars: List[Car] = []
+        self.controllers: List[AstarCarController] = []
         for i in range(self.players):
-            cars.append(create_random_car(self.segments, cars))
-        for car in cars:
+            self.cars.append(create_random_car(self.segments, self.cars))
+        for car in self.cars:
             self._place_goals(car)
-            self.cars_controllers[car] = AstarCarController(car, car.goal)
+            self.controllers.append(AstarCarController(car, car.goal))
         self.time = 0
 
     def _place_goals(self, car: Car) -> None:
@@ -128,11 +109,12 @@ class TrafficEnv:
         """
         game_over = True
 
-        for car in self.cars_controllers.keys():
+        for controller in self.controllers:
+            car = controller.car
             if car.dead:
                 continue
 
-            action = self.cars_controllers[car].get_action()
+            action = controller.get_action()
             moved = self._move(car, action)  # update the head
 
             # increment time
@@ -144,7 +126,7 @@ class TrafficEnv:
                 continue
 
             # Crash detection:
-            for other_car in self.cars_controllers.keys():
+            for other_car in self.cars:
                 if other_car != car:
                     # if overlap(car.pos, car.w, car.h,
                     #            other_car.pos, other_car.w, other_car.h):
@@ -171,8 +153,8 @@ class TrafficEnv:
                 self._place_goals(car)
 
             # Player won!
-            if car.score > 100:
-                car.dead = True
+            if car.score > WINNING_SCORE:
+                # car.dead = True
                 continue
 
             game_over = False
@@ -217,7 +199,7 @@ class TrafficEnv:
             pt = car.pos
         if pt.x > WINDOW_WIDTH - 1 or pt.x < 0 or pt.y > WINDOW_HEIGHT - 1 or pt.y < 0:
             return True
-        if any([overlap(pt, car.w, car.h, other_car.pos, other_car.w, other_car.h) for other_car in self.cars_to_controllers.keys() if
+        if any([overlap(pt, car.w, car.h, other_car.pos, other_car.w, other_car.h) for other_car in self.cars if
                 car != other_car]):
             return True
         return False
