@@ -124,7 +124,7 @@ class AstarCarController:
                 potential_jump = new_brk_dist - reserved_length
                 if potential_jump + abs(segments[-1].end) >= segments[-1].segment.length:
                 # potential_jump -= extended_segments[-1].segment.length
-                    next_segments = self.car.get_next_segment(segments[-1])
+                    next_segments = self.car.get_next_segment(segments[-1].segment)
                     if not next_segments:
                         print("NO next segments in get_accelerate - Bug?")
                         print(self.car.name)
@@ -175,15 +175,11 @@ class AstarCarController:
                         time_to_enter = \
                             math.ceil((sum([abs(seg_info.end - seg_info.begin) 
                                             for seg_info in segments[0:i]]) / max(new_speed, CROSSING_MAX_SPEED)))
-                        time_to_leave = \
-                            math.ceil((sum([abs(seg_info.end - seg_info.begin) 
-                                            for seg_info in segments[0:i+1]]) / max(new_speed, CROSSING_MAX_SPEED)))
                         for other_car in seg.cars[0:seg.cars.index(self.car)]:
                             if new_speed > other_car.speed:
                                 collision = True
                                 break
-                            if  time_to_enter <= seg.time_to_leave[other_car]: #and \
-                                # time_to_leave >= seg.time_to_enter[other_car]:
+                            if  time_to_enter <= seg.time_to_leave[other_car]:
                                 collision = True
                                 break
 
@@ -192,30 +188,22 @@ class AstarCarController:
                 for i, added_seg in enumerate(added_segments):
                     seg = added_seg.segment
                     if isinstance(seg, CrossingSegment):
-                        intersection = seg.intersection
-                        if self.car not in intersection.priority:
-                            intersection.priority[self.car] = self.car.time
+                        # if self.car not in intersection.priority:
+                        #     intersection.priority[self.car] = self.car.time
                         if len(seg.cars) > 0:
-                            # collision = True
-                            # break
-
                             time_to_enter = \
                                 math.ceil((sum([abs(added_seg.end - added_seg.begin) 
                                                 for seg_info in added_segments[0:i]]) / max(new_speed, CROSSING_MAX_SPEED)))
-                            time_to_leave = \
-                                math.ceil((sum([abs(added_seg.end - added_seg.begin) 
-                                                for added_seg in added_segments[0:i+1]]) / max(new_speed, CROSSING_MAX_SPEED)))
                             for other_car in seg.cars:
                                 if new_speed > other_car.speed:
                                     collision = True
                                     break
-                                if  time_to_enter <= seg.time_to_leave[other_car]: #and \
-                                    # time_to_leave >= seg.time_to_enter[other_car]:
+                                if  time_to_enter <= seg.time_to_leave[other_car]:
                                     collision = True
                                     break
                 if not collision:
                     if isinstance(added_segments[1].segment, CrossingSegment):
-                        intersection = added_seg[1].segment.intersection
+                        intersection = added_segments[1].segment.intersection
                         for other_car, time in intersection.priority.items():
                             if other_car != self.car and time < intersection.priority[self.car]:
                                 collision = True
@@ -225,11 +213,13 @@ class AstarCarController:
                 last_seg = added_segments[-1]
                 for other_car in last_seg.segment.cars:
                     if other_car != self.car:
-                        other_car_seg_info = next(seg_info for seg_info in other_car.res if seg_info.segment == last_seg.segment)
+                        other_car_seg_info = next(seg_info for seg_info in other_car.res 
+                                                  if seg_info.segment == last_seg.segment)
                         begin = abs(last_seg.begin)
                         end = abs(last_seg.end)
-                        o_begin = abs(other_car_seg_info.begin)
-                        o_end = abs(other_car_seg_info.end)
+                        o_max_dec = - min(MAX_DEC, other_car.speed)
+                        o_begin = abs(other_car_seg_info.begin) + other_car.speed - o_max_dec
+                        o_end = abs(other_car_seg_info.end) + other_car.speed - o_max_dec
                         if o_begin <= begin <= o_end or o_end <= begin <= o_begin:
                             continue
                         if o_begin <= end <= o_end or o_end <= end <= o_begin:

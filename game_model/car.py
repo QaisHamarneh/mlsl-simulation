@@ -94,7 +94,11 @@ class Car:
         self.time += 1
 
         self.extend_res()
-        intersection: Intersection = None
+        last_seg_info = self.res[-1]
+        if last_seg_info.segment.length - abs(self.res[-1].end) <= last_seg_info.segment.length // 10:
+            intersection = last_seg_info.segment.end_crossing.intersection
+            if self not in intersection.priority:
+                intersection.priority[self] = self.time
 
         while abs(self.loc) > self.res[0].segment.length:
             seg_info = self.res.pop(0)
@@ -143,7 +147,7 @@ class Car:
         self._update_position()
         return True
 
-    def get_next_segment(self, last_seg_info: SegmentInfo = None) -> List[Segment]:
+    def get_next_segment(self, last_seg: Segment = None) -> List[Segment]:
         """
         Get the next segment for the car to move to.
 
@@ -154,8 +158,8 @@ class Car:
         Returns:
              List[Segment]: The next segments for the car to move to, up to the next Lanesegment
         """
-        if last_seg_info is None:
-            last_seg_info = self.res[-1]
+        if last_seg is None:
+            last_seg_info = self.res[-1].segment
 
         if self.res[0].segment == self.goal.lane_segment:
             #case 1: cur seg == goal seg -> preplan path to second goal
@@ -164,7 +168,7 @@ class Car:
 
         else:
             #case 2: cur seg != goal seg -> plan path to first goal(e.g. for alternative lanes (right, left)
-            segs = self.astar(last_seg_info.segment)
+            segs = self.astar(last_seg)
         
 
 
@@ -186,8 +190,10 @@ class Car:
         """
         Extend the reservation of the car to the next segments.
         """
-        if abs(self.loc) + self.get_braking_distance() >= sum([seg_info.segment.length for seg_info in self.res]):
-
+        breaking_distance = self.get_braking_distance()
+        reserved_length = sum([abs(seg_info.end - seg_info.begin) for seg_info in self.res])
+        if abs(self.loc) + breaking_distance >= sum([seg_info.segment.length for seg_info in self.res]):
+            breaking_distance -= reserved_length 
             next_segs = self.astar()
             if len(next_segs) < 2:
                 next_segs = self.astar(goal=self.second_goal)
@@ -203,33 +209,34 @@ class Car:
                     next_segs = next_segs[1:i + 1]
                     break 
 
+            if self in next_segs[0].intersection.priority:
+                next_segs[0].intersection.priority.pop(self)
             for i, next_seg in enumerate(next_segs):
-                    extra = abs(self.loc) + self.get_braking_distance() - sum([seg_info.segment.length for seg_info in self.res])
-                    next_dir = None
-                    if isinstance(next_seg, LaneSegment):
-                        next_dir = next_seg.lane.direction
-                    elif isinstance(next_seg, CrossingSegment):
-                        next_next_seg = next_segs[i + 1] if len(next_segs) > i + 1 else None
-                        if next_next_seg is None:
-                            print(Problem.NO_NEXT_SEGMENT)
-                        for dir, seg in next_seg.connected_segments.items():
-                            if seg == next_next_seg:
-                                next_dir = dir
-                                break
-                    next_seg_info = SegmentInfo(next_seg, 
-                                                0,
-                                                min((1 if true_direction[next_dir] else -1) * extra, next_seg.length) if 
-                                                isinstance(next_seg, LaneSegment) else BLOCK_SIZE,
-                                                next_dir,
-                                                next_dir != self.res[-1].direction)
-                    self.res.append(next_seg_info)
-                    next_seg.cars.append(self)
-                    if isinstance(next_seg, CrossingSegment):
-                        if self in next_seg.intersection.priority:
-                            next_seg.intersection.priority.pop(self)
-                        next_seg.time_to_leave[self] = \
-                            math.ceil(sum([abs(seg_info.end - seg_info.begin) for seg_info in self.res]) / 
-                                      max(1, min(self.speed, CROSSING_MAX_SPEED)))
+                extra = abs(self.loc) + self.get_braking_distance() - sum([seg_info.segment.length for seg_info in self.res])
+                next_dir = None
+                if isinstance(next_seg, LaneSegment):
+                    next_dir = next_seg.lane.direction
+                elif isinstance(next_seg, CrossingSegment):
+                    next_next_seg = next_segs[i + 1] if len(next_segs) > i + 1 else None
+                    if next_next_seg is None:
+                        print(Problem.NO_NEXT_SEGMENT)
+                    for dir, seg in next_seg.connected_segments.items():
+                        if seg == next_next_seg:
+                            next_dir = dir
+                            break
+                next_seg_info = SegmentInfo(next_seg, 
+                                            0,
+                                            min((1 if true_direction[next_dir] else -1) * extra, next_seg.length) if 
+                                            isinstance(next_seg, LaneSegment) else BLOCK_SIZE,
+                                            next_dir,
+                                            next_dir != self.res[-1].direction)
+                
+                self.res.append(next_seg_info)
+                next_seg.cars.append(self)
+                if isinstance(next_seg, CrossingSegment):
+                    next_seg.time_to_leave[self] = \
+                        math.ceil(sum([abs(seg_info.end - seg_info.begin) for seg_info in self.res]) / 
+                                    max(1, min(self.speed, CROSSING_MAX_SPEED)))
 
 
 
