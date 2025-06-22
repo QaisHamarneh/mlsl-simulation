@@ -1,7 +1,5 @@
-from math import gamma
 from typing import List, Tuple, Optional
 
-from controller.astar_car_controller import AstarCarController
 from game_model.game_model import TrafficEnv
 from game_model.road_network import LaneSegment, CrossingSegment
 
@@ -61,7 +59,7 @@ class SimulationTester:
 
         for controller in self.controllers:
             car = controller.car
-            if not isinstance(car.res[-1]["seg"], LaneSegment):
+            if not isinstance(car.res[-1].segment, LaneSegment):
                 not_in_lane += 1
 
         if not_in_lane > 0:
@@ -86,11 +84,11 @@ class SimulationTester:
         incorrect_priority = 0
         for controller in self.controllers:
             car = controller.car
-            priority = car.res[0]["seg"].cars.index(car)
-            if isinstance(car.res[0]["seg"], LaneSegment):
-                if priority != car.res[0]["seg"].cars.index(car):
+            priority = car.res[0].segment.cars.index(car)
+            if isinstance(car.res[0].segment, LaneSegment):
+                if priority != car.res[0].segment.cars.index(car):
                     incorrect_priority += 1
-            elif isinstance(car.res[0]["seg"], CrossingSegment):
+            elif isinstance(car.res[0].segment, CrossingSegment):
                 if priority != 0:
                     incorrect_priority += 1
 
@@ -116,15 +114,15 @@ class SimulationTester:
 
         for controller in self.controllers:
             car = controller.car
-            reserved_length = sum([abs(seg["end"]) - abs(seg["begin"]) for seg in car.res])
+            reserved_length = sum([abs(seg_info.end) - abs(seg_info.end) for seg_info in car.res])
 
             if reserved_length < car.get_braking_distance():
-                if car.res[-1]["seg"] == controller.goal.lane_segment:
+                if car.res[-1].segment == controller.goal.lane_segment:
                     continue
                 too_short_reservations += 1
 
             elif reserved_length > car.get_braking_distance():  # todo:check if this is correct
-                if car.res[-1]["end"] - car.res[-1]["begin"] < car.size:
+                if car.res[-1].end - car.res[-1].begin < car.size:
                     no_correct_reservation_on_last_segment += 1
 
         if too_short_reservations > 0 or no_correct_reservation_on_last_segment > 0:
@@ -149,13 +147,13 @@ class SimulationTester:
 
         for controller in self.controllers:
             car = controller.car
-            for seg in car.res:
-                if car not in seg["seg"].cars:
+            for seg_info in car.res:
+                if car not in seg_info.segment.cars:
                     missing_reservations += 1
 
         for seg in self.game_model.segments:
             for car in seg.cars:
-                segs = [seg["seg"] for seg in car.res]
+                segs = [seg_info.segment for seg_info in car.res]
                 if seg not in segs:
                     additional_reservations += 1
 

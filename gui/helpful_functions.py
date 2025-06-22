@@ -120,7 +120,7 @@ def create_car_rect(car: 'Car', flash_count: int) -> shapes.Rectangle:
     return shapes.Rectangle(
         x=car.pos.x, y=car.pos.y,
         width=car.w, height=car.h,
-        color=car.color if not car.dead or flash_count <= HALF_FLASH_CYCLE else DEAD_GREY
+        color=car.color if not car.dead or flash_count <= FLASH_CYCLE / 2 else DEAD_GREY
     )
 
 
