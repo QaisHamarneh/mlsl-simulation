@@ -186,20 +186,20 @@ class AstarCarController:
 
             # Case 1: Enter a crossing
             if len(added_segments) > 1:
+                distance_to_intersection = added_segments[0].segment.length - abs(added_segments[0].begin) + self.car.size
                 for i, added_seg in enumerate(added_segments):
                     seg = added_seg.segment
                     if isinstance(seg, CrossingSegment):
-                        # if self.car not in intersection.priority:
-                        #     intersection.priority[self.car] = self.car.time
                         if len(seg.cars) > 0:
+                            # collision = True
+                            # break
                             time_to_enter = \
-                                math.ceil((sum([abs(added_seg.end - added_seg.begin) 
-                                                for seg_info in added_segments[0:i]]) / max(new_speed, CROSSING_MAX_SPEED)))
+                                math.ceil((sum([seg_info.segment.length
+                                                for seg_info in added_segments[1:i]]) + distance_to_intersection) / max(new_speed, CROSSING_MAX_SPEED))
                             for other_car in seg.cars:
-                                if new_speed > other_car.speed:
-                                    collision = True
-                                    break
-                                if  time_to_enter <= seg.time_to_leave[other_car]:
+                                other_car_seg_info = next(seg_info for seg_info in other_car.res 
+                                                        if seg_info.segment == seg)
+                                if new_speed > other_car.speed or time_to_enter <= seg.time_to_leave[other_car] or other_car_seg_info.direction != added_seg.direction:
                                     collision = True
                                     break
                 if not collision:
