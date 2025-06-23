@@ -80,3 +80,4 @@ class GameController:
         print(f"Game Over:")
         for car in game.cars:
             print(f"car {car.name} score {car.score}")
+            #Todo: print reason, if car is dead
