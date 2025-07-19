@@ -123,5 +123,16 @@ HORIZONTAL_VERTICAL = {
     "players": 25
 }
 
+CIRCUIT = {
+    "roads": [
+        Road("bottom", True, 0, 1, 0),
+        Road("right", False, WINDOW_WIDTH - BLOCK_SIZE, 0, 1),
+        Road("top", True, WINDOW_HEIGHT - BLOCK_SIZE, 0, 1),
+        Road("left", False, 0, 1, 0),
+    ],
+    "segmentation": False,
+    "players": 0
+}
+
 JUST_ONE_CAR = STARTING_SCENARIO.copy()
 JUST_ONE_CAR["players"] = 1

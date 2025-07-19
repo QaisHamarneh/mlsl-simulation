@@ -16,20 +16,23 @@ class TrafficEnv:
     Attributes:
         roads (List[Road]): List of roads in the environment.
         segments (List[Segment]): List of segments created from the roads.
-        players (int): Number of players in the environment.
+        npcs (int): Number of npcs in the environment.
+        agents (int): Number of ai controlled agents in the environment.
         cars_controllers (Dict[Car, Optional[AstarCarController]]): Dictionary of cars and corresponding controllers.
-        n_actions (int): Number of possible actions.
         moved (bool): Flag to indicate if a car has moved.
         time (int): Current time in the environment.
     """
 
-    def __init__(self, roads: List[Road], players: int, cars: Optional[List[Car]] = None, controllers: Optional[List[AstarCarController]] = None):
+    def __init__(self, 
+                 roads: List[Road], 
+                 npcs: int, 
+                 agents: int = 0):
         """
         Initialize the TrafficEnv.
 
         Args:
             roads (List[Road]): List of roads in the environment.
-            players (int): Number of players in the environment.
+            npcs (int): Number of npcs in the environment.
             cars (Optional[List[Car]]): List of cars in the environment.
             controllers (Optional[List[AstarCarController]]): List of car controllers.
         """
@@ -37,10 +40,8 @@ class TrafficEnv:
         self.scores = None
         self.roads = roads
         self.segments, self.intersections = create_segments(roads)
-        self.players = players
-        self.cars = cars
-        self.controllers = controllers
-        self.n_actions = N_ACTIONS
+        self.npcs = npcs
+        self.agents = agents
         # init display
         self.moved = True
         
@@ -53,20 +54,25 @@ class TrafficEnv:
         self.crashes[Direction.LEFT] = 0
         self.crashes[Direction.DOWN] = 0
 
-        if cars is None or controllers is None:
-            self.reset()
+        self.reset()
 
     def reset(self) -> None:
         """
         Reset the environment to its initial state.
         """
-        self.cars: List[Car] = []
+        self.npc_cars: List[Car] = []
+        self.agent_cars: List[Car] = []
         self.controllers: List[AstarCarController] = []
-        for i in range(self.players):
-            self.cars.append(create_random_car(self.segments, self.cars))
-        for car in self.cars:
+        for i in range(self.npcs):
+            self.npc_cars.append(create_random_car(self.segments, self.npc_cars))
+        for i in range(self.agents):
+            self.agent_cars.append(create_random_car(self.segments, self.npc_cars + self.agent_cars))
+        for car in self.npc_cars:
             self._place_goals(car)
             self.controllers.append(AstarCarController(car, car.goal))
+        for car in self.agent_cars:
+            self._place_goals(car)
+        self.cars = self.npc_cars + self.agent_cars
         self.time = 0
 
     def _place_goals(self, car: Car) -> None:
@@ -100,14 +106,21 @@ class TrafficEnv:
             car.goal.update_position()
             car.second_goal.update_position()
 
-    def play_step(self) -> bool:
+    def play_step(self, actions: None | list[tuple[int, int]] = None) -> bool:
         """
         Execute a step in the environment for each car.
 
         Returns:
             bool: A boolean indicating if the game is over.
         """
-        game_over = True
+        game_over = []
+
+        for agent in range(self.agents):
+            if self.agent_cars[agent].dead:
+                continue
+
+            action = actions[agent]
+            game_over.append(self._execute_action(car=self.agent_cars[agent], action=action))
 
         for controller in self.controllers:
             car = controller.car
@@ -115,51 +128,60 @@ class TrafficEnv:
                 continue
 
             action = controller.get_action()
-            moved = self._move(car, action)  # update the head
-
-            # increment time
-            self.time += 1
-
-            # Check if the action was possible
-            if isinstance(moved, Problem):
-                car.dead = True
-                continue
-
-            # Crash detection:
-            for other_car in self.cars:
-                if other_car != car:
-                    # if overlap(car.pos, car.w, car.h,
-                    #            other_car.pos, other_car.w, other_car.h):
-                    if collision_check(car, other_car):
-                        self.total_crashes += 1
-                        self.crashes[car.direction] += 1
-                        print("___________________________________________________________________________")
-                        print(f"Frame = {self.time // len(self.cars)},  Crash: {self.total_crashes}")
-                        print(f"Direction = {car.direction},  Crash: {self.crashes[car.direction]}")
-                        print(f"First car {car.name} loc {car.loc} speed {car.speed}")
-                        for seg in car.res:
-                            print(seg)
-                        print(f"Second car {other_car.name} loc {other_car.loc} speed {other_car.speed}")
-                        for seg in other_car.res:
-                            print(seg)
-                        print("___________________________________________________________________________")
-                        car.dead = True
-                        other_car.dead = True
-                        continue
-
-            # Place new goal if the goal is reached
-            if reached_goal(car, car.goal):
-                car.score += 1
-                self._place_goals(car)
-
-            # Player won!
-            if car.score > WINNING_SCORE:
-                continue
-
-            game_over = False
+            game_over.append(self._execute_action(car=car, action=action))
 
         # return game over
-        return game_over
+        return all(game_over)
+    
+    def _execute_action(self, car: Car, action: Tuple[int, int]) -> bool:
+        """
+        Execute an action for a car.
+
+        Returns:
+            bool: A boolean indicating if the game is over for this car.
+        """
+        # update the head
+        moved = self._move(car, action)
+
+        # increment time
+        self.time += 1
+        # Check if the action was possible
+        if isinstance(moved, Problem):
+            car.dead = True
+            return True
+
+        # Crash detection:
+        for other_car in self.cars:
+            if other_car != car:
+                # if overlap(car.pos, car.w, car.h,
+                #            other_car.pos, other_car.w, other_car.h):
+                if collision_check(car, other_car):
+                    self.total_crashes += 1
+                    self.crashes[car.direction] += 1
+                    print("___________________________________________________________________________")
+                    print(f"Frame = {self.time // len(self.cars)},  Crash: {self.total_crashes}")
+                    print(f"Direction = {car.direction},  Crash: {self.crashes[car.direction]}")
+                    print(f"First car {car.name} loc {car.loc} speed {car.speed}")
+                    for seg in car.res:
+                        print(seg)
+                    print(f"Second car {other_car.name} loc {other_car.loc} speed {other_car.speed}")
+                    for seg in other_car.res:
+                        print(seg)
+                    print("___________________________________________________________________________")
+                    car.dead = True
+                    other_car.dead = True
+                    return True
+
+        # Place new goal if the goal is reached
+        if reached_goal(car, car.goal):
+            car.score += 1
+            self._place_goals(car)
+
+        # Player won!
+        if car.score > WINNING_SCORE:
+            return True
+        else:
+            return False
 
     def _move(self, car: Car, action: Tuple[int, int]) -> bool:
         """

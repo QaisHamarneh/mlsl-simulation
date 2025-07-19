@@ -1,2 +1,3 @@
 numpy>=1.26.1
 pyglet>=2.0.9
+gymnasium>=1.2.0
