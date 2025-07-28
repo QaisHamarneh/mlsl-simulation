@@ -22,14 +22,11 @@ class ObservationState():
     dist_to_goal: float
 
 class MlslEnv(Env):
-    metadata = {"render_modes": ["human", "rgb_array"]}
 
     def __init__(self, 
-                 game_model: TrafficEnv, 
-                 gui: bool = True, ):
+                 game_model: TrafficEnv):
         
         self.game_model = game_model
-        self.renderer = Renderer()
         self.map_shapes: List[Union[shapes.Line, shapes.Rectangle]] = GameDrawer.draw_map(self.game_model.roads)
 
         self.flash_count = 0
@@ -54,24 +51,14 @@ class MlslEnv(Env):
         })
 
     def reset(self, *, seed = None, options = None) -> List[ObservationState]:
-        self.game_model.reset()
+        # self.game_model.reset()
         return self._get_obs()
     
     def step(self, actions: List[Tuple[int, int]]):
         done = self.game_model.play_step(actions=actions)
         obs = self._get_obs()
         reward = self._compute_reward()
-        return obs, reward, done
-    
-    def render(self, gui=True):
-        game_shapes = []
-        game_shapes += self.map_shapes
-        game_shapes += GameDrawer.draw_goals(self.game_model.cars)
-        game_shapes += GameDrawer.draw_cars(self.game_model.cars, self.flash_count)
-        self.renderer.render(game_shapes)
-
-    def close(self):
-        self.renderer.close()
+        return done, obs, reward
 
     def _get_obs(self) -> List[ObservationState]:
         observation_states = []

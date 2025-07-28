@@ -1,7 +1,7 @@
 import pyglet
-from typing import List, Optional
+from typing import List
 from game_model.game_model import TrafficEnv
-from game_model.road_network import Point, Road
+from game_model.road_network import Point
 from gui.renderer import Renderer
 from gui.game_drawer import GameDrawer
 from gui.helpful_functions import *
@@ -54,7 +54,6 @@ class CarsWindow(pyglet.window.Window):
         game_shapes += GameDrawer.draw_cars(self.game_model.cars, self.flash_count, self.debug)
         game_shapes.append(GameDrawer.draw_test_results(self.game_model.roads, self.test_results))
         self.renderer.render(game_shapes)
-    
 
     def on_key_press(self, symbol: int, modifiers: int) -> None:
         """

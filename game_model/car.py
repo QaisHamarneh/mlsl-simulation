@@ -1,6 +1,6 @@
 import math
 import numpy as np
-
+import logging
 from game_model.constants import *
 from game_model.road_network import Color, Goal, Intersection, LaneSegment, SegmentInfo, true_direction, Problem, CrossingSegment, Point, \
     horiz_direction, right_direction, Segment
@@ -198,7 +198,7 @@ class Car:
             if len(next_segs) < 2:
                 next_segs = self.astar(goal=self.second_goal)
             if len(next_segs) < 2:
-                print(Problem.NO_NEXT_SEGMENT)
+                logging.warning(Problem.NO_NEXT_SEGMENT)
                 print(f"Problem car {self.name} loc {self.loc} speed {self.speed}")
                 for seg in self.res:
                     print(seg)
