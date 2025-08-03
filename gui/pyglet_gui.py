@@ -48,6 +48,8 @@ class CarsWindow(pyglet.window.Window):
         """
         Handle the draw event to update the window content.
         """
+        self.flash_count += TIME_PER_FRAME if not self.flash_count >= FLASH_CYCLE else -self.flash_count
+        
         game_shapes = []
         game_shapes += self.map_shapes
         game_shapes += GameDrawer.draw_goals(self.game_model.cars)

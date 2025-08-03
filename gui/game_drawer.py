@@ -6,6 +6,7 @@ from game_model.car import Car
 from game_model.constants import *
 from gui.map_colors import *
 from gui.helpful_functions import get_xy_crossingseg, return_updated_position, find_greatest_gap
+import gui.map_colors
 
 class GameDrawer():
 
@@ -14,7 +15,9 @@ class GameDrawer():
         car_shapes = []
 
         for car in cars:
-            car_rect = GameDrawer.draw_car_rect(car, flash_count)
+            color = car.color if not car.dead or flash_count <= FLASH_CYCLE / 2 else DEAD_GREY
+
+            car_rect = GameDrawer.draw_car_rect(car, color)
 
             car_res_box = None
             if car.res[0].direction == Direction.RIGHT:
@@ -24,7 +27,7 @@ class GameDrawer():
                     car_res_box = GameDrawer.draw_lines(x, y, x + car.get_braking_distance(), y,
                                             x + car.get_braking_distance(), y + h,
                                             x, y + h, x, y,
-                                            color=car.color, width=2)
+                                            color=color, width=2)
 
             elif car.res[0].direction == Direction.LEFT:
 
@@ -33,7 +36,7 @@ class GameDrawer():
                     car_res_box = GameDrawer.draw_lines(x + w, y, x + w - car.get_braking_distance(), y,
                                             x + w - car.get_braking_distance(), y + h,
                                             x + w, y + h, x + w, y,
-                                            color=car.color, width=2)
+                                            color=color, width=2)
 
             elif car.res[0].direction == Direction.UP:
                 if car.changing_lane:
@@ -41,7 +44,7 @@ class GameDrawer():
                     car_res_box = GameDrawer.draw_lines(x, y, x, y + car.get_braking_distance(),
                                             x + w, y + car.get_braking_distance(),
                                             x + w, y, x, y,
-                                            color=car.color, width=2)
+                                            color=color, width=2)
 
             elif car.res[0].direction == Direction.DOWN:
                 if car.changing_lane:
@@ -49,11 +52,11 @@ class GameDrawer():
                     car_res_box = GameDrawer.draw_lines(x, y + h, x, y - car.get_braking_distance() + h,
                                             x + w, y - car.get_braking_distance() + h,
                                             x + w, y + h, x, y + h,
-                                            color=car.color, width=2)
+                                            color=color, width=2)
 
             car_shapes.append(car_rect)
 
-            brake_box_points = GameDrawer.draw_brake_box(car, debug)
+            brake_box_points = GameDrawer.draw_brake_box(car, color, debug)
             car_shapes += brake_box_points
             if car_res_box is not None:
                 car_shapes += car_res_box
@@ -243,7 +246,7 @@ class GameDrawer():
         return lines
     
     @classmethod
-    def draw_car_rect(cls, car: Car, flash_count: int) -> shapes.Rectangle:
+    def draw_car_rect(cls, car: Car, color: gui.map_colors) -> shapes.Rectangle:
         """
         Creates a rectangle shape for a car.
 
@@ -256,7 +259,7 @@ class GameDrawer():
         return shapes.Rectangle(
             x=car.pos.x, y=car.pos.y,
             width=car.w, height=car.h,
-            color=car.color if not car.dead or flash_count <= FLASH_CYCLE / 2 else DEAD_GREY
+            color=color
         )
     
     @classmethod
@@ -280,7 +283,7 @@ class GameDrawer():
         return lines
     
     @classmethod
-    def draw_brake_box(cls, car: 'Car', debug: bool) -> List[Union[shapes.Line, shapes.Rectangle]]:
+    def draw_brake_box(cls, car: Car, color: gui.map_colors, debug: bool) -> List[Union[shapes.Line, shapes.Rectangle]]:
         """
         Creates a brake box for a car. This is done collecting all points of the brake box on the left and right side separately.
 
@@ -591,7 +594,7 @@ class GameDrawer():
         # combine left and right points
         points = left_points + right_points
         # create lines from points
-        line = GameDrawer.draw_lines(*[p for point in points for p in point], color=car.color, width=2)
+        line = GameDrawer.draw_lines(*[p for point in points for p in point], color=color, width=2)
 
         if debug:
             return line + shapes_at_end

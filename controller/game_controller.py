@@ -101,8 +101,6 @@ class GameController:
 
         elif not self.window.pause:
             self.frame_count += TIME_PER_FRAME
-            self.window.flash_count += TIME_PER_FRAME if not self.window.flash_count >= FLASH_CYCLE else -self.window.flash_count
-
 
     def _check_deadlock(self) -> bool:
         deadlock = [True if car.speed == 0 else False for car in self.game_model.cars]
