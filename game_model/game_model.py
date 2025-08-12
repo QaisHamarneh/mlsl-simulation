@@ -106,7 +106,7 @@ class TrafficEnv:
             car.goal.update_position()
             car.second_goal.update_position()
 
-    def play_step(self, actions: None | list[tuple[int, int]] = None) -> bool:
+    def play_step(self, action: None | Tuple[int, int] = None) -> bool:
         """
         Execute a step in the environment for each car.
 
@@ -117,9 +117,9 @@ class TrafficEnv:
 
         for agent in range(self.agents):
             if self.agent_cars[agent].dead:
+                game_over.append(True)
                 continue
 
-            action = actions[agent]
             game_over.append(self._execute_action(car=self.agent_cars[agent], action=action))
 
         for controller in self.controllers:
@@ -127,11 +127,18 @@ class TrafficEnv:
             if car.dead:
                 continue
 
-            action = controller.get_action()
-            game_over.append(self._execute_action(car=car, action=action))
+            controller_action = controller.get_action()
+            game_over.append(self._execute_action(car=car, action=controller_action))
 
-        # return game over
-        return all(game_over)
+        deadlock = [True if car.speed == 0 else False for car in self.cars]
+        if not all(game_over) and all(deadlock):
+            print("___________________________________________________________________________")
+            print("Deadlock between all cars.")
+            print("___________________________________________________________________________")
+            return True
+        else:
+            # return game over
+            return all(game_over)
     
     def _execute_action(self, car: Car, action: Tuple[int, int]) -> bool:
         """
@@ -178,10 +185,7 @@ class TrafficEnv:
             self._place_goals(car)
 
         # Player won!
-        if car.score > WINNING_SCORE:
-            return True
-        else:
-            return False
+        return car.score > WINNING_SCORE
 
     def _move(self, car: Car, action: Tuple[int, int]) -> bool:
         """
