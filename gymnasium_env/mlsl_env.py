@@ -1,12 +1,9 @@
 from gymnasium import Env
 from gymnasium import spaces
 from typing import List, Tuple, Union, Dict
-from game_model.car import Car
 from game_model.game_model import TrafficEnv
 from game_model.constants import LANE_MAX_SPEED, MAX_ACC, MAX_DEC, WINDOW_HEIGHT, WINDOW_WIDTH
 from gui.game_drawer import GameDrawer
-from gui.renderer import Renderer
-from dataclasses import dataclass
 from gymnasium_env.abstract_observation import Observation
 import numpy as np
 import pyglet
@@ -20,7 +17,7 @@ class MlslEnv(Env):
         
         self.game_model = game_model
         self.map_shapes: List[Union[shapes.Line, shapes.Rectangle]] = GameDrawer.draw_map(self.game_model.roads)
-        self.agent_score: int = self.game_model.agent_cars[0].score
+        self.agent_score: int = self.game_model.agent_car.score
 
         self.observation_model = observation_model
 
@@ -49,10 +46,10 @@ class MlslEnv(Env):
         return observation, reward, done, truncated, info
 
     def _compute_reward(self):
-        if self.game_model.agent_cars[0].score > self.agent_score:
-            self.agent_score = self.game_model.agent_cars[0].score
+        if self.game_model.agent_car.score > self.agent_score:
+            self.agent_score = self.game_model.agent_car.score
             return 1
-        elif self.game_model.agent_cars[0].dead:
+        elif self.game_model.agent_car.dead:
             return -10
         else:
             return 0

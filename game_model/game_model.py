@@ -26,7 +26,7 @@ class TrafficEnv:
     def __init__(self, 
                  roads: List[Road], 
                  npcs: int, 
-                 agents: int = 0):
+                 agent: bool = False):
         """
         Initialize the TrafficEnv.
 
@@ -41,7 +41,7 @@ class TrafficEnv:
         self.roads = roads
         self.segments, self.intersections = create_segments(roads)
         self.npcs = npcs
-        self.agents = agents
+        self.agent = agent
         # init display
         self.moved = True
         
@@ -61,18 +61,23 @@ class TrafficEnv:
         Reset the environment to its initial state.
         """
         self.npc_cars: List[Car] = []
-        self.agent_cars: List[Car] = []
+        self.agent_car: None | Car = None
         self.controllers: List[AstarCarController] = []
         for i in range(self.npcs):
             self.npc_cars.append(create_random_car(self.segments, self.npc_cars))
-        for i in range(self.agents):
-            self.agent_cars.append(create_random_car(self.segments, self.npc_cars + self.agent_cars))
         for car in self.npc_cars:
             self._place_goals(car)
             self.controllers.append(AstarCarController(car, car.goal))
-        for car in self.agent_cars:
-            self._place_goals(car)
-        self.cars = self.npc_cars + self.agent_cars
+
+        
+        self.agent_car = create_random_car(self.segments, self.npc_cars)
+        self._place_goals(self.agent_car)
+        
+        if self.agent:
+            self.cars = [self.agent_car] + self.npc_cars
+        else:
+            self.cars = self.npc_cars
+            
         self.time = 0
 
     def _place_goals(self, car: Car) -> None:
@@ -115,12 +120,11 @@ class TrafficEnv:
         """
         game_over = []
 
-        for agent in range(self.agents):
-            if self.agent_cars[agent].dead:
+        if self.agent:
+            if self.agent_car.dead:
                 game_over.append(True)
-                continue
-
-            game_over.append(self._execute_action(car=self.agent_cars[agent], action=action))
+            else:
+                game_over.append(self._execute_action(car=self.agent_car, action=action))
 
         for controller in self.controllers:
             car = controller.car
@@ -154,8 +158,11 @@ class TrafficEnv:
         self.time += 1
         # Check if the action was possible
         if isinstance(moved, Problem):
-            car.dead = True
-            return True
+            if car is self.agent_car:
+                car.illegal_move = True
+            else:
+                car.dead = True
+                return True
 
         # Crash detection:
         for other_car in self.cars:

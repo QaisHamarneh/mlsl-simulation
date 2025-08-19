@@ -34,7 +34,8 @@ class Car:
         self.speed = speed
         self.size = size
         self.color = color
-        self.dead = False
+        self._dead = False
+        self.illegal_move = False
         self.goal = None
         self.second_goal = None
         self.direction = segment.lane.direction

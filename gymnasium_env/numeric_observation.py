@@ -7,7 +7,7 @@ import numpy as np
 
 MAX_CARS = 22
 MAX_LANES = 20
-MAX_RES = 10
+MAX_RES = 16
 
 class NumbericObservation(Observation):
     def __init__(self, game_model: TrafficEnv) -> None:
@@ -52,12 +52,12 @@ class NumbericObservation(Observation):
 
         while len(lanes) < MAX_LANES:
             lanes.append([-1] * 4)
-        lanes = lanes[:MAX_LANES] # making sure that it is always ≤ MAX_LANES
+            
         lanes = np.array(lanes, dtype=np.float32)
 
         # cars
         cars = []
-        for car in self.game_model.agent_cars + self.game_model.npc_cars:
+        for car in self.game_model.cars:
             speed = np.array([[car.speed] + [0] * 5], dtype=np.float32)
 
             reservations = []
@@ -74,7 +74,6 @@ class NumbericObservation(Observation):
             while len(reservations) < MAX_RES:
                 reservations.append([0] * 6)
 
-            reservations = reservations[:MAX_RES]
             reservations = np.array(reservations, dtype=np.float32)
             all_info = np.vstack((speed, reservations))
             cars.append(all_info)

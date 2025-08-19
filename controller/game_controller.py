@@ -16,13 +16,13 @@ class GameController:
                  gui: bool, 
                  roads: List[Road], 
                  npcs: int,
-                 agents: int = 0,  
+                 agent: bool = False,  
                  debug: bool = False, 
                  test_mode: List[str] = None):
         
         self.gui = gui
 
-        self.game_model: TrafficEnv = TrafficEnv(roads=roads, npcs=npcs, agents=agents)
+        self.game_model: TrafficEnv = TrafficEnv(roads=roads, npcs=npcs, agent=agent)
         self.observation_model: Observation = NumbericObservation(self.game_model)
         self.env: MlslEnv = MlslEnv(game_model=self.game_model, observation_model=self.observation_model)
 
