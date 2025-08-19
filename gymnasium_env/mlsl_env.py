@@ -1,22 +1,25 @@
 from gymnasium import Env
 from gymnasium import spaces
-from typing import List, Tuple, Union, Dict
+from typing import Tuple, Dict
 from game_model.game_model import TrafficEnv
-from game_model.constants import LANE_MAX_SPEED, MAX_ACC, MAX_DEC, WINDOW_HEIGHT, WINDOW_WIDTH
-from gui.game_drawer import GameDrawer
+from game_model.constants import MAX_ACC, MAX_DEC, TIME_PER_FRAME, RENDER_MODES
+from gui.pyglet_gui import GameWindow
 from gymnasium_env.abstract_observation import Observation
-import numpy as np
 import pyglet
-from pyglet import shapes
+import time
 
 class MlslEnv(Env):
 
     def __init__(self, 
                  game_model: TrafficEnv,
-                 observation_model: Observation):
+                 observation_model: Observation,
+                 render_mode: None | str = None):
         
-        self.game_model = game_model
-        self.map_shapes: List[Union[shapes.Line, shapes.Rectangle]] = GameDrawer.draw_map(self.game_model.roads)
+        self.render_mode = render_mode
+
+        self.game_model: TrafficEnv = game_model
+        self.game_window: None | GameWindow = GameWindow(self.game_model) if self.render_mode == 'human' else None
+
         self.agent_score: int = self.game_model.agent_car.score
 
         self.observation_model = observation_model
@@ -31,26 +34,45 @@ class MlslEnv(Env):
     
     def step(self, actions: Tuple[int, int]):
         decoded_action = (actions[0] - MAX_DEC, actions[1] - 1)
-        done = self.game_model.play_step(action=decoded_action)
+
+        result = self.game_model.play_step(action=decoded_action)
 
         observation = self.observation_model.observe()
 
         reward = self._compute_reward()
 
-        # We don't use truncation in this environment
-        # (could add a step limit here if desired)
+        done = False
         truncated = False
+
+        if result == 'game_over':
+            done = True
+        elif result == 'deadlock':
+            truncated = True
 
         info = self._get_info() # for debugging
 
         return observation, reward, done, truncated, info
+    
+    def render(self):
+        if self.game_window:
+            self._render_frame()
+            time.sleep(1.0 / TIME_PER_FRAME)
+
+    def _render_frame(self):
+        self.game_window.dispatch_events()
+        self.game_window.on_draw()
+        pyglet.clock.tick()
+        self.game_window.flip()
 
     def _compute_reward(self):
         if self.game_model.agent_car.score > self.agent_score:
             self.agent_score = self.game_model.agent_car.score
             return 1
-        elif self.game_model.agent_car.dead:
+        elif self.game_model.agent_car.illegal_move:
+            self.game_model.agent_car.illegal_move = False
             return -10
+        elif self.game_model.agent_car.dead:
+            return -100
         else:
             return 0
     

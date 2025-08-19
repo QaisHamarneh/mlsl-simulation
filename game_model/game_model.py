@@ -1,6 +1,6 @@
 import random
+import logging
 from typing import Optional, Tuple, List
-
 from controller.astar_car_controller import AstarCarController
 from game_model.car import Car
 from game_model.road_network import Direction, Goal, Road, LaneSegment, Problem, Point
@@ -25,8 +25,8 @@ class TrafficEnv:
 
     def __init__(self, 
                  roads: List[Road], 
-                 npcs: int, 
-                 agent: bool = False):
+                 players: int, 
+                 ai: bool = False):
         """
         Initialize the TrafficEnv.
 
@@ -40,8 +40,8 @@ class TrafficEnv:
         self.scores = None
         self.roads = roads
         self.segments, self.intersections = create_segments(roads)
-        self.npcs = npcs
-        self.agent = agent
+        self.npcs = players
+        self.agent = ai
         # init display
         self.moved = True
         
@@ -69,14 +69,12 @@ class TrafficEnv:
             self._place_goals(car)
             self.controllers.append(AstarCarController(car, car.goal))
 
-        
-        self.agent_car = create_random_car(self.segments, self.npc_cars)
-        self._place_goals(self.agent_car)
+        self.cars = self.npc_cars
         
         if self.agent:
+            self.agent_car = create_random_car(self.segments, self.npc_cars)
+            self._place_goals(self.agent_car)
             self.cars = [self.agent_car] + self.npc_cars
-        else:
-            self.cars = self.npc_cars
             
         self.time = 0
 
@@ -111,7 +109,7 @@ class TrafficEnv:
             car.goal.update_position()
             car.second_goal.update_position()
 
-    def play_step(self, action: None | Tuple[int, int] = None) -> bool:
+    def play_step(self, action: None | Tuple[int, int] = None) -> None | str:
         """
         Execute a step in the environment for each car.
 
@@ -121,28 +119,29 @@ class TrafficEnv:
         game_over = []
 
         if self.agent:
-            if self.agent_car.dead:
-                game_over.append(True)
-            else:
-                game_over.append(self._execute_action(car=self.agent_car, action=action))
+            game_over.append(
+                self._execute_action(car=self.agent_car, action=action) if not self.agent_car.dead else True
+            )
 
         for controller in self.controllers:
             car = controller.car
-            if car.dead:
-                continue
-
-            controller_action = controller.get_action()
-            game_over.append(self._execute_action(car=car, action=controller_action))
+            game_over.append(
+                self._execute_action(car=car, action=controller.get_action()) if not car.dead else True
+            )
 
         deadlock = [True if car.speed == 0 else False for car in self.cars]
         if not all(game_over) and all(deadlock):
-            print("___________________________________________________________________________")
-            print("Deadlock between all cars.")
-            print("___________________________________________________________________________")
-            return True
-        else:
-            # return game over
-            return all(game_over)
+            log_msg = "Deadlock between all cars:\n"
+            log_msg += f"Frame: {self.time // len(self.cars)}\n"
+            for car in self.cars:
+                log_msg += f"Car: {car.name} | Speed: {car.speed} | Dead: {car.dead}\n"
+            logging.warning(log_msg)
+            return 'deadlock'
+        
+        if all(game_over):
+            return 'game_over'
+        
+        return None
     
     def _execute_action(self, car: Car, action: Tuple[int, int]) -> bool:
         """
@@ -163,6 +162,9 @@ class TrafficEnv:
             else:
                 car.dead = True
                 return True
+            
+        if car.speed == 0:
+            car.illegal_move = True
 
         # Crash detection:
         for other_car in self.cars:
@@ -172,16 +174,15 @@ class TrafficEnv:
                 if collision_check(car, other_car):
                     self.total_crashes += 1
                     self.crashes[car.direction] += 1
-                    print("___________________________________________________________________________")
-                    print(f"Frame = {self.time // len(self.cars)},  Crash: {self.total_crashes}")
-                    print(f"Direction = {car.direction},  Crash: {self.crashes[car.direction]}")
-                    print(f"First car {car.name} loc {car.loc} speed {car.speed}")
-                    for seg in car.res:
-                        print(seg)
-                    print(f"Second car {other_car.name} loc {other_car.loc} speed {other_car.speed}")
-                    for seg in other_car.res:
-                        print(seg)
-                    print("___________________________________________________________________________")
+                    log_msg = (
+                        f"Frame = {self.time // len(self.cars)},  Crash: {self.total_crashes}\n"
+                        f"Direction = {car.direction},  Crash: {self.crashes[car.direction]}\n"
+                        f"First car {car.name} loc {car.loc} speed {car.speed}\n"
+                        + "\n".join(str(seg) for seg in car.res) + "\n"
+                        f"Second car {other_car.name} loc {other_car.loc} speed {other_car.speed}\n"
+                        + "\n".join(str(seg) for seg in other_car.res) + "\n"
+                    )
+                    logging.warning(log_msg)
                     car.dead = True
                     other_car.dead = True
                     return True
@@ -235,4 +236,16 @@ class TrafficEnv:
                 car != other_car]):
             return True
         return False
+    
+    def current_state(self):
+        print("---------------------")
+        print("Current Game State:\n")
+        game_over = True
+
+        for car in self.cars:
+            print(f"Car: {car.name} | Score: {car.score} | Dead: {car.dead}")
+            game_over = car.dead and game_over
+
+        print(f"\nGame Over -> {game_over}")
+        print("---------------------\n")
 

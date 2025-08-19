@@ -7,7 +7,7 @@ from gui.game_drawer import GameDrawer
 from gui.helpful_functions import *
 
 
-class CarsWindow(pyglet.window.Window):
+class GameWindow(pyglet.window.Window):
     def __init__(self, game_model: TrafficEnv, debug: bool = False) -> None:
         """
         Initialize the CarsWindow.

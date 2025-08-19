@@ -71,7 +71,7 @@ STARTING_SCENARIO = {
         Road("v3", False, 3 * WINDOW_WIDTH // 4 - 1 * BLOCK_SIZE, 2, 0)
     ],
     "segmentation": False,
-    "players": 1
+    "players": 22
 }
 TWO_CROSSING = {
     "roads": [
@@ -131,7 +131,7 @@ CIRCUIT = {
         Road("left", False, 0, 1, 0),
     ],
     "segmentation": False,
-    "players": 0
+    "players": 1
 }
 
 JUST_ONE_CAR = STARTING_SCENARIO.copy()

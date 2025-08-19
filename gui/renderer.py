@@ -4,6 +4,8 @@ from pyglet import text
 from pyglet.window import Window
 from typing import List, Union
 from gui.map_colors import PALE_GREEN
+from game_model.constants import WINDOW_WIDTH, WINDOW_HEIGHT
+
 
 class Renderer():
     def __init__(self, window: Window = None):
@@ -18,6 +20,3 @@ class Renderer():
             shape.batch = self.batch
 
         self.batch.draw()
-
-    def close(self):
-        self.window.close()
