@@ -60,21 +60,23 @@ class TrafficEnv:
         """
         Reset the environment to its initial state.
         """
+        self.cars: List[Car] = []
         self.npc_cars: List[Car] = []
         self.agent_car: None | Car = None
         self.controllers: List[AstarCarController] = []
-        for i in range(self.npcs):
-            self.npc_cars.append(create_random_car(self.segments, self.npc_cars))
-        for car in self.npc_cars:
-            self._place_goals(car)
-            self.controllers.append(AstarCarController(car, car.goal))
 
-        self.cars = self.npc_cars
-        
         if self.agent:
             self.agent_car = create_random_car(self.segments, self.npc_cars)
             self._place_goals(self.agent_car)
-            self.cars = [self.agent_car] + self.npc_cars
+            self.cars.append(self.agent_car)
+
+        for i in range(self.npcs):
+            car = create_random_car(self.segments, self.cars)
+            self.cars.append(car)
+            self.npc_cars.append(car)
+        for car in self.npc_cars:
+            self._place_goals(car)
+            self.controllers.append(AstarCarController(car, car.goal))
             
         self.time = 0
 
@@ -125,8 +127,10 @@ class TrafficEnv:
 
         for controller in self.controllers:
             car = controller.car
+            test_action = controller.get_action()
+            print(test_action)
             game_over.append(
-                self._execute_action(car=car, action=controller.get_action()) if not car.dead else True
+                self._execute_action(car=car, action=test_action) if not car.dead else True
             )
 
         deadlock = [True if car.speed == 0 else False for car in self.cars]
@@ -239,13 +243,15 @@ class TrafficEnv:
     
     def current_state(self):
         print("---------------------")
-        print("Current Game State:\n")
+        print("Game State:\n")
         game_over = True
 
         for car in self.cars:
-            print(f"Car: {car.name} | Score: {car.score} | Dead: {car.dead}")
+            car_type = 'Agent' if car == self.agent_car else 'NPC'
+            print(f"{car_type}: {car.name} | Score: {car.score} | Dead: {car.dead}")
             game_over = car.dead and game_over
 
-        print(f"\nGame Over -> {game_over}")
+        print(f"\nWinning Score -> {WINNING_SCORE}")
+        print(f"Game Over -> {game_over}")
         print("---------------------\n")
 

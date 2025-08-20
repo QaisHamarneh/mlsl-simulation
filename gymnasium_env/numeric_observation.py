@@ -1,8 +1,9 @@
-from typing import Dict
+from typing import Dict, Tuple
 from gymnasium_env.abstract_observation import Observation
 from gymnasium import spaces
 from game_model.game_model import TrafficEnv
-from game_model.constants import BLOCK_SIZE
+from game_model.constants import BLOCK_SIZE, LANE_DISPLACEMENT
+from game_model.road_network import Direction, LaneSegment, CrossingSegment, Lane, SegmentInfo
 import numpy as np
 
 MAX_CARS = 22
@@ -45,14 +46,13 @@ class NumbericObservation(Observation):
         for road in self.game_model.roads:
             for lane in road.left_lanes + road.right_lanes:
                 direction = lane.direction.value
-                begin = lane.top
                 num_in_road = lane.num
-                end_or_block = BLOCK_SIZE
-                lanes.append([direction, begin, num_in_road, end_or_block])
+                begin, end = self._lane_span(lane)
+                lanes.append([direction, num_in_road, begin, end])
 
         while len(lanes) < MAX_LANES:
             lanes.append([-1] * 4)
-            
+
         lanes = np.array(lanes, dtype=np.float32)
 
         # cars
@@ -62,13 +62,18 @@ class NumbericObservation(Observation):
 
             reservations = []
             for seg_info in car.res:
+                direction = seg_info.direction.value
+                res_begin = seg_info.begin
+                res_end = seg_info.end
+                seg_begin, seg_end, seg_type = self._segment_span(seg_info)
+
                 reservations.append([
-                    seg_info.begin,
-                    seg_info.end,
-                    0,
-                    seg_info.segment.length,
-                    seg_info.direction.value,
-                    1 if not seg_info.turn else 2
+                    seg_type,
+                    direction,
+                    res_begin,
+                    res_end,
+                    seg_begin,
+                    seg_end
                 ])
 
             while len(reservations) < MAX_RES:
@@ -88,3 +93,21 @@ class NumbericObservation(Observation):
             'lanes': lanes,
             'cars': cars
         }
+    
+    def _lane_span(self, lane: Lane) -> Tuple[int, int]:
+        lane_segments = [segment for segment in lane.segments if isinstance(segment, LaneSegment)]
+        if not lane_segments:
+            return lane.top, lane.top
+        begin = lane_segments[0].begin
+        end = lane_segments[-1].end
+        return begin, end
+    
+    def _segment_span(self, seg_info: SegmentInfo) -> Tuple[int, int, int]:
+        seg = seg_info.segment
+        if isinstance(seg, LaneSegment):
+            return seg.begin, seg.end, 1  # type 1 = lane
+        else:
+            if seg_info.direction in (Direction.LEFT, Direction.RIGHT):
+                return seg.horiz_lane.top, seg.horiz_lane.top + seg.length, 2
+            else:
+                return seg.vert_lane.top, seg.vert_lane.top + seg.length, 2

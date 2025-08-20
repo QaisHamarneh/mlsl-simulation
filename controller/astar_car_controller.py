@@ -78,6 +78,7 @@ class AstarCarController:
                     if right_lane_acceleration >= max_possible_acc:
                         lane_change = RIGHT_LANE_CHANGE
                         max_possible_acc = right_lane_acceleration
+        print("end")
         return min(max_possible_acc, max_possible_acc), lane_change
 
     def get_accelerate(self, segments: list[SegmentInfo]) -> int:

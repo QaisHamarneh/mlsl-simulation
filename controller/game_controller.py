@@ -50,14 +50,14 @@ class GameController:
         self.env: MlslEnv = MlslEnv(game_model=self.game_model, observation_model=self.observation_model, render_mode=self.render_mode)
 
         self.model = PPO("MultiInputPolicy", self.env, verbose=1)
-        self.model.learn(10_000)
+        self.model.learn(100_000)
 
         self.vec_env = self.model.get_env()
 
     def _run_model(self):
         self.observation = self.vec_env.reset()
 
-        while self.done == None:
+        while not self.done:
             action, _ = self.model.predict(self.observation, deterministic=True)
 
             self.observation, self.reward, self.done, self.info = self.vec_env.step(actions=action)
