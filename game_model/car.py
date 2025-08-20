@@ -261,7 +261,7 @@ class Car:
                 self.parallel_res[-1].turn = True
             return True
 
-    def change_speed(self, speed_diff: int) -> bool:
+    def change_speed(self, speed_diff: int) -> None:
         """
         Change the speed of the car.
 
@@ -269,10 +269,9 @@ class Car:
             speed_diff (int): The difference in speed to apply.
 
         Returns:
-            bool: True if the speed was changed successfully, False otherwise.
+            None.
         """
         self.speed = max(min(self.speed + speed_diff, self.max_speed), 0)
-        return True
 
     def get_adjacent_lane_segment(self, lane_diff: int, lane_segment: LaneSegment = None) -> LaneSegment:
         """

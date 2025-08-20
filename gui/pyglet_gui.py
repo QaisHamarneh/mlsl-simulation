@@ -33,7 +33,12 @@ class GameWindow(pyglet.window.Window):
         self.pause: bool = False
         self.flash_count: int = 0
 
-        self.event_loop = pyglet.app.EventLoop()
+    def reset_model(self, game_model: TrafficEnv) -> None:
+        self.game_model = game_model
+        self.map_shapes = GameDrawer.draw_map(self.game_model.roads)
+        self.flash_count = 0
+        self.pause = False
+        self._test_results = None
 
     @property
     def test_results(self) -> None | List[Tuple[bool, str]]:

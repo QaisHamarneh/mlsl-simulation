@@ -2,7 +2,7 @@ import logging
 from scenarios.scenarios import *
 from controller.game_controller import GameController
 
-logging.basicConfig(level=logging.DEBUG, format='%(levelname)s | %(asctime)s | %(message)s')
+logging.basicConfig(level=logging.DEBUG, format='%(asctime)s | %(levelname)s | %(filename)s:%(lineno)s | %(message)s')
 
 def main(players, roads, segmentation, render_mode = None, ai: bool = False, debug = False, test_mode = None):
     controller = GameController(roads, 

@@ -37,9 +37,9 @@ class GameController:
         if self.ai:
             self._train_model()
             self._run_model()
-        elif self.render_mode is 'human':
+        elif self.render_mode == 'human':
             self.frame_count = 0
-            self._run_gui()
+            self._run_gui()    
         else:
             self._run_headless()
 
@@ -64,10 +64,21 @@ class GameController:
             self.vec_env.render()
 
     def _run_gui(self) -> None:
-        self.window = GameWindow(game_model=self.game_model, debug=self.debug)
-
-        pyglet.clock.schedule_interval(self._update_gui, (1 / TIME_PER_FRAME))
+        self._start_new_game()
         pyglet.app.run()
+
+    def _start_new_game(self) -> None:
+        self.game_model.reset()
+        self.done = False
+        self.frame_count = 0
+
+        if hasattr(self, 'window') and self.window:
+            self.window.reset_model(self.game_model)
+        else:
+            self.window = GameWindow(game_model=self.game_model, debug=self.debug)
+
+        pyglet.clock.unschedule(self._update_gui)
+        pyglet.clock.schedule_interval(self._update_gui, (1 / TIME_PER_FRAME))
 
     def _update_gui(self, delta_time: float) -> None:
         if not self.window.pause and self.frame_count % TIME_PER_FRAME == 0:
@@ -77,6 +88,9 @@ class GameController:
 
             if not self.done == None:
                 self.window.pause = True
+                while self.window.pause:
+                    pass
+                self._start_new_game()
 
         elif not self.window.pause:
             self.frame_count += TIME_PER_FRAME

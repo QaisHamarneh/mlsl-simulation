@@ -37,22 +37,10 @@ class TrafficEnv:
             controllers (Optional[List[AstarCarController]]): List of car controllers.
         """
         super().__init__()
-        self.scores = None
         self.roads = roads
         self.segments, self.intersections = create_segments(roads)
         self.npcs = players
         self.agent = ai
-        # init display
-        self.moved = True
-        
-        self.time = 0
-
-        self.total_crashes = 0
-        self.crashes: dict = {}
-        self.crashes[Direction.RIGHT] = 0
-        self.crashes[Direction.UP] = 0
-        self.crashes[Direction.LEFT] = 0
-        self.crashes[Direction.DOWN] = 0
 
         self.reset()
 
@@ -60,6 +48,13 @@ class TrafficEnv:
         """
         Reset the environment to its initial state.
         """
+        self.scores = None
+        for seg in self.segments:
+            seg.cars = []
+        # init display
+        self.moved = True
+        self.time = 0
+
         self.cars: List[Car] = []
         self.npc_cars: List[Car] = []
         self.agent_car: None | Car = None
@@ -77,8 +72,13 @@ class TrafficEnv:
         for car in self.npc_cars:
             self._place_goals(car)
             self.controllers.append(AstarCarController(car, car.goal))
-            
-        self.time = 0
+
+        self.total_crashes = 0
+        self.crashes: dict = {}
+        self.crashes[Direction.RIGHT] = 0
+        self.crashes[Direction.UP] = 0
+        self.crashes[Direction.LEFT] = 0
+        self.crashes[Direction.DOWN] = 0
 
     def _place_goals(self, car: Car) -> None:
         """
@@ -92,9 +92,9 @@ class TrafficEnv:
             road = random.choice(self.roads)
             lane = random.choice(road.right_lanes + road.left_lanes)
             lane_segment = random.choice([seg for seg in lane.segments if isinstance(seg, LaneSegment)])
-            roads = self.roads.copy()
-            roads.remove(road)
-            road = random.choice(roads)
+            roads_copy = self.roads.copy()
+            roads_copy.remove(road)
+            road = random.choice(roads_copy)
             lane = random.choice(road.right_lanes + road.left_lanes)
             lane_segment_second = random.choice([seg for seg in lane.segments if isinstance(seg, LaneSegment)])
             car.goal = Goal(lane_segment, car.color)
@@ -128,7 +128,6 @@ class TrafficEnv:
         for controller in self.controllers:
             car = controller.car
             test_action = controller.get_action()
-            print(test_action)
             game_over.append(
                 self._execute_action(car=car, action=test_action) if not car.dead else True
             )
