@@ -1,5 +1,5 @@
 from typing import List
-from game_model.constants import TIME_PER_FRAME, FLASH_CYCLE, RENDER_MODES
+from game_model.constants import TIME_PER_FRAME, RENDER_MODES, TRAINING_TIMESTEPS
 from game_model.game_model import TrafficEnv
 from game_model.Tester import SimulationTester
 from game_model.road_network import Road
@@ -50,7 +50,7 @@ class GameController:
         self.env: MlslEnv = MlslEnv(game_model=self.game_model, observation_model=self.observation_model, render_mode=self.render_mode)
 
         self.model = PPO("MultiInputPolicy", self.env, verbose=1)
-        self.model.learn(100_000)
+        self.model.learn(total_timesteps=TRAINING_TIMESTEPS)
 
         self.vec_env = self.model.get_env()
 
