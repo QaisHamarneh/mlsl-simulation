@@ -110,7 +110,7 @@ ONE_ROAD = {
         Road("r1", True, 400, 6, 0)
     ],
     "segmentation": False,
-    "players": 25
+    "players": 5
 }
 
 HORIZONTAL_VERTICAL = {

@@ -81,10 +81,12 @@ class GameController:
         pyglet.clock.schedule_interval(self._update_gui, (1 / TIME_PER_FRAME))
 
     def _update_gui(self, delta_time: float) -> None:
+        obs = NumbericObservation(self.game_model)
         if not self.window.pause and self.frame_count % TIME_PER_FRAME == 0:
             self.frame_count = 0
 
             self.done = self.game_model.play_step()
+            obs.observe()
 
             if not self.done == None:
                 self.window.pause = True

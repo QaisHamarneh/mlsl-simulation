@@ -1,10 +1,7 @@
-import pyglet
-from pyglet import shapes
-
 from game_model.constants import *
 from game_model.road_network import Direction, Road, LaneSegment, CrossingSegment, true_direction
 from game_model.car import Car
-from typing import List, Tuple, Union
+from typing import List, Tuple
 
 from gui.map_colors import *
 
