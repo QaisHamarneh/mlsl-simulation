@@ -101,8 +101,5 @@ def create_segments(roads: List[Road]) -> None | Tuple[List[Segment], List[Inter
                                 lane.segments[j].connected_segments[Direction.DOWN] = lane.segments[j - 1]
                                 # if isinstance(lane.segments[j - 1], CrossingSegment):
                                 #     lane.segments[j - 1].up = lane.segments[j]
-    # for seg in segments:
-    #     if isinstance(seg, LaneSegment):
-    #         print(seg.lane.direction, seg.begin, seg.end)
     return segments, intersections
 
