@@ -1,4 +1,4 @@
-from typing import Dict, Tuple
+from typing import List, Dict, Tuple
 from gymnasium_env.abstract_observation import Observation
 from gymnasium import spaces
 from game_model.game_model import TrafficEnv
@@ -51,43 +51,14 @@ class NumbericObservation(Observation):
         lanes = []
         for road in self.game_model.roads:
             for lane in road.left_lanes + road.right_lanes:
-                lane_number = lane.num
-                direction = lane.direction
-
-                if direction is Direction.RIGHT:
-                    begin_x = 0
-                    end_x = sum([semgment.length for semgment in lane.segments])
-                    begin_y = end_y = lane.top
-                elif direction is Direction.DOWN:
-                    begin_x = end_x = lane.top
-                    begin_y = sum([semgment.length for semgment in lane.segments])
-                    end_y = 0
-                elif direction is Direction.LEFT:
-                    begin_x = sum([semgment.length for semgment in lane.segments])
-                    end_x = 0
-                    begin_y = end_y = lane.top
-                else:
-                    begin_x = end_x = lane.top
-                    begin_y = 0
-                    end_y = sum([semgment.length for semgment in lane.segments])
-
-                lanes.append([
-                    lane_number, 
-                    direction.value, 
-                    begin_x, 
-                    begin_y, 
-                    end_x, 
-                    end_y
-                ])
+                lanes.append(self._get_lane_bounds(lane))
 
         while len(lanes) < MAX_LANES:
             lanes.append([-1] * LANES_INFO)
 
         lanes = np.array(lanes, dtype=np.float32)
 
-        print(lanes)
-
-        test = False
+        # car reservations
         cars = []
         for car in self.game_model.cars:
             speed = np.array([[car.speed] + [0] * (CAR_RES_INFO - 1)], dtype=np.float32)
@@ -96,7 +67,6 @@ class NumbericObservation(Observation):
             for seg_info in car.res:
 
                 if isinstance(seg_info.segment, LaneSegment):
-                    test = True
 
                     reservations.append([
                         seg_info.segment.lane.num,
@@ -105,7 +75,6 @@ class NumbericObservation(Observation):
                     ])
 
                 elif isinstance(seg_info.segment, CrossingSegment):
-
                     lane_num = seg_info.segment.horiz_lane.num if seg_info.direction in (Direction.RIGHT, Direction.LEFT) else seg_info.segment.vert_lane.num
 
                     reservations.append([
@@ -126,14 +95,24 @@ class NumbericObservation(Observation):
 
         cars = np.array(cars, dtype=np.float32)
 
-        # if test:
-        #     print(cars)
-
         return {
             'block_size': block_size,
             'lanes': lanes,
             'cars': cars
         }
+    
+    def _get_lane_bounds(self, lane) -> List[float]:
+        """Return lane_number, direction, begin_x, begin_y, end_x, end_y"""
+        total_length = sum(seg.length for seg in lane.segments)
+
+        if lane.direction is Direction.RIGHT:
+            return [lane.num, lane.direction.value, 0, lane.top, total_length, lane.top]
+        elif lane.direction is Direction.DOWN:
+            return [lane.num, lane.direction.value, lane.top, total_length, lane.top, 0]
+        elif lane.direction is Direction.LEFT:
+            return [lane.num, lane.direction.value, total_length, lane.top, 0, lane.top]
+        else:  # UP
+            return [lane.num, lane.direction.value, lane.top, 0, lane.top, total_length]
 
     def _get_lane_reservation(self, seg_info: SegmentInfo, seg: LaneSegment) -> Tuple[float, float, float, float]:
         # horizontal lane
@@ -141,21 +120,11 @@ class NumbericObservation(Observation):
             res_begin_x = seg.begin + seg_info.begin 
             res_end_x = seg.begin + seg_info.end
             res_begin_y = res_end_y = seg.lane.top
-
-            if seg_info.direction is Direction.RIGHT:
-                assert res_begin_x <= res_end_x
-            else:
-                assert res_begin_x >= res_end_x
         # vertical lane
         else:
             res_begin_x = res_end_x = seg.lane.top
             res_begin_y = seg.begin + seg_info.begin
             res_end_y = seg.begin + seg_info.end
-
-            if seg_info.direction is Direction.UP:
-                assert res_begin_y <= res_end_y
-            else:
-                assert res_begin_y >= res_end_y
 
         return [
             res_begin_x, 
@@ -163,45 +132,28 @@ class NumbericObservation(Observation):
             res_end_x, 
             res_end_y
         ]
-    
+
     def _get_crossing_reservation(self, seg_info: SegmentInfo, seg: CrossingSegment) -> Tuple[float, float, float, float]:
-        res_begin_x = res_begin_y = res_end_x = res_end_y = None
+        # Pick the correct lane (horizontal vs vertical)
+        lane = seg.horiz_lane if seg_info.direction in (Direction.LEFT, Direction.RIGHT) else seg.vert_lane
+        forward = seg_info.direction in (Direction.RIGHT, Direction.UP)
+
+        return self._accumulate_crossing_coords(lane, seg, forward)
+
+    def _accumulate_crossing_coords(self, lane, target_seg, forward: bool) -> Tuple[float, float, float, float]:
         blocks = 0
-        
-        if seg_info.direction in (Direction.RIGHT, Direction.UP):
-            lane = seg.horiz_lane if seg_info.direction is Direction.RIGHT else seg.vert_lane
+        segments = lane.segments if forward else reversed(lane.segments)
 
-            for i in range(len(lane.segments)):
-                blocks += lane.segments[i].length
+        for seg in segments:
+            blocks += seg.length
+            if seg is target_seg:
+                if lane.direction is Direction.UP:
+                    return [lane.top, blocks - BLOCK_SIZE, lane.top, blocks]
+                elif lane.direction is Direction.DOWN:
+                    return [lane.top, WINDOW_HEIGHT - blocks + BLOCK_SIZE, lane.top, WINDOW_HEIGHT - blocks]
+                elif lane.direction is Direction.RIGHT:
+                    return [blocks - BLOCK_SIZE, lane.top, blocks, lane.top]
+                elif lane.direction is Direction.LEFT:
+                    return [WINDOW_WIDTH - blocks + BLOCK_SIZE, lane.top, WINDOW_WIDTH - blocks, lane.top]
 
-                if (lane.segments[i] is seg):
-                    if lane.direction is Direction.UP:
-                        res_begin_y = blocks - BLOCK_SIZE
-                        res_end_y = blocks
-                        res_begin_x = res_end_x = lane.top
-                    else:
-                        res_begin_x = blocks - BLOCK_SIZE
-                        res_end_x = blocks
-                        res_begin_y = res_end_y = lane.top
-        else:
-            lane = seg.horiz_lane if seg_info.direction is Direction.LEFT else seg.vert_lane
-
-            for i in range(len(lane.segments) - 1, 0, -1):
-                blocks += lane.segments[i].length
-
-                if (lane.segments[i] is seg):
-                    if lane.direction is Direction.DOWN:
-                        res_begin_y = WINDOW_HEIGHT - blocks + BLOCK_SIZE
-                        res_end_y = WINDOW_HEIGHT - blocks
-                        res_begin_x = res_end_x = lane.top
-                    else:
-                        res_begin_x = WINDOW_WIDTH - blocks + BLOCK_SIZE
-                        res_end_x = WINDOW_WIDTH - blocks
-                        res_begin_y = res_end_y = lane.top
-
-        return [
-            res_begin_x,
-            res_begin_y,
-            res_end_x,
-            res_end_y
-        ]
+        raise ValueError("Target segment not found in lane")
