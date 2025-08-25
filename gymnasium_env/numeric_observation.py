@@ -2,12 +2,12 @@ from typing import List, Dict, Tuple
 from gymnasium_env.abstract_observation import Observation
 from gymnasium import spaces
 from game_model.game_model import TrafficEnv
-from game_model.constants import BLOCK_SIZE, LANE_DISPLACEMENT, WINDOW_WIDTH, WINDOW_HEIGHT
+from game_model.constants import BLOCK_SIZE, WINDOW_WIDTH, WINDOW_HEIGHT
 from game_model.road_network import Direction, LaneSegment, CrossingSegment, Lane, SegmentInfo
 import numpy as np
 
 MAX_CARS = 22
-MAX_LANES = 20
+MAX_LANES = 24
 MAX_RES = 16
 
 LANES_INFO = 6
@@ -101,7 +101,7 @@ class NumbericObservation(Observation):
             'cars': cars
         }
     
-    def _get_lane_bounds(self, lane) -> List[float]:
+    def _get_lane_bounds(self, lane: Lane) -> List[float]:
         """Return lane_number, direction, begin_x, begin_y, end_x, end_y"""
         total_length = sum(seg.length for seg in lane.segments)
 

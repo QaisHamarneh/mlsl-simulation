@@ -14,4 +14,4 @@ def main(players, roads, segmentation, render_mode = None, ai: bool = False, deb
     controller.run()
 
 if __name__ == '__main__':
-    main(**CIRCUIT, render_mode='human', ai=False, debug=False, test_mode=['all'])
+    main(**CIRCUIT, render_mode='human', ai=True, debug=False, test_mode=['all'])
