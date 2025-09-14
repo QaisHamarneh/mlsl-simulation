@@ -24,7 +24,7 @@ class NumbericObservation(Observation):
         return spaces.Dict({
             'block_size': spaces.Box(
                 low=0, 
-                high=np.inf, 
+                high=BLOCK_SIZE, 
                 shape=(1,), 
                 dtype=np.float32
                 ),

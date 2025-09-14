@@ -3,7 +3,7 @@ import os
 TRAINING_TIMESTEPS = 100_000
 
 # modes
-NONE = 0
+NULL = 0
 LOAD = 1
 TRAIN = 2
 

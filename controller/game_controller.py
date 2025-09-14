@@ -7,7 +7,7 @@ from gui.pyglet_gui import GameWindow
 from gymnasium_env.mlsl_env import MlslEnv
 from gymnasium_env.abstract_observation import Observation
 from gymnasium_env.numeric_observation import NumbericObservation
-from gymnasium_env.rl_constants import NONE, LOAD, TRAIN, TRAINING_TIMESTEPS, PPO_PATH, LOAD_PPO_PATH
+from gymnasium_env.rl_constants import NULL, LOAD, TRAIN, TRAINING_TIMESTEPS, PPO_PATH, LOAD_PPO_PATH
 from stable_baselines3 import PPO
 from stable_baselines3.common.evaluation import evaluate_policy
 from stable_baselines3.common.callbacks import EvalCallback
@@ -18,7 +18,7 @@ class GameController:
                  roads: List[Road], 
                  players: int,
                  render_mode: None | str = None, 
-                 rl_mode: int = NONE, 
+                 rl_mode: int = NULL, 
                  debug: bool = False, 
                  test_mode: List[str] = None):
         
@@ -28,7 +28,7 @@ class GameController:
 
         self.game_model: TrafficEnv = TrafficEnv(roads=roads, players=players, rl_mode=self.rl_mode)
 
-        if not rl_mode == NONE:
+        if not rl_mode == NULL:
             self.observation_model: Observation = NumbericObservation(self.game_model)
             self.env: MlslEnv = MlslEnv(game_model=self.game_model, observation_model=self.observation_model, render_mode=self.render_mode)
 
