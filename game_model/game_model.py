@@ -7,6 +7,7 @@ from game_model.road_network import Direction, Goal, Road, LaneSegment, Problem,
 from game_model.helper_functions import create_random_car, overlap, reached_goal, collision_check
 from game_model.create_game import create_segments
 from game_model.constants import *
+from gymnasium_env.rl_constants import NONE, AGENT, NPC
 
 
 class TrafficEnv:
@@ -26,7 +27,7 @@ class TrafficEnv:
     def __init__(self, 
                  roads: List[Road], 
                  players: int, 
-                 ai: bool = False):
+                 rl_mode: int = NONE):
         """
         Initialize the TrafficEnv.
 
@@ -40,7 +41,7 @@ class TrafficEnv:
         self.roads = roads
         self.segments, self.intersections = create_segments(roads)
         self.npcs = players
-        self.agent = ai
+        self.agent = False if rl_mode == NONE else True
 
         self.reset()
 
@@ -61,12 +62,12 @@ class TrafficEnv:
         self.controllers: List[AstarCarController] = []
 
         if self.agent:
-            self.agent_car = create_random_car(self.segments, self.npc_cars)
+            self.agent_car = create_random_car(self.segments, self.npc_cars, AGENT)
             self._place_goals(self.agent_car)
             self.cars.append(self.agent_car)
 
         for i in range(self.npcs):
-            car = create_random_car(self.segments, self.cars)
+            car = create_random_car(self.segments, self.cars, NPC)
             self.cars.append(car)
             self.npc_cars.append(car)
         for car in self.npc_cars:
@@ -134,11 +135,9 @@ class TrafficEnv:
 
         deadlock = [True if car.speed == 0 else False for car in self.cars]
         if not all(game_over) and all(deadlock):
-            log_msg = "Deadlock between all cars:\n"
-            log_msg += f"Frame: {self.time // len(self.cars)}\n"
-            for car in self.cars:
-                log_msg += f"Car: {car.name} | Speed: {car.speed} | Dead: {car.dead}\n"
-            logging.warning(log_msg)
+            # log_msg = "Deadlock between all cars:\n"
+            # log_msg += f"Frame: {self.time // len(self.cars)}\n"
+            # logging.warning(log_msg)
             return 'deadlock'
         
         if all(game_over):
@@ -172,20 +171,14 @@ class TrafficEnv:
         # Crash detection:
         for other_car in self.cars:
             if other_car != car:
-                # if overlap(car.pos, car.w, car.h,
-                #            other_car.pos, other_car.w, other_car.h):
                 if collision_check(car, other_car):
                     self.total_crashes += 1
                     self.crashes[car.direction] += 1
-                    log_msg = (
-                        f"Frame = {self.time // len(self.cars)},  Crash: {self.total_crashes}\n"
-                        f"Direction = {car.direction},  Crash: {self.crashes[car.direction]}\n"
-                        f"First car {car.name} loc {car.loc} speed {car.speed}\n"
-                        + "\n".join(str(seg) for seg in car.res) + "\n"
-                        f"Second car {other_car.name} loc {other_car.loc} speed {other_car.speed}\n"
-                        + "\n".join(str(seg) for seg in other_car.res) + "\n"
-                    )
-                    logging.warning(log_msg)
+                    # log_msg = (
+                    #     f"Frame = {self.time // len(self.cars)},  Crash: {self.total_crashes}\n"
+                    #     f"First car {car.type}:{car.name} Second car {other_car.type}:{other_car.name}\n"
+                    # )
+                    # logging.warning(log_msg)
                     car.dead = True
                     other_car.dead = True
                     return True
@@ -246,8 +239,7 @@ class TrafficEnv:
         game_over = True
 
         for car in self.cars:
-            car_type = 'Agent' if car == self.agent_car else 'NPC'
-            print(f"{car_type}: {car.name} | Score: {car.score} | Dead: {car.dead}")
+            print(f"{car.type}: {car.name} | Score: {car.score} | Dead: {car.dead}")
             game_over = car.dead and game_over
 
         print(f"\nWinning Score -> {WINNING_SCORE}")

@@ -10,6 +10,7 @@ from typing import Optional, List, Dict
 class Car:
     def __init__(self,
                  name: str,
+                 type: str,
                  loc: int,
                  segment: LaneSegment,
                  speed: int,
@@ -31,6 +32,7 @@ class Car:
         self.reserved_segment = None
         self.changing_lane = None
         self.name = name
+        self.type = type
         self.speed = speed
         self.size = size
         self.color = color

@@ -70,9 +70,9 @@ class MlslEnv(Env):
             return 1
         elif self.game_model.agent_car.illegal_move:
             self.game_model.agent_car.illegal_move = False
-            return -10
+            return -1
         elif self.game_model.agent_car.dead:
-            return -100
+            return -10
         else:
             return 0
     

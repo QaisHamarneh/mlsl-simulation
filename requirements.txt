@@ -2,3 +2,5 @@ numpy>=1.26.1
 pyglet>=2.0.9
 gymnasium>=1.2.0
 stable-baselines3>=2.7.0
+tqdm>=4.67.1
+rich>=14.1.0

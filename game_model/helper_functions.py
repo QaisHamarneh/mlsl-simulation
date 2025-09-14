@@ -68,7 +68,7 @@ def reached_goal(car: Car, goal: Goal) -> bool:
     return False
 
 
-def create_random_car(segments: List[Segment], cars: List[Car]) -> Car:
+def create_random_car(segments: List[Segment], cars: List[Car], car_type: str) -> Car:
     """
     Create a random car that does not overlap with existing cars.
     Randomly selects a color, lane segment, speed, size. The location is set to 0.
@@ -107,6 +107,7 @@ def create_random_car(segments: List[Segment], cars: List[Car]) -> Car:
     loc = 0
 
     return Car(name=name,
+               type=car_type,
                loc=loc,
                segment=lane_segment,
                speed=speed,
