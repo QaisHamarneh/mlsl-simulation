@@ -24,19 +24,19 @@ class NumbericObservation(Observation):
         return spaces.Dict({
             'block_size': spaces.Box(
                 low=0, 
-                high=BLOCK_SIZE, 
-                shape=(1,), 
+                high=max(BLOCK_SIZE / WINDOW_WIDTH, BLOCK_SIZE / WINDOW_HEIGHT), 
+                shape=(2,), 
                 dtype=np.float32
                 ),
             'lanes': spaces.Box(
-                low=np.inf, 
-                high=np.inf,
+                low=0, 
+                high=1,
                 shape=(MAX_LANES, LANES_INFO),
                 dtype=np.float32
                 ),
             'cars': spaces.Box(
-                low=np.inf, 
-                high=np.inf,
+                low=0, 
+                high=1,
                 shape=(MAX_CARS, 1 + MAX_RES, CAR_RES_INFO), 
                 # (speed + 16 res) * 6 fields (res_begin, res_end, seg_begin, seg_end, direction, lane or crossing
                 dtype=np.float32
@@ -45,7 +45,7 @@ class NumbericObservation(Observation):
 
     def observe(self) -> Dict:
         # block size
-        block_size = np.array([BLOCK_SIZE])
+        block_size = np.array([BLOCK_SIZE / WINDOW_WIDTH, BLOCK_SIZE / WINDOW_HEIGHT])
 
         # lanes
         lanes = []
@@ -54,23 +54,24 @@ class NumbericObservation(Observation):
                 lanes.append(self._get_lane_bounds(lane))
 
         while len(lanes) < MAX_LANES:
-            lanes.append([-1] * LANES_INFO)
+            lanes.append([0] * LANES_INFO)
 
         lanes = np.array(lanes, dtype=np.float32)
 
         # car reservations
         cars = []
         for car in self.game_model.cars:
-            speed = np.array([[car.speed] + [0] * (CAR_RES_INFO - 1)], dtype=np.float32)
+            speed = np.array([[car.speed / car.max_speed] + [0] * (CAR_RES_INFO - 1)], dtype=np.float32)
 
             reservations = []
             for seg_info in car.res:
 
                 if isinstance(seg_info.segment, LaneSegment):
 
+                    # todo: move doubled code from lanesegment and crossing segment
                     reservations.append([
-                        seg_info.segment.lane.num,
-                        seg_info.direction.value,
+                        seg_info.segment.lane.num / MAX_LANES,
+                        seg_info.direction.value / Direction.DIRECTIONS.value,
                         *self._get_lane_reservation(seg_info, seg_info.segment)
                     ])
 
@@ -78,8 +79,8 @@ class NumbericObservation(Observation):
                     lane_num = seg_info.segment.horiz_lane.num if seg_info.direction in (Direction.RIGHT, Direction.LEFT) else seg_info.segment.vert_lane.num
 
                     reservations.append([
-                        lane_num,
-                        seg_info.direction.value,
+                        lane_num / MAX_LANES,
+                        seg_info.direction.value / Direction.DIRECTIONS.value,
                         *self._get_crossing_reservation(seg_info, seg_info.segment)
                     ])
 
@@ -95,6 +96,10 @@ class NumbericObservation(Observation):
 
         cars = np.array(cars, dtype=np.float32)
 
+        print("block_size", block_size)
+        print("lanes", lanes)
+        # print("cars", cars)
+
         return {
             'block_size': block_size,
             'lanes': lanes,
@@ -105,14 +110,37 @@ class NumbericObservation(Observation):
         """Return lane_number, direction, begin_x, begin_y, end_x, end_y"""
         total_length = sum(seg.length for seg in lane.segments)
 
+        normalized_lane_num = lane.num / MAX_LANES
+        normalized_lane_direction = lane.direction.value / Direction.DIRECTIONS.value
+
         if lane.direction is Direction.RIGHT:
-            return [lane.num, lane.direction.value, 0, lane.top, total_length, lane.top]
+            return [normalized_lane_num, 
+                    normalized_lane_direction, 
+                    0, 
+                    lane.top / WINDOW_HEIGHT, 
+                    total_length / WINDOW_WIDTH, 
+                    lane.top / WINDOW_HEIGHT]
         elif lane.direction is Direction.DOWN:
-            return [lane.num, lane.direction.value, lane.top, total_length, lane.top, 0]
+            return [normalized_lane_num, 
+                    normalized_lane_direction, 
+                    lane.top / WINDOW_WIDTH, 
+                    total_length / WINDOW_HEIGHT, 
+                    lane.top / WINDOW_WIDTH, 
+                    0]
         elif lane.direction is Direction.LEFT:
-            return [lane.num, lane.direction.value, total_length, lane.top, 0, lane.top]
+            return [normalized_lane_num, 
+                    normalized_lane_direction, 
+                    total_length / WINDOW_WIDTH, 
+                    lane.top / WINDOW_HEIGHT, 
+                    0, 
+                    lane.top / WINDOW_HEIGHT]
         else:  # UP
-            return [lane.num, lane.direction.value, lane.top, 0, lane.top, total_length]
+            return [normalized_lane_num, 
+                    normalized_lane_direction, 
+                    lane.top / WINDOW_WIDTH, 
+                    0, 
+                    lane.top / WINDOW_WIDTH, 
+                    total_length / WINDOW_HEIGHT]
 
     def _get_lane_reservation(self, seg_info: SegmentInfo, seg: LaneSegment) -> Tuple[float, float, float, float]:
         # horizontal lane
@@ -127,10 +155,10 @@ class NumbericObservation(Observation):
             res_end_y = seg.begin + seg_info.end
 
         return [
-            res_begin_x, 
-            res_begin_y, 
-            res_end_x, 
-            res_end_y
+            res_begin_x / WINDOW_WIDTH, 
+            res_begin_y / WINDOW_HEIGHT, 
+            res_end_x / WINDOW_WIDTH, 
+            res_end_y / WINDOW_HEIGHT
         ]
 
     def _get_crossing_reservation(self, seg_info: SegmentInfo, seg: CrossingSegment) -> Tuple[float, float, float, float]:

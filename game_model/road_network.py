@@ -17,6 +17,8 @@ class Direction(Enum):
     DOWN = 2
     LEFT = 3
     UP = 4
+    # Used for normalization in numeric_observation.py
+    DIRECTIONS = 4
 
 
 class Problem(Enum):

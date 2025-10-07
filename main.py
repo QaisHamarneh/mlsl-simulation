@@ -15,4 +15,4 @@ def main(players, roads, segmentation, render_mode = None, rl_mode: int = NULL, 
     controller.run()
 
 if __name__ == '__main__':
-    main(**CIRCUIT, render_mode='human', rl_mode=NULL, debug=False, test_mode=['all'])
+    main(**CIRCUIT, render_mode='human', rl_mode=TRAIN, debug=False, test_mode=['all'])
