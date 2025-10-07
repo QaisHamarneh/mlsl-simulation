@@ -61,7 +61,7 @@ class GameController:
                                      render=False)
         
         #todo: Figure out network size/structure, parameters (which ones are optimized and not) 
-        self.model = PPO("MultiInputPolicy", self.env, verbose=0)
+        self.model = PPO("MlpPolicy", self.env, verbose=0)
 
         # Train the agent
         self.model.learn(total_timesteps=TRAINING_TIMESTEPS, callback=eval_callback, progress_bar=True)

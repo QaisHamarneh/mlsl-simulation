@@ -21,31 +21,21 @@ class NumbericObservation(Observation):
         super().__init__(game_model)
 
     def space(self) -> spaces.Space:
-        return spaces.Dict({
-            'block_size': spaces.Box(
-                low=0, 
-                high=max(BLOCK_SIZE / WINDOW_WIDTH, BLOCK_SIZE / WINDOW_HEIGHT), 
-                shape=(2,), 
-                dtype=np.float32
-                ),
-            'lanes': spaces.Box(
-                low=0, 
-                high=1,
-                shape=(MAX_LANES, LANES_INFO),
-                dtype=np.float32
-                ),
-            'cars': spaces.Box(
-                low=0, 
-                high=1,
-                shape=(MAX_CARS, 1 + MAX_RES, CAR_RES_INFO), 
-                # (speed + 16 res) * 6 fields (res_begin, res_end, seg_begin, seg_end, direction, lane or crossing
-                dtype=np.float32
-                )
-            })
+        lanes_shape = MAX_LANES * LANES_INFO
+        cars_shape = MAX_CARS * (1 + MAX_RES) * CAR_RES_INFO
+
+        obs_dim = lanes_shape + cars_shape
+
+        return spaces.Box(
+            low=0,
+            high=1,
+            shape=(obs_dim,),
+            dtype=np.float32
+        )
 
     def observe(self) -> Dict:
         # block size
-        block_size = np.array([BLOCK_SIZE / WINDOW_WIDTH, BLOCK_SIZE / WINDOW_HEIGHT])
+        # block_size = np.array([BLOCK_SIZE / WINDOW_WIDTH, BLOCK_SIZE / WINDOW_HEIGHT])
 
         # lanes
         lanes = []
@@ -56,7 +46,7 @@ class NumbericObservation(Observation):
         while len(lanes) < MAX_LANES:
             lanes.append([0] * LANES_INFO)
 
-        lanes = np.array(lanes, dtype=np.float32)
+        lanes = np.array(lanes, dtype=np.float32).flatten()
 
         # car reservations
         cars = []
@@ -94,17 +84,9 @@ class NumbericObservation(Observation):
         while len(cars) < MAX_CARS:
             cars.append(np.zeros((1 + MAX_RES, CAR_RES_INFO), dtype=np.float32))
 
-        cars = np.array(cars, dtype=np.float32)
+        cars = np.array(cars, dtype=np.float32).flatten()
 
-        print("block_size", block_size)
-        print("lanes", lanes)
-        # print("cars", cars)
-
-        return {
-            'block_size': block_size,
-            'lanes': lanes,
-            'cars': cars
-        }
+        return np.concatenate([lanes, cars])
     
     def _get_lane_bounds(self, lane: Lane) -> List[float]:
         """Return lane_number, direction, begin_x, begin_y, end_x, end_y"""
