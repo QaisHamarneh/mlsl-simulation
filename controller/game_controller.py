@@ -4,21 +4,24 @@ from game_model.game_model import TrafficEnv
 from game_model.Tester import SimulationTester
 from game_model.road_network import Road
 from gui.pyglet_gui import GameWindow
-from gymnasium_env.mlsl_env import MlslEnv
-from gymnasium_env.abstract_observation import Observation
-from gymnasium_env.numeric_observation import NumbericObservation
-from gymnasium_env.rl_constants import NULL, LOAD, TRAIN, TRAINING_TIMESTEPS, PPO_PATH, LOAD_PPO_PATH
+from reinforcement_learning.gymnasium_env.mlsl_env import MlslEnv
+from reinforcement_learning.gymnasium_env.abstract_observation import Observation
+from reinforcement_learning.gymnasium_env.numeric_observation import NumbericObservation
+from reinforcement_learning.rl_constants import TRAINING_TIMESTEPS, PPO_PATH, LOAD_PPO_PATH
+from reinforcement_learning.rl_modes import RLMode
 from stable_baselines3 import PPO
 from stable_baselines3.common.evaluation import evaluate_policy
 from stable_baselines3.common.callbacks import EvalCallback
 import pyglet
 
 class GameController:
+    mode_handlers = {}
+
     def __init__(self, 
                  roads: List[Road], 
                  players: int,
                  render_mode: None | str = None, 
-                 rl_mode: int = NULL, 
+                 rl_mode: RLMode = RLMode.NULL, 
                  debug: bool = False, 
                  test_mode: List[str] = None):
         
@@ -28,7 +31,7 @@ class GameController:
 
         self.game_model: TrafficEnv = TrafficEnv(roads=roads, players=players, rl_mode=self.rl_mode)
 
-        if not rl_mode == NULL:
+        if not rl_mode == RLMode.NULL:
             self.observation_model: Observation = NumbericObservation(self.game_model)
             self.env: MlslEnv = MlslEnv(game_model=self.game_model, observation_model=self.observation_model, render_mode=self.render_mode)
 
@@ -39,11 +42,16 @@ class GameController:
         if test_mode is not None:
             self.sim_tester: SimulationTester = SimulationTester(self.game_model, self.test_mode)
 
+    def register_mode(mode_handlers, mode):
+        def decorator(func):
+            mode_handlers[mode] = func
+            return func
+        return decorator
+
     def run(self) -> None:
-        if self.rl_mode == TRAIN:
-            self._train_model()
-        elif self.rl_mode == LOAD:
-            self._load_model()
+        handler = self.mode_handlers.get(self.rl_mode)
+        if handler:
+            handler(self)
         elif self.render_mode == 'human':
             self.frame_count = 0
             self._run_gui()    
@@ -52,6 +60,7 @@ class GameController:
 
         self.game_model.current_state()
 
+    @register_mode(mode_handlers, RLMode.TRAIN) # _train_model = register_mode(mode_handlers, TRAIN)(_train_model)
     def _train_model(self):
         # Used to save the best model
         eval_callback = EvalCallback(self.env, 
@@ -60,16 +69,21 @@ class GameController:
                                      deterministic=True, 
                                      render=False)
         
-        #todo: Figure out network size/structure, parameters (which ones are optimized and not) 
         self.model = PPO("MlpPolicy", self.env, verbose=0)
 
         # Train the agent
         self.model.learn(total_timesteps=TRAINING_TIMESTEPS, callback=eval_callback, progress_bar=True)
+        
         evaluate_policy(self.model, self.env, n_eval_episodes=1, render=True)
 
+    @register_mode(mode_handlers, RLMode.LOAD)
     def _load_model(self):
         self.model = PPO.load(LOAD_PPO_PATH, self.env)
         evaluate_policy(self.model, self.env, n_eval_episodes=1, render=True)
+
+    @register_mode(mode_handlers, RLMode.HYPER_PARAM_OPT)
+    def _optimize_hyperparams(self):
+        pass
 
     def _run_gui(self) -> None:
         self._start_new_game()

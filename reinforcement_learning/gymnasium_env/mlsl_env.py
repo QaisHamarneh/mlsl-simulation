@@ -4,7 +4,7 @@ from typing import Tuple, Dict
 from game_model.game_model import TrafficEnv
 from game_model.constants import MAX_ACC, MAX_DEC, TIME_PER_FRAME, RENDER_MODES
 from gui.pyglet_gui import GameWindow
-from gymnasium_env.abstract_observation import Observation
+from reinforcement_learning.gymnasium_env.abstract_observation import Observation
 import pyglet
 import time
 

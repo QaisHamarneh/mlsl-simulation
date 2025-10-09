@@ -1,5 +1,5 @@
 from typing import List, Dict, Tuple
-from gymnasium_env.abstract_observation import Observation
+from reinforcement_learning.gymnasium_env.abstract_observation import Observation
 from gymnasium import spaces
 from game_model.game_model import TrafficEnv
 from game_model.constants import BLOCK_SIZE, WINDOW_WIDTH, WINDOW_HEIGHT

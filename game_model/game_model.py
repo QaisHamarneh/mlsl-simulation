@@ -7,7 +7,8 @@ from game_model.road_network import Direction, Goal, Road, LaneSegment, Problem,
 from game_model.helper_functions import create_random_car, overlap, reached_goal, collision_check
 from game_model.create_game import create_segments
 from game_model.constants import *
-from gymnasium_env.rl_constants import NULL, AGENT, NPC
+from reinforcement_learning.rl_constants import AGENT, NPC
+from reinforcement_learning.rl_modes import RLMode
 
 
 class TrafficEnv:
@@ -27,7 +28,7 @@ class TrafficEnv:
     def __init__(self, 
                  roads: List[Road], 
                  players: int, 
-                 rl_mode: int = NULL):
+                 rl_mode: RLMode = RLMode.NULL):
         """
         Initialize the TrafficEnv.
 
@@ -41,7 +42,7 @@ class TrafficEnv:
         self.roads = roads
         self.segments, self.intersections = create_segments(roads)
         self.npcs = players
-        self.agent = False if rl_mode == NULL else True
+        self.agent = False if rl_mode == RLMode.NULL else True
 
         self.reset()
 
