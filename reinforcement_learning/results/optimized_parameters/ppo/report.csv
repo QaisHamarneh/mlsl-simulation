@@ -1,0 +1,3 @@
+,number,value,datetime_start,datetime_complete,duration,params_activation_fn,params_batch_size,params_clip_range,params_ent_coef,params_gae_lambda,params_gamma,params_learning_rate,params_lr_schedule,params_max_grad_norm,params_n_epochs,params_n_steps,params_net_arch_depth,params_net_arch_width,params_ortho_init,params_vf_coef,state
+0,0,-303.6,2025-10-12 15:31:33.055338,2025-10-12 15:32:19.654469,0 days 00:00:46.599131,elu,32,0.3,0.021711646887975604,0.92,0.5,4.3230799761850954e-05,linear,0.5,10,8,3,128,False,0.5896615717168964,COMPLETE
+1,1,-402.2,2025-10-12 15:32:19.654685,2025-10-12 15:32:28.565340,0 days 00:00:08.910655,elu,512,0.2,4.6291935696917315e-07,0.95,0.98,1.7535250188700206e-05,linear,0.3,20,1024,3,128,False,0.7594519710022033,COMPLETE

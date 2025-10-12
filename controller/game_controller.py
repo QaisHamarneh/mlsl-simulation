@@ -1,3 +1,6 @@
+import os
+import pyglet
+
 from typing import List
 from game_model.constants import TIME_PER_FRAME, RENDER_MODES
 from game_model.game_model import TrafficEnv
@@ -7,12 +10,14 @@ from gui.pyglet_gui import GameWindow
 from reinforcement_learning.gymnasium_env.mlsl_env import MlslEnv
 from reinforcement_learning.gymnasium_env.abstract_observation import Observation
 from reinforcement_learning.gymnasium_env.numeric_observation import NumbericObservation
-from reinforcement_learning.rl_constants import TRAINING_TIMESTEPS, PPO_PATH, LOAD_PPO_PATH
+from reinforcement_learning.rl_constants import TRAINING_TIMESTEPS, PPO_MODEL
 from reinforcement_learning.rl_modes import RLMode
+from reinforcement_learning.rl_io import save_model_path, load_model_path
+from reinforcement_learning.hyperparameters.optuna_serach import OptunaSearch
 from stable_baselines3 import PPO
+from stable_baselines3.common.monitor import Monitor
 from stable_baselines3.common.evaluation import evaluate_policy
 from stable_baselines3.common.callbacks import EvalCallback
-import pyglet
 
 class GameController:
     mode_handlers = {}
@@ -34,6 +39,8 @@ class GameController:
         if not rl_mode == RLMode.NULL:
             self.observation_model: Observation = NumbericObservation(self.game_model)
             self.env: MlslEnv = MlslEnv(game_model=self.game_model, observation_model=self.observation_model, render_mode=self.render_mode)
+            self.env = Monitor(self.env) # Used to know the episode reward, length, time and other data
+            self.model = PPO("MlpPolicy", self.env, verbose=0)
 
         self.done = None
 
@@ -60,16 +67,13 @@ class GameController:
 
         self.game_model.current_state()
 
-    @register_mode(mode_handlers, RLMode.TRAIN) # _train_model = register_mode(mode_handlers, TRAIN)(_train_model)
+    @register_mode(mode_handlers, RLMode.TRAIN) # _train_model = register_mode(mode_handlers, RLMode.TRAIN)(_train_model)
     def _train_model(self):
         # Used to save the best model
         eval_callback = EvalCallback(self.env, 
-                                     best_model_save_path=PPO_PATH,
+                                     best_model_save_path=save_model_path(PPO_MODEL),
                                      eval_freq=500,
-                                     deterministic=True, 
                                      render=False)
-        
-        self.model = PPO("MlpPolicy", self.env, verbose=0)
 
         # Train the agent
         self.model.learn(total_timesteps=TRAINING_TIMESTEPS, callback=eval_callback, progress_bar=True)
@@ -78,12 +82,13 @@ class GameController:
 
     @register_mode(mode_handlers, RLMode.LOAD)
     def _load_model(self):
-        self.model = PPO.load(LOAD_PPO_PATH, self.env)
+        self.model = PPO.load(load_model_path(PPO_MODEL), self.env)
         evaluate_policy(self.model, self.env, n_eval_episodes=1, render=True)
 
-    @register_mode(mode_handlers, RLMode.HYPER_PARAM_OPT)
+    @register_mode(mode_handlers, RLMode.OPTUNA)
     def _optimize_hyperparams(self):
-        pass
+        optuna_search = OptunaSearch(self.env)
+        optuna_search.search_params()
 
     def _run_gui(self) -> None:
         self._start_new_game()

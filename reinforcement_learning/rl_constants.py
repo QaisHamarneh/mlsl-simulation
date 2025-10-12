@@ -2,11 +2,13 @@ import os
 
 TRAINING_TIMESTEPS = 100_000
 
-# save models
-PPO_PATH = os.path.join('reinforcement_learning/saved_trainings', 'saved_ppo_model')
+HYPERPARAMS_TRAINING_TIMESTEPS = 5_000
 
-# load models
-LOAD_PPO_PATH = os.path.join('reinforcement_learning/saved_trainings', 'saved_ppo_model', 'best_model')
+PPO_MODEL = 'ppo'
+
+RESULT_MODEL_PATH = os.path.join('reinforcement_learning', 'results', 'saved_trainings')
+
+RESULT_PARAM_PATH = os.path.join('reinforcement_learning', 'results', 'optimized_parameters')
 
 # car types
 AGENT = "Agent"

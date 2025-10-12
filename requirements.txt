@@ -4,3 +4,4 @@ gymnasium>=1.2.0
 stable-baselines3>=2.7.0
 tqdm>=4.67.1
 rich>=14.1.0
+optuna>=4.5.0

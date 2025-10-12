@@ -15,4 +15,4 @@ def main(players, roads, segmentation, render_mode = None, rl_mode: RLMode = RLM
     controller.run()
 
 if __name__ == '__main__':
-    main(**CIRCUIT, render_mode='human', rl_mode=RLMode.LOAD, debug=False, test_mode=['all'])
+    main(**CIRCUIT, render_mode='human', rl_mode=RLMode.TRAIN, debug=False, test_mode=['all'])
