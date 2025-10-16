@@ -426,7 +426,7 @@ class Car:
 
         if speed is None:
             speed = self.speed
-        assert speed >= 0, f"Speed must be positive {self.name} - {speed}"
+        assert speed >= 0, f"Speed must be positive {self.type} - {speed}" + str(test)
         # braking = math.ceil(speed**2  // (2 * MAX_DEC))
 
         braking = 0

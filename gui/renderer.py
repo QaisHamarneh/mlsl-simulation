@@ -4,7 +4,6 @@ from pyglet import text
 from pyglet.window import Window
 from typing import List, Union
 from gui.map_colors import PALE_GREEN
-from game_model.constants import WINDOW_WIDTH, WINDOW_HEIGHT
 
 
 class Renderer():

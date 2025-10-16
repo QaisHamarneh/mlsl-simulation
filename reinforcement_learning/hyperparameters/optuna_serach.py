@@ -1,4 +1,3 @@
-import os
 import optuna
 
 from optuna.samplers import TPESampler
@@ -22,21 +21,20 @@ class OptunaSearch:
         study = optuna.create_study(
             sampler=self.sampler,
             pruner=self.pruner,
-            load_if_exists=True,
-            direction='maximize',
+            direction="maximize",
         )
 
-        study.optimize(self.objective, n_jobs=1, n_trials=128)
+        study.optimize(self.objective, n_jobs=1, n_trials=16)
 
-        study.trials_dataframe().to_csv(save_params_path(PPO_MODEL, 'report.csv'))
+        study.trials_dataframe().to_csv(save_params_path(PPO_MODEL, "report.csv"))
 
         fig1 = plot_optimization_history(study)
         fig2 = plot_param_importances(study)
         fig3 = plot_timeline(study)
 
-        fig1.write_html(save_params_path(PPO_MODEL, 'optuna_optimization_history.html'))
-        fig2.write_html(save_params_path(PPO_MODEL, 'optuna_param_importances.html'))
-        fig3.write_html(save_params_path(PPO_MODEL, 'optuna_timeline.html'))
+        fig1.write_html(save_params_path(PPO_MODEL, "optuna_optimization_history.html"))
+        fig2.write_html(save_params_path(PPO_MODEL, "optuna_param_importances.html"))
+        fig3.write_html(save_params_path(PPO_MODEL, "optuna_timeline.html"))
 
     def objective(self, trial: optuna.Trial):
         sampled_hyperparams = sample_ppo_params(trial)

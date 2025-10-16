@@ -28,7 +28,7 @@ class TrafficEnv:
     def __init__(self, 
                  roads: List[Road], 
                  players: int, 
-                 rl_mode: RLMode = RLMode.NULL):
+                 rl_mode: RLMode = RLMode.NO_AI):
         """
         Initialize the TrafficEnv.
 
@@ -42,7 +42,7 @@ class TrafficEnv:
         self.roads = roads
         self.segments, self.intersections = create_segments(roads)
         self.npcs = players
-        self.agent = False if rl_mode == RLMode.NULL else True
+        self.agent = False if rl_mode == RLMode.NO_AI else True
 
         self.reset()
 
@@ -165,9 +165,6 @@ class TrafficEnv:
             else:
                 car.dead = True
                 return True
-            
-        if car.speed == 0:
-            car.illegal_move = True
 
         # Crash detection:
         for other_car in self.cars:

@@ -1,14 +1,16 @@
+import pyglet
+import time
+
+from abc import ABC, abstractmethod
 from gymnasium import Env
 from gymnasium import spaces
 from typing import Tuple, Dict
 from game_model.game_model import TrafficEnv
-from game_model.constants import MAX_ACC, MAX_DEC, TIME_PER_FRAME, RENDER_MODES
+from game_model.constants import MAX_ACC, MAX_DEC, TIME_PER_FRAME
 from gui.pyglet_gui import GameWindow
-from reinforcement_learning.gymnasium_env.abstract_observation import Observation
-import pyglet
-import time
+from reinforcement_learning.observation_spaces.abstract_observation import Observation
 
-class MlslEnv(Env):
+class MlslEnv(Env, ABC):
 
     def __init__(self, 
                  game_model: TrafficEnv,
@@ -24,7 +26,7 @@ class MlslEnv(Env):
 
         self.observation_model = observation_model
 
-        # accelaration = [-MAX_DEC, MAX_ACC] and lange changes = [-1, 0, 1]
+        # accelaration = [0, MAX_DEC + MAX_ACC - 1] and lange changes = [0, 2]
         self.action_space = spaces.MultiDiscrete([MAX_ACC + MAX_DEC, 3])
         self.observation_space = self.observation_model.space()
 
@@ -33,20 +35,24 @@ class MlslEnv(Env):
         return (self.observation_model.observe(), self._get_info())
     
     def step(self, actions: Tuple[int, int]):
-        decoded_action = (actions[0] - MAX_DEC, actions[1] - 1)
+        # accelaration = [-MAX_DEC, MAX_ACC] and lange changes = [-1, 0, 1]
+        if actions[0] > MAX_DEC - 1:
+            decoded_action = (actions[0] - MAX_DEC + 1, actions[1] - 1)
+        else:
+            decoded_action = (actions[0] - MAX_DEC, actions[1] - 1)
 
-        result = self.game_model.play_step(action=decoded_action)
+        self.result = self.game_model.play_step(action=decoded_action)
 
         observation = self.observation_model.observe()
 
-        reward = self._compute_reward()
+        reward = self.compute_reward()
 
         done = False
         truncated = False
 
-        if result == 'game_over':
+        if self.result == "game_over":
             done = True
-        elif result == 'deadlock':
+        elif self.result == "deadlock":
             truncated = True
 
         info = self._get_info() # for debugging
@@ -64,17 +70,9 @@ class MlslEnv(Env):
         pyglet.clock.tick()
         self.game_window.flip()
 
-    def _compute_reward(self):
-        if self.game_model.agent_car.score > self.agent_score:
-            self.agent_score = self.game_model.agent_car.score
-            return 1
-        elif self.game_model.agent_car.illegal_move:
-            self.game_model.agent_car.illegal_move = False
-            return -1
-        elif self.game_model.agent_car.dead:
-            return -10
-        else:
-            return 0
+    @abstractmethod
+    def compute_reward(self):
+        ...
     
     def _get_info(self) -> Dict:
         """Compute auxiliary information for debugging.

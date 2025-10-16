@@ -1,7 +1,8 @@
 from enum import Enum, auto
 
 class RLMode(Enum):
-    NULL = auto()
+    NO_AI = auto()
     LOAD = auto()
     TRAIN = auto()
-    OPTUNA = auto()
+    OPTIMIZE = auto()
+    OPTIMIZE_AND_TRAIN = auto()
