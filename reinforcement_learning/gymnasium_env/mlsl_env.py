@@ -8,7 +8,7 @@ from typing import Tuple, Dict
 from game_model.game_model import TrafficEnv
 from game_model.constants import MAX_ACC, MAX_DEC, TIME_PER_FRAME
 from gui.pyglet_gui import GameWindow
-from reinforcement_learning.observation_spaces.abstract_observation import Observation
+from reinforcement_learning.gymnasium_env.observation_spaces.abstract_observation import Observation
 
 class MlslEnv(Env, ABC):
 

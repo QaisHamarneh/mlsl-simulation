@@ -1,6 +1,6 @@
 import pyglet
 
-from typing import List, Callable
+from typing import List, Callable, Dict
 from game_model.constants import TIME_PER_FRAME
 from game_model.game_model import TrafficEnv
 from game_model.road_network import Road
@@ -9,9 +9,12 @@ from gui.render_mode import RenderMode
 from reinforcement_learning.gymnasium_env.mlsl_env import MlslEnv
 from reinforcement_learning.gymnasium_env.reward_types import RewardType
 from controller.reward_registry import get_reward_model
-from reinforcement_learning.observation_spaces.observation_model_types import ObservationModelType
-from reinforcement_learning.observation_spaces.abstract_observation import Observation
+from reinforcement_learning.gymnasium_env.observation_spaces.observation_model_types import ObservationModelType
+from reinforcement_learning.gymnasium_env.observation_spaces.abstract_observation import Observation
 from controller.observation_registry import get_observation_model
+from reinforcement_learning.algorithms.rl_algorithm import RLAlgorithm
+from reinforcement_learning.algorithms.rl_algorithm_types import RLAlgorithmType
+from controller.rl_algo_registry import get_rl_algo
 from reinforcement_learning.rl_constants import TRAINING_TIMESTEPS, PPO_MODEL
 from reinforcement_learning.rl_modes import RLMode
 from reinforcement_learning.rl_io import save_model_path, load_model_path
@@ -22,22 +25,32 @@ from stable_baselines3.common.evaluation import evaluate_policy
 from stable_baselines3.common.callbacks import EvalCallback
 
 class GameController:
-    mode_handlers = {}
+    mode_handlers: Dict[RLMode, Callable] = {}
 
-    def __init__(self, 
+    def __init__(self,
+                 scenario_name: str, 
                  roads: List[Road], 
                  players: int,
                  render_mode: RenderMode = RenderMode.GUI, 
                  rl_mode: RLMode = RLMode.NO_AI, 
+                 rl_algorithm_type: None | RLAlgorithmType = None,
                  observation_model_type: None | ObservationModelType = None,
                  reward_type: None | RewardType = None):
         
+        self.scenario_name = scenario_name
         self.render_mode = render_mode
+        self.rl_algorithm_type = rl_algorithm_type
         self.rl_mode = rl_mode
 
         self.game_model: TrafficEnv = TrafficEnv(roads=roads, players=players, rl_mode=self.rl_mode)
 
-        if not (rl_mode == RLMode.NO_AI or observation_model_type == None or reward_type == None):
+        if not (
+            rl_mode == RLMode.NO_AI 
+            or observation_model_type == None 
+            or reward_type == None
+            or rl_algorithm_type == None
+            ):
+
             observation_model_class: Observation = get_observation_model(observation_model_type)
             self.observation_model: Observation = observation_model_class(self.game_model)
 
@@ -45,7 +58,8 @@ class GameController:
             self.env: MlslEnv = env_class(game_model=self.game_model, observation_model=self.observation_model, render_mode=self.render_mode)
             self.env = Monitor(self.env) # Used to know the episode reward, length, time and other data
 
-            self.model = PPO("MlpPolicy", self.env, verbose=0)
+            rl_algo_class: RLAlgorithm = get_rl_algo(self.rl_algorithm_type)
+            self.rl_algorithm: RLAlgorithm = rl_algo_class(self.env)
 
         self.done = None
 
@@ -76,19 +90,24 @@ class GameController:
                                      render=False)
 
         # Train the agent
-        self.model.learn(total_timesteps=TRAINING_TIMESTEPS, callback=eval_callback, progress_bar=True)
+        self.rl_algorithm.algorithm.learn(total_timesteps=TRAINING_TIMESTEPS, callback=eval_callback, progress_bar=True)
         
-        evaluate_policy(self.model, self.env, n_eval_episodes=1, render=True)
+        evaluate_policy(self.rl_algorithm, self.env, n_eval_episodes=1, render=True)
 
     @register_mode(mode_handlers, RLMode.LOAD)
     def _load_model(self):
-        self.model = PPO.load(load_model_path(PPO_MODEL), self.env)
-        evaluate_policy(self.model, self.env, n_eval_episodes=1, render=True)
+        model = self.rl_algorithm.algorithm.load(load_model_path(PPO_MODEL), self.env)
+        evaluate_policy(model, self.env, n_eval_episodes=1, render=True)
 
     @register_mode(mode_handlers, RLMode.OPTIMIZE)
     def _optimize_hyperparams(self):
         optuna_search = OptunaSearch(self.env)
-        optuna_search.search_params()
+        params = optuna_search.search_params()
+
+    @register_mode(mode_handlers, RLMode.OPTIMIZE_AND_TRAIN)
+    def _optimize_and_train(self):
+        self._optimize_hyperparams(self)
+        self._train_model(self)
 
     def _run_gui(self) -> None:
         self._start_new_game()

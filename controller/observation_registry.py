@@ -1,6 +1,6 @@
 from typing import Dict, Callable
-from reinforcement_learning.observation_spaces.observation_model_types import ObservationModelType
-from reinforcement_learning.observation_spaces.abstract_observation import Observation
+from reinforcement_learning.gymnasium_env.observation_spaces.observation_model_types import ObservationModelType
+from reinforcement_learning.gymnasium_env.observation_spaces.abstract_observation import Observation
 
 _observation_registry: Dict[ObservationModelType, Observation] = {}
 

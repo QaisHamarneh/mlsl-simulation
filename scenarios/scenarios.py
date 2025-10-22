@@ -10,7 +10,8 @@ LEFT_RIGHT_OVERTAKE = {
         Road("h1", True, 330, 3, 3),
     ],
     "segmentation": False,
-    "players": 2
+    "players": 2,
+    "name": "left_right_overtake"
 }
 
 LEFT_RIGHT_OVERTAKE_2 = {
@@ -23,7 +24,8 @@ LEFT_RIGHT_OVERTAKE_2 = {
         Road("h1", True, 330, 3, 3),
     ],
     "segmentation": False,
-    "players": 6
+    "players": 6,
+    "name": "left_right_overtake_2"
 }
 
 UP_DOWN_OVERTAKE = {
@@ -35,7 +37,8 @@ UP_DOWN_OVERTAKE = {
         Road("v1", False, 680, 3, 3),
     ],
     "segmentation": False,
-    "players": 2
+    "players": 2,
+    "name": "up_down_overtake"
 }
 
 BIG_SCENARIO = {
@@ -54,7 +57,8 @@ BIG_SCENARIO = {
         Road("v3", False, 3 * WINDOW_WIDTH // 4 - 1 * BLOCK_SIZE, 2, 0)
     ],
     "segmentation": False,
-    "players": 80
+    "players": 80,
+    "name": "big_scenario"
 }
 
 STARTING_SCENARIO = {
@@ -71,7 +75,8 @@ STARTING_SCENARIO = {
         Road("v3", False, 3 * WINDOW_WIDTH // 4 - 1 * BLOCK_SIZE, 2, 0)
     ],
     "segmentation": False,
-    "players": 21
+    "players": 21,
+    "name": "starting_scenario"
 }
 TWO_CROSSING = {
     "roads": [
@@ -85,7 +90,8 @@ TWO_CROSSING = {
         Road("v2", False, 23 * BLOCK_SIZE, 3, 4)
     ],
     "segmentation": False,
-    "players": 22
+    "players": 22,
+    "name": "two_crossings"
 }
 
 ONE_CROSSING = {
@@ -98,7 +104,8 @@ ONE_CROSSING = {
         Road("h1", True, WINDOW_HEIGHT // 2 - 3 * BLOCK_SIZE, 1, 1),
     ],
     "segmentation": False,
-    "players": 16
+    "players": 16,
+    "name": "one_crossing"
 }
 
 ONE_ROAD = {
@@ -110,7 +117,8 @@ ONE_ROAD = {
         Road("r1", True, 400, 6, 0)
     ],
     "segmentation": False,
-    "players": 5
+    "players": 5,
+    "name": "one_road"
 }
 
 HORIZONTAL_VERTICAL = {
@@ -120,7 +128,8 @@ HORIZONTAL_VERTICAL = {
         Road("v2", False, 540, 2, 2)
     ],
     "segmentation": False,
-    "players": 25
+    "players": 25,
+    "name": "horizontal_vertical"
 }
 
 CIRCUIT = {
@@ -131,8 +140,10 @@ CIRCUIT = {
         Road("left", False, 0, 1, 0),
     ],
     "segmentation": False,
-    "players": 3
+    "players": 3,
+    "name": "circuit"
 }
 
 JUST_ONE_CAR = STARTING_SCENARIO.copy()
 JUST_ONE_CAR["players"] = 1
+JUST_ONE_CAR["name"] = "just_one_car"

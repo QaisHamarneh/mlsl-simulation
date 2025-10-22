@@ -24,7 +24,9 @@ class OptunaSearch:
             direction="maximize",
         )
 
-        study.optimize(self.objective, n_jobs=1, n_trials=16)
+        study.optimize(self.objective, n_jobs=1, n_trials=2)
+
+        best_trial = study.best_trial
 
         study.trials_dataframe().to_csv(save_params_path(PPO_MODEL, "report.csv"))
 
@@ -35,6 +37,8 @@ class OptunaSearch:
         fig1.write_html(save_params_path(PPO_MODEL, "optuna_optimization_history.html"))
         fig2.write_html(save_params_path(PPO_MODEL, "optuna_param_importances.html"))
         fig3.write_html(save_params_path(PPO_MODEL, "optuna_timeline.html"))
+
+        return best_trial.params
 
     def objective(self, trial: optuna.Trial):
         sampled_hyperparams = sample_ppo_params(trial)

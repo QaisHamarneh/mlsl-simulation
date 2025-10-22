@@ -4,9 +4,6 @@ from controller.reward_registry import register_reward_model
 
 @register_reward_model(RewardType.INITIAL)
 class InitialReward(MlslEnv):
-    def __init__(self, game_model, observation_model, render_mode = None):
-        super().__init__(game_model, observation_model, render_mode)
-
     def compute_reward(self):
         if self.game_model.agent_car.score > self.agent_score:
             self.agent_score = self.game_model.agent_car.score
