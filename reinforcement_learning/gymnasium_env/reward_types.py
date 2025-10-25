@@ -1,4 +1,4 @@
 from enum import Enum, auto
 
 class RewardType(Enum):
-    INITIAL = auto()
+    INITIAL_REWARD = auto()

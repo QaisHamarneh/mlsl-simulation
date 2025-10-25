@@ -3,21 +3,20 @@ import optuna
 from optuna.samplers import TPESampler
 from optuna.pruners import MedianPruner
 from optuna.visualization import plot_optimization_history, plot_param_importances, plot_timeline
-from stable_baselines3 import PPO 
+from optuna.study import Study
 from stable_baselines3.common.callbacks import StopTrainingOnNoModelImprovement, EvalCallback
-from reinforcement_learning.gymnasium_env.mlsl_env import MlslEnv
-from reinforcement_learning.hyperparameters.sample_ppo_params import sample_ppo_params
-from reinforcement_learning.rl_constants import HYPERPARAMS_TRAINING_TIMESTEPS, PPO_MODEL
-from reinforcement_learning.rl_io import save_params_path
+from reinforcement_learning.algorithms.sample_ppo_params import sample_ppo_params
+from reinforcement_learning.algorithms.rl_algorithm import RLAlgorithm
+from reinforcement_learning.rl_constants import HYPERPARAMS_TRAINING_TIMESTEPS
 
 class OptunaSearch:
-    def __init__(self, env: MlslEnv):
-        self.env = env
+    def __init__(self, rl_algorithm: RLAlgorithm):
+        self.rl_algorithm = rl_algorithm
 
         self.sampler = TPESampler(n_startup_trials=10, multivariate=True)
         self.pruner = MedianPruner(n_startup_trials=10, n_warmup_steps=10)
 
-    def search_params(self):
+    def search_params(self) -> Study:
         study = optuna.create_study(
             sampler=self.sampler,
             pruner=self.pruner,
@@ -26,27 +25,17 @@ class OptunaSearch:
 
         study.optimize(self.objective, n_jobs=1, n_trials=2)
 
-        best_trial = study.best_trial
-
-        study.trials_dataframe().to_csv(save_params_path(PPO_MODEL, "report.csv"))
-
-        fig1 = plot_optimization_history(study)
-        fig2 = plot_param_importances(study)
-        fig3 = plot_timeline(study)
-
-        fig1.write_html(save_params_path(PPO_MODEL, "optuna_optimization_history.html"))
-        fig2.write_html(save_params_path(PPO_MODEL, "optuna_param_importances.html"))
-        fig3.write_html(save_params_path(PPO_MODEL, "optuna_timeline.html"))
-
-        return best_trial.params
+        return study
 
     def objective(self, trial: optuna.Trial):
-        sampled_hyperparams = sample_ppo_params(trial)
+        sampled_hyperparams = self.rl_algorithm.get_sample_params(trial)
 
-        self.model = PPO("MlpPolicy", env=self.env, verbose=0, **sampled_hyperparams)
+        self.rl_algorithm.change_params(sampled_hyperparams)
+
+        self.model = self.rl_algorithm.algorithm
 
         stop_callback = StopTrainingOnNoModelImprovement(max_no_improvement_evals=30, min_evals=50, verbose=1)
-        eval_callback = EvalCallback(self.env,
+        eval_callback = EvalCallback(self.model.get_env(),
                                      callback_after_eval=stop_callback,
                                      eval_freq=500,
                                      render=False)

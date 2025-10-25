@@ -19,7 +19,9 @@ def main(
         rl_mode: RLMode = RLMode.NO_AI, 
         rl_algorithm_type: None | RLAlgorithmType = None,
         observation_model_type: None | ObservationModelType = None,
-        reward_type: None | RewardType = None
+        reward_type: None | RewardType = None,
+        id_model: None | str = None,
+        id_hyperparams: None | str = None,
         ):
 
     controller = GameController(
@@ -31,16 +33,19 @@ def main(
         rl_algorithm_type,
         observation_model_type,
         reward_type,
+        id_model,
+        id_hyperparams,
         )
     
     controller.run()
 
 if __name__ == '__main__':
     main(
-        **STARTING_SCENARIO, 
+        **CIRCUIT, 
         render_mode=RenderMode.GUI, 
-        rl_mode=RLMode.NO_AI, 
+        rl_mode=RLMode.LOAD, 
         rl_algorithm_type=RLAlgorithmType.PPO,
-        observation_model_type=ObservationModelType.NUMERIC,
-        reward_type=RewardType.INITIAL
+        observation_model_type=ObservationModelType.NUMERIC_OBSERVATION,
+        reward_type=RewardType.INITIAL_REWARD,
+        id_model = "2025-10-25 14:59:43"
         )

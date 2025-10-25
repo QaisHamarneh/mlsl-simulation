@@ -3,9 +3,8 @@ import numpy as np
 from typing import List, Dict, Tuple
 from reinforcement_learning.gymnasium_env.observation_spaces.abstract_observation import Observation
 from reinforcement_learning.gymnasium_env.observation_spaces.observation_model_types import ObservationModelType
-from controller.observation_registry import register_observation_model
+from reinforcement_learning.gymnasium_env.observation_spaces.observation_registry import register_observation_model
 from gymnasium import spaces
-from game_model.game_model import TrafficEnv
 from game_model.constants import BLOCK_SIZE, WINDOW_WIDTH, WINDOW_HEIGHT
 from game_model.road_network import Direction, LaneSegment, CrossingSegment, Lane, SegmentInfo
 
@@ -19,7 +18,7 @@ CAR_RES_INFO = 6
 LANE_SEGMENT = 1
 CROSSING_SEGMENT = 2
 
-@register_observation_model(ObservationModelType.NUMERIC)
+@register_observation_model(ObservationModelType.NUMERIC_OBSERVATION)
 class NumbericObservation(Observation):
     def space(self) -> spaces.Space:
         lanes_shape = MAX_LANES * LANES_INFO

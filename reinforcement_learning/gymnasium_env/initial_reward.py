@@ -1,8 +1,8 @@
 from reinforcement_learning.gymnasium_env.mlsl_env import MlslEnv
 from reinforcement_learning.gymnasium_env.reward_types import RewardType
-from controller.reward_registry import register_reward_model
+from reinforcement_learning.gymnasium_env.reward_registry import register_reward_model
 
-@register_reward_model(RewardType.INITIAL)
+@register_reward_model(RewardType.INITIAL_REWARD)
 class InitialReward(MlslEnv):
     def compute_reward(self):
         if self.game_model.agent_car.score > self.agent_score:

@@ -1,0 +1,2 @@
+batch_size,n_steps,gamma,learning_rate,lr_schedule,ent_coef,clip_range,n_epochs,gae_lambda,max_grad_norm,vf_coef,ortho_init,activation_fn,net_arch_width,net_arch_depth
+32,2048,0.5,0.0008247374187294512,linear,0.000976020797475217,0.1,10,0.92,2,0.16663759404876233,False,relu,512,3
