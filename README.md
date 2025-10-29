@@ -51,16 +51,18 @@ These two parameters are used to load previously stored models or hyperparameter
 
 In the results directory we have the two sub-directories hyperparameters and models. To save results of the rl_modes RLMode.TRAIN, RLMode.OPTIMIZE and RLMode.OPTIMIZE_AND_TRAIN in these sub-directories, we make use of the selected parameters in main. 
 
-If a model would be trained with the parameters scenario=CIRCUIT, rl_mode=RLMode.TRAIN, rl_algorithm_type=RLAlgorithmType.PPO, observation_model_type=ObservationModelType.NUMERIC_OBSERVATION and reward_type=RewardType.INITIAL_REWARD, the results are saved in this structure: *results/models/circuit/PPO/NUMERIC_OBSERVATION/INITIAL_REWARD/timestamp<sub>*</sub>/best_model.zip*
+If a model would be trained with the parameters scenario=CIRCUIT, rl_mode=RLMode.TRAIN, rl_algorithm_type=RLAlgorithmType.PPO, observation_model_type=ObservationModelType.NUMERIC_OBSERVATION and reward_type=RewardType.INITIAL_REWARD, the results are saved in this structure: *results/models/circuit/PPO/NUMERIC_OBSERVATION/INITIAL_REWARD/*timestamp*<sub>*</sub>/best_model.zip*
 
-<sub>*</sub> Each time a model or hyperparameters are saved a timestamp is created which can be used to load these model or hyperparameters later (see Examples).
+timestamp<sub>*</sub> Each time a model or hyperparameters are saved a timestamp is created which can be used to load these model or hyperparameters later (see Examples).
 
 If rl_mode would have been RLMode.OPTIMIZE the results structure would have been as follows: *results/hyperparameters/circuit/PPO/NUMERIC_OBSERVATION/INITIAL_REWARD/timestamp/best_params.csv param_importance.html trials.csv*
 
 ### Examples
 
 **Load Model**\
+
 If one wants to load model a with the path *results/models/circuit/PPO/NUMERIC_OBSERVATION/INITIAL_REWARD/2025-10-29 18:26:52/best_model.zip*, the parameters have to be set to: rl_mode=RLMode.LOAD, rl_algorithm_type=RLAlgorithmType.PPO, observation_model_type=ObservationModelType.NUMERIC_OBSERVATION, reward_type=RewardType.INITIAL_REWARD and id_model="2025-10-29 18:26:52".
 
 **Train Model with specific hyperparameters**\
+
 If one wants to train a model with a set of previously optimized hyperparameters located at *results/hyperparameters/circuit/PPO/NUMERIC_OBSERVATION/INITIAL_REWARD/2025-10-29 18:26:52/best_model.zip*, the parameters have to be set to: rl_mode=RLMode.TRAIN, rl_algorithm_type=RLAlgorithmType.PPO, observation_model_type=ObservationModelType.NUMERIC_OBSERVATION, reward_type=RewardType.INITIAL_REWARD and id_hyperparams="2025-10-29 18:26:52".
