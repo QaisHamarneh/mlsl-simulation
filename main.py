@@ -54,8 +54,8 @@ if __name__ == '__main__':
     main(
         **CIRCUIT, 
         render_mode=RenderMode.GUI,
-        show_reservation=True, 
-        rl_mode=RLMode.TRAIN, 
+        show_reservation=False, 
+        rl_mode=RLMode.OPTIMIZE_AND_TRAIN, 
         rl_algorithm_type=RLAlgorithmType.PPO,
         observation_model_type=ObservationModelType.NUMERIC_OBSERVATION,
         reward_type=RewardType.INITIAL_REWARD,

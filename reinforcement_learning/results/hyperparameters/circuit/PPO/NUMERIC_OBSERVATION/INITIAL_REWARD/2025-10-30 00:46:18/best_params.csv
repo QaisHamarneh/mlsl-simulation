@@ -1,0 +1,2 @@
+batch_size,n_steps,gamma,learning_rate,ent_coef,clip_range,n_epochs,gae_lambda,max_grad_norm,vf_coef
+16,8,0.9999,0.000282153807427309,0.012782020333833065,0.1,10,0.8,0.6,0.1139195609979593

@@ -129,29 +129,14 @@ class RLGameController(AbstractGameController):
         save_best_params(best_params_df, self.hyperparams_path)
         save_study_materials(study, self.hyperparams_path)
 
-        return study.best_params
+        return best_params
 
 
     @register_mode(mode_handlers, RLMode.OPTIMIZE_AND_TRAIN)
     def _optimize_and_train(self):
-        optuna_search = OptunaSearch(self.rl_algorithm)
-        study: optuna.Study = optuna_search.search_params()
-
-        best_params = study.best_params.copy()
-        best_params.pop("lr_schedule")
-
-        best_params_df = pd.DataFrame([best_params])
-        save_best_params(best_params_df, self.hyperparams_path)
-        save_study_materials(study, self.hyperparams_path)
+        best_params = self._optimize_hyperparams()
 
         self.rl_algorithm.change_params(best_params)
-        # Used to save the best model
-        eval_callback = EvalCallback(self.env, 
-                                     best_model_save_path=self.model_path,
-                                     eval_freq=500,
-                                     render=self.render_mode.value)
-
-        # Train the agent
-        self.rl_algorithm.algorithm.learn(total_timesteps=TRAINING_TIMESTEPS, callback=eval_callback, progress_bar=True)
+        self.id_hyperparams = None # needed if id_hyperparams parameter is not None
+        self._train_model()
         
-        evaluate_policy(self.rl_algorithm.algorithm, self.env, n_eval_episodes=1, render=self.render_mode.value)
