@@ -52,13 +52,13 @@ def main(
 
 if __name__ == '__main__':
     main(
-        **STARTING_SCENARIO, 
+        **CIRCUIT, 
         render_mode=RenderMode.GUI,
-        show_reservation=False, 
-        rl_mode=None, 
+        show_reservation=True, 
+        rl_mode=RLMode.TRAIN, 
         rl_algorithm_type=RLAlgorithmType.PPO,
         observation_model_type=ObservationModelType.NUMERIC_OBSERVATION,
         reward_type=RewardType.INITIAL_REWARD,
-        id_model="2025-10-29 18:01:41",
-        id_hyperparams="2025-10-29 16:44:55",
+        id_model="2025-10-29 18:26:52",
+        id_hyperparams="2025-10-29 18:26:52",
         )
