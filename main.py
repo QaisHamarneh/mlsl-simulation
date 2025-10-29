@@ -1,7 +1,7 @@
 import logging
 
-from scenarios.scenarios import CIRCUIT, STARTING_SCENARIO, STARTING_SCENARIO, TWO_CROSSING
-from controller.game_controller import GameController
+from scenarios.scenarios import CIRCUIT, STARTING_SCENARIO, TWO_CROSSING
+from game_model.game_controller import GameController
 from gui.render_mode import RenderMode
 from reinforcement_learning.rl_modes import RLMode
 from reinforcement_learning.algorithms.rl_algorithm_types import RLAlgorithmType
@@ -43,9 +43,10 @@ if __name__ == '__main__':
     main(
         **CIRCUIT, 
         render_mode=RenderMode.GUI, 
-        rl_mode=RLMode.LOAD, 
+        rl_mode=RLMode.TRAIN, 
         rl_algorithm_type=RLAlgorithmType.PPO,
         observation_model_type=ObservationModelType.NUMERIC_OBSERVATION,
         reward_type=RewardType.INITIAL_REWARD,
-        id_model = "2025-10-25 14:59:43"
+        id_model=None,
+        id_hyperparams="2025-10-29 16:44:55",
         )

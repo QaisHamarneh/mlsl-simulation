@@ -85,8 +85,8 @@ def sample_ppo_params(trial: optuna.Trial) -> Dict[str, Any]:
     # sde_sample_freq = trial.suggest_categorical("sde_sample_freq", [-1, 8, 16, 32, 64, 128, 256])
     
     # Network architecture parameters
-    ortho_init = trial.suggest_categorical('ortho_init', [False, True])
-    activation_fn = trial.suggest_categorical('activation_fn', ['tanh', 'relu', 'elu', 'leaky_relu'])
+    # ortho_init = trial.suggest_categorical('ortho_init', [False, True])
+    # activation_fn = trial.suggest_categorical('activation_fn', ['tanh', 'relu', 'elu', 'leaky_relu'])
 
     # Ensure batch_size doesn't exceed n_steps
     if batch_size > n_steps:
@@ -97,12 +97,12 @@ def sample_ppo_params(trial: optuna.Trial) -> Dict[str, Any]:
         learning_rate = linear_schedule(learning_rate)
 
     # Network architecture configuration
-    net_arch_width = trial.suggest_categorical("net_arch_width", [8, 16, 32, 64, 128, 256, 512])
-    net_arch_depth = trial.suggest_int("net_arch_depth", 1, 3)
-    net_arch = dict(pi=[net_arch_width] * net_arch_depth, vf=[net_arch_width] * net_arch_depth)
+    # net_arch_width = trial.suggest_categorical("net_arch_width", [8, 16, 32, 64, 128, 256, 512])
+    # net_arch_depth = trial.suggest_int("net_arch_depth", 1, 3)
+    # net_arch = dict(pi=[net_arch_width] * net_arch_depth, vf=[net_arch_width] * net_arch_depth)
 
-    # Convert activation function string to PyTorch module
-    activation_fn = {"tanh": nn.Tanh, "relu": nn.ReLU, "elu": nn.ELU, "leaky_relu": nn.LeakyReLU}[activation_fn]
+    # # Convert activation function string to PyTorch module
+    # activation_fn = {"tanh": nn.Tanh, "relu": nn.ReLU, "elu": nn.ELU, "leaky_relu": nn.LeakyReLU}[activation_fn]
 
     return {
         "n_steps": n_steps,
@@ -116,10 +116,10 @@ def sample_ppo_params(trial: optuna.Trial) -> Dict[str, Any]:
         "max_grad_norm": max_grad_norm,
         "vf_coef": vf_coef,
         # "sde_sample_freq": sde_sample_freq,
-        "policy_kwargs": dict(
-            # log_std_init=log_std_init,
-            net_arch=net_arch,
-            activation_fn=activation_fn,
-            ortho_init=ortho_init,
-        ),
+        # "policy_kwargs": dict(
+        #     # log_std_init=log_std_init,
+        #     net_arch=net_arch,
+        #     activation_fn=activation_fn,
+        #     ortho_init=ortho_init,
+        # ),
     }

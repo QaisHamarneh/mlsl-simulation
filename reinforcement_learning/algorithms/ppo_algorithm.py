@@ -13,6 +13,7 @@ class PPOAlgorithm(RLAlgorithm):
         if params == None:
             return PPO("MlpPolicy", self.env)
         else:
+            print(params)
             return PPO("MlpPolicy", self.env, **params)
         
     def get_sample_params(self, trial: optuna.Trial) -> Dict[str, Any]:
