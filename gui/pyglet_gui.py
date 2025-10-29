@@ -8,7 +8,7 @@ from gui.helpful_functions import *
 
 
 class GameWindow(pyglet.window.Window):
-    def __init__(self, game_model: TrafficEnv, debug: bool = False) -> None:
+    def __init__(self, game_model: TrafficEnv, show_reservations: bool, debug: bool = False) -> None:
         """
         Initialize the CarsWindow.
 
@@ -26,6 +26,8 @@ class GameWindow(pyglet.window.Window):
         
         self.game_model = game_model
         self.map_shapes: List[Union[shapes.Line, shapes.Rectangle]] = GameDrawer.draw_map(self.game_model.roads)
+
+        self.show_reservations: bool = show_reservations
 
         self.debug: bool = debug
         self._test_results = None
@@ -58,7 +60,7 @@ class GameWindow(pyglet.window.Window):
         game_shapes = []
         game_shapes += self.map_shapes
         game_shapes += GameDrawer.draw_goals(self.game_model.cars)
-        game_shapes += GameDrawer.draw_cars(self.game_model.cars, self.flash_count, self.debug)
+        game_shapes += GameDrawer.draw_cars(self.game_model.cars, self.flash_count, self.show_reservations, self.debug)
         game_shapes.append(GameDrawer.draw_test_results(self.game_model.roads, self.test_results))
         self.renderer.render(game_shapes)
 

@@ -3,7 +3,5 @@ import os
 TRAINING_TIMESTEPS = 1_000
 
 HYPERPARAMS_TRAINING_TIMESTEPS = 1_000
-
-# car types
-AGENT = "Agent"
-NPC = "NPC"
+OPTUNA_TRIALS = 2
+OPTUNA_PARALLEL_JOBS = 1 # currently only working with 1

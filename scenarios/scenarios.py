@@ -11,7 +11,7 @@ LEFT_RIGHT_OVERTAKE = {
     ],
     "segmentation": False,
     "players": 2,
-    "name": "left_right_overtake"
+    "scenario_name": "left_right_overtake"
 }
 
 LEFT_RIGHT_OVERTAKE_2 = {
@@ -25,7 +25,7 @@ LEFT_RIGHT_OVERTAKE_2 = {
     ],
     "segmentation": False,
     "players": 6,
-    "name": "left_right_overtake_2"
+    "scenario_name": "left_right_overtake_2"
 }
 
 UP_DOWN_OVERTAKE = {
@@ -38,7 +38,7 @@ UP_DOWN_OVERTAKE = {
     ],
     "segmentation": False,
     "players": 2,
-    "name": "up_down_overtake"
+    "scenario_name": "up_down_overtake"
 }
 
 BIG_SCENARIO = {
@@ -58,7 +58,7 @@ BIG_SCENARIO = {
     ],
     "segmentation": False,
     "players": 80,
-    "name": "big_scenario"
+    "scenario_name": "big_scenario"
 }
 
 STARTING_SCENARIO = {
@@ -76,7 +76,7 @@ STARTING_SCENARIO = {
     ],
     "segmentation": False,
     "players": 21,
-    "name": "starting_scenario"
+    "scenario_name": "starting_scenario"
 }
 TWO_CROSSING = {
     "roads": [
@@ -91,7 +91,7 @@ TWO_CROSSING = {
     ],
     "segmentation": False,
     "players": 22,
-    "name": "two_crossings"
+    "scenario_name": "two_crossings"
 }
 
 ONE_CROSSING = {
@@ -105,7 +105,7 @@ ONE_CROSSING = {
     ],
     "segmentation": False,
     "players": 16,
-    "name": "one_crossing"
+    "scenario_name": "one_crossing"
 }
 
 ONE_ROAD = {
@@ -118,7 +118,7 @@ ONE_ROAD = {
     ],
     "segmentation": False,
     "players": 5,
-    "name": "one_road"
+    "scenario_name": "one_road"
 }
 
 HORIZONTAL_VERTICAL = {
@@ -129,7 +129,7 @@ HORIZONTAL_VERTICAL = {
     ],
     "segmentation": False,
     "players": 25,
-    "name": "horizontal_vertical"
+    "scenario_name": "horizontal_vertical"
 }
 
 CIRCUIT = {
@@ -141,7 +141,7 @@ CIRCUIT = {
     ],
     "segmentation": False,
     "players": 3,
-    "name": "circuit"
+    "scenario_name": "circuit"
 }
 
 JUST_ONE_CAR = STARTING_SCENARIO.copy()

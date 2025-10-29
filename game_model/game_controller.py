@@ -13,10 +13,12 @@ class GameController(AbstractGameController):
             self, 
             roads: List[Road], 
             players: int,
-            render_mode: RenderMode = RenderMode.GUI, 
+            render_mode: RenderMode,
+            show_reservation: bool, 
             ):
 
         self.render_mode = render_mode
+        self.show_reservation = show_reservation
         self.game_model: TrafficEnv = TrafficEnv(roads=roads, players=players)
         self.done = None
 
@@ -44,7 +46,7 @@ class GameController(AbstractGameController):
         if hasattr(self, 'window') and self.window:
             self.window.reset_model(self.game_model)
         else:
-            self.window = GameWindow(game_model=self.game_model)
+            self.window = GameWindow(game_model=self.game_model, show_reservations=self.show_reservation)
 
         pyglet.clock.unschedule(self._update_gui)
         pyglet.clock.schedule_interval(self._update_gui, (1 / TIME_PER_FRAME))

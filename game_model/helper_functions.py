@@ -4,9 +4,10 @@ from typing import Optional, List
 import numpy as np
 
 from game_model.car import Car
+from game_model.car_types import CarType
 from game_model.constants import *
-from game_model.road_network import Direction, Road, true_direction, Goal, Point
-from game_model.road_network import LaneSegment, CrossingSegment, Segment
+from game_model.road_network import true_direction, Goal, Point
+from game_model.road_network import LaneSegment, Segment
 from gui.selected_colors import selected_colors
 from gui.colors import colors
 
@@ -68,7 +69,7 @@ def reached_goal(car: Car, goal: Goal) -> bool:
     return False
 
 
-def create_random_car(segments: List[Segment], cars: List[Car], car_type: str) -> Car:
+def create_random_car(segments: List[Segment], cars: List[Car], car_type: CarType) -> Car:
     """
     Create a random car that does not overlap with existing cars.
     Randomly selects a color, lane segment, speed, size. The location is set to 0.

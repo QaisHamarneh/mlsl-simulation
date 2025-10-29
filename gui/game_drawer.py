@@ -11,7 +11,7 @@ import gui.map_colors
 class GameDrawer():
 
     @classmethod
-    def draw_cars(cls, cars: List[Car], flash_count: int, debug: bool = False) -> List[shapes.Rectangle]:
+    def draw_cars(cls, cars: List[Car], flash_count: int, show_reservations: bool, debug: bool = False) -> List[shapes.Rectangle]:
         car_shapes = []
 
         for car in cars:
@@ -56,10 +56,11 @@ class GameDrawer():
 
             car_shapes.append(car_rect)
 
-            brake_box_points = GameDrawer.draw_brake_box(car, color, debug)
-            car_shapes += brake_box_points
-            if car_res_box is not None:
-                car_shapes += car_res_box
+            if show_reservations:
+                brake_box_points = GameDrawer.draw_brake_box(car, color, debug)
+                car_shapes += brake_box_points
+                if car_res_box is not None:
+                    car_shapes += car_res_box
 
         return car_shapes
     

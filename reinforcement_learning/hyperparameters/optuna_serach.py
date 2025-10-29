@@ -7,7 +7,7 @@ from optuna.study import Study
 from stable_baselines3.common.callbacks import StopTrainingOnNoModelImprovement, EvalCallback
 from reinforcement_learning.algorithms.sample_ppo_params import sample_ppo_params
 from reinforcement_learning.algorithms.rl_algorithm import RLAlgorithm
-from reinforcement_learning.rl_constants import HYPERPARAMS_TRAINING_TIMESTEPS
+from reinforcement_learning.rl_constants import HYPERPARAMS_TRAINING_TIMESTEPS, OPTUNA_TRIALS, OPTUNA_PARALLEL_JOBS
 
 class OptunaSearch:
     def __init__(self, rl_algorithm: RLAlgorithm):
@@ -23,7 +23,7 @@ class OptunaSearch:
             direction="maximize",
         )
 
-        study.optimize(self.objective, n_jobs=1, n_trials=2)
+        study.optimize(self.objective, n_jobs=OPTUNA_PARALLEL_JOBS, n_trials=OPTUNA_TRIALS)
 
         return study
 

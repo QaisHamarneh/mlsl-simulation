@@ -1,8 +1,10 @@
 import math
 import numpy as np
 import logging
+
+from game_model.car_types import CarType
 from game_model.constants import *
-from game_model.road_network import Color, Goal, Intersection, LaneSegment, SegmentInfo, true_direction, Problem, CrossingSegment, Point, \
+from game_model.road_network import Color, Goal, LaneSegment, SegmentInfo, true_direction, Problem, CrossingSegment, Point, \
     horiz_direction, right_direction, Segment
 from typing import Optional, List, Dict
 
@@ -10,7 +12,7 @@ from typing import Optional, List, Dict
 class Car:
     def __init__(self,
                  name: str,
-                 type: str,
+                 type: CarType,
                  loc: int,
                  segment: LaneSegment,
                  speed: int,

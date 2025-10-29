@@ -17,7 +17,8 @@ def main(
         roads, 
         segmentation,
         scenario_name, 
-        render_mode: RenderMode = RenderMode.GUI, 
+        render_mode: RenderMode,
+        show_reservation: bool, 
         rl_mode: None | RLMode = None, 
         rl_algorithm_type: None | RLAlgorithmType = None,
         observation_model_type: None | ObservationModelType = None,
@@ -31,6 +32,7 @@ def main(
             roads,
             players,
             render_mode,
+            show_reservation,
         )
     else:
         controller: AbstractGameController = RLGameController(
@@ -50,9 +52,10 @@ def main(
 
 if __name__ == '__main__':
     main(
-        **CIRCUIT, 
-        render_mode=RenderMode.GUI, 
-        rl_mode=RLMode.OPTIMIZE_AND_TRAIN, 
+        **STARTING_SCENARIO, 
+        render_mode=RenderMode.GUI,
+        show_reservation=False, 
+        rl_mode=None, 
         rl_algorithm_type=RLAlgorithmType.PPO,
         observation_model_type=ObservationModelType.NUMERIC_OBSERVATION,
         reward_type=RewardType.INITIAL_REWARD,

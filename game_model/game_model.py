@@ -1,13 +1,14 @@
 import random
 import logging
+
 from typing import Optional, Tuple, List
 from controller.astar_car_controller import AstarCarController
 from game_model.car import Car
+from game_model.car_types import CarType
 from game_model.road_network import Direction, Goal, Road, LaneSegment, Problem, Point
 from game_model.helper_functions import create_random_car, overlap, reached_goal, collision_check
 from game_model.create_game import create_segments
 from game_model.constants import *
-from reinforcement_learning.rl_constants import AGENT, NPC
 from reinforcement_learning.rl_modes import RLMode
 
 
@@ -63,12 +64,12 @@ class TrafficEnv:
         self.controllers: List[AstarCarController] = []
 
         if self.agent:
-            self.agent_car = create_random_car(self.segments, self.npc_cars, AGENT)
+            self.agent_car = create_random_car(self.segments, self.npc_cars, CarType.AGENT)
             self._place_goals(self.agent_car)
             self.cars.append(self.agent_car)
 
         for i in range(self.npcs):
-            car = create_random_car(self.segments, self.cars, NPC)
+            car = create_random_car(self.segments, self.cars, CarType.NPC)
             self.cars.append(car)
             self.npc_cars.append(car)
         for car in self.npc_cars:
