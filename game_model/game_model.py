@@ -28,7 +28,7 @@ class TrafficEnv:
     def __init__(self, 
                  roads: List[Road], 
                  players: int, 
-                 rl_mode: RLMode = RLMode.NO_AI):
+                 rl_mode: None | RLMode = None):
         """
         Initialize the TrafficEnv.
 
@@ -42,7 +42,7 @@ class TrafficEnv:
         self.roads = roads
         self.segments, self.intersections = create_segments(roads)
         self.npcs = players
-        self.agent = False if rl_mode == RLMode.NO_AI else True
+        self.agent = False if rl_mode == None else True
 
         self.reset()
 

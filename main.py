@@ -1,7 +1,9 @@
 import logging
 
 from scenarios.scenarios import CIRCUIT, STARTING_SCENARIO, TWO_CROSSING
+from game_model.abstract_game_controller import AbstractGameController
 from game_model.game_controller import GameController
+from game_model.rl_game_controller import RLGameController
 from gui.render_mode import RenderMode
 from reinforcement_learning.rl_modes import RLMode
 from reinforcement_learning.algorithms.rl_algorithm_types import RLAlgorithmType
@@ -14,27 +16,34 @@ def main(
         players, 
         roads, 
         segmentation,
-        name, 
+        scenario_name, 
         render_mode: RenderMode = RenderMode.GUI, 
-        rl_mode: RLMode = RLMode.NO_AI, 
+        rl_mode: None | RLMode = None, 
         rl_algorithm_type: None | RLAlgorithmType = None,
         observation_model_type: None | ObservationModelType = None,
         reward_type: None | RewardType = None,
         id_model: None | str = None,
         id_hyperparams: None | str = None,
         ):
-
-    controller = GameController(
-        name,
-        roads, 
-        players, 
-        render_mode,
-        rl_mode,
-        rl_algorithm_type,
-        observation_model_type,
-        reward_type,
-        id_model,
-        id_hyperparams,
+    
+    if not rl_mode:
+        controller: AbstractGameController = GameController(
+            roads,
+            players,
+            render_mode,
+        )
+    else:
+        controller: AbstractGameController = RLGameController(
+            scenario_name,
+            roads,
+            players,
+            render_mode,
+            rl_mode,
+            rl_algorithm_type,
+            observation_model_type,
+            reward_type,
+            id_model,
+            id_hyperparams,
         )
     
     controller.run()
@@ -43,10 +52,10 @@ if __name__ == '__main__':
     main(
         **CIRCUIT, 
         render_mode=RenderMode.GUI, 
-        rl_mode=RLMode.TRAIN, 
+        rl_mode=RLMode.OPTIMIZE_AND_TRAIN, 
         rl_algorithm_type=RLAlgorithmType.PPO,
         observation_model_type=ObservationModelType.NUMERIC_OBSERVATION,
         reward_type=RewardType.INITIAL_REWARD,
-        id_model=None,
+        id_model="2025-10-29 18:01:41",
         id_hyperparams="2025-10-29 16:44:55",
         )
