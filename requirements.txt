@@ -5,3 +5,4 @@ stable-baselines3>=2.7.0
 tqdm>=4.67.1
 rich>=14.1.0
 optuna>=4.5.0
+pyarrow>=22.0.0
