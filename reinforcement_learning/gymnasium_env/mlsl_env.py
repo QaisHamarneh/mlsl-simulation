@@ -11,6 +11,17 @@ from gui.pyglet_gui import GameWindow
 from reinforcement_learning.gymnasium_env.observation_spaces.abstract_observation import Observation
 
 class MlslEnv(Env, ABC):
+    """
+    An abstract gymnasium env.
+
+    To add a new environment create a RewardType Enum (e.g. RewardType.example) and
+    a new class which inherits from MlslEnv (e.g. ExampleEnv(MlslEnv)). Use the 
+    reward_registry to register the new env:
+
+    @register_reward_model(RewardType.example)
+    class ExampleEnv(MlslEnv):
+
+    """
 
     def __init__(self, 
                  game_model: TrafficEnv,

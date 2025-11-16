@@ -94,6 +94,16 @@ class RLGameController(AbstractGameController):
         return decorator
 
 
+    """
+    To add new reinforcement learning modes create a new RLMode Enum (e.g. RLMode.example)
+    and a new function in this class (e.g. def _example_fnc(self)). Use the register_mode function
+    to add the function to the mode_handlers dictionary. The function then should look like this:
+
+    @register_mode(mode_handlers, RLMode.example)
+    def _example_fnc(self):
+
+    """
+
     @register_mode(mode_handlers, RLMode.TRAIN) # _train_model = register_mode(mode_handlers, RLMode.TRAIN)(_train_model)
     def _train_model(self):
         if self.id_hyperparams != None:
