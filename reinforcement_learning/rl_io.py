@@ -1,9 +1,10 @@
 import os
 import datetime
 import pandas as pd
-import optuna
+import pickle
 
-from typing import Dict, Any
+from typing import Dict, Any, Tuple, List
+from game_model.game_history import GameHistory
 from reinforcement_learning.algorithms.rl_algorithm import RLAlgorithm
 from reinforcement_learning.gymnasium_env.mlsl_env import MlslEnv
 from stable_baselines3.common.base_class import BaseAlgorithm
@@ -58,3 +59,21 @@ def load_best_params(path_center: str, id: str) -> Dict[str, Any]:
     path = os.path.join(RESULT_PARAM_PATH, path_center, id, BEST_PARAMS_FILE)
     best_params = pd.read_parquet(path).iloc[0].to_dict()
     return best_params
+
+def create_game_history(path: str, map_history, car_history, action_history, action_length_history) -> None:
+    action_length = action_length_history / len(car_history)
+    name = str(datetime.datetime.now().strftime("%H:%M:%S")) + "_" + str(int(action_length)) + ".pkl"
+
+    os.makedirs(os.path.join(path, "history"), exist_ok=True)
+
+    file = os.path.join(path, "history", name)
+
+    with open(file, 'wb') as f:
+        pickle.dump(map_history, f)
+        pickle.dump(car_history, f)
+        pickle.dump(action_history, f)
+    
+    # with open(file, 'w') as f: 
+    #     json.dump(game_history.map, f)
+    #     json.dump(game_history.list_of_cars, f)
+    #     json.dump(game_history.action_history_dict, f)

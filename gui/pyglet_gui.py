@@ -1,14 +1,20 @@
 import pyglet
 from typing import List
-from game_model.game_model import TrafficEnv
-from game_model.road_network import Point
+from game_model.car import Car
+from game_model.road_network import Point, Road
 from gui.renderer import Renderer
 from gui.game_drawer import GameDrawer
 from gui.helpful_functions import *
 
 
 class GameWindow(pyglet.window.Window):
-    def __init__(self, game_model: TrafficEnv, show_reservations: bool, debug: bool = False) -> None:
+    def __init__(
+            self, 
+            cars: List[Car],
+            roads: List[Road],
+            show_reservations: bool, 
+            debug: bool = False
+            ) -> None:
         """
         Initialize the CarsWindow.
 
@@ -24,8 +30,9 @@ class GameWindow(pyglet.window.Window):
         self.set_location(self.pos.x - 300, self.pos.y - 200)
         self.renderer = Renderer(self)
         
-        self.game_model = game_model
-        self.map_shapes: List[Union[shapes.Line, shapes.Rectangle]] = GameDrawer.draw_map(self.game_model.roads)
+        self.cars = cars
+        self.roads = roads
+        self.map_shapes: List[Union[shapes.Line, shapes.Rectangle]] = GameDrawer.draw_map(self.roads)
 
         self.show_reservations: bool = show_reservations
 
@@ -35,9 +42,10 @@ class GameWindow(pyglet.window.Window):
         self.pause: bool = False
         self.flash_count: int = 0
 
-    def reset_model(self, game_model: TrafficEnv) -> None:
-        self.game_model = game_model
-        self.map_shapes = GameDrawer.draw_map(self.game_model.roads)
+    def reset_model(self, cars: List[Car], roads: List[Road]) -> None:
+        self.cars = cars
+        self.roads = roads
+        self.map_shapes = GameDrawer.draw_map(self.roads)
         self.flash_count = 0
         self.pause = False
         self._test_results = None
@@ -59,9 +67,9 @@ class GameWindow(pyglet.window.Window):
         
         game_shapes = []
         game_shapes += self.map_shapes
-        game_shapes += GameDrawer.draw_goals(self.game_model.cars)
-        game_shapes += GameDrawer.draw_cars(self.game_model.cars, self.flash_count, self.show_reservations, self.debug)
-        game_shapes.append(GameDrawer.draw_test_results(self.game_model.roads, self.test_results))
+        game_shapes += GameDrawer.draw_goals(self.cars)
+        game_shapes += GameDrawer.draw_cars(self.cars, self.flash_count, self.show_reservations, self.debug)
+        game_shapes.append(GameDrawer.draw_test_results(self.roads, self.test_results))
         self.renderer.render(game_shapes)
 
     def on_key_press(self, symbol: int, modifiers: int) -> None:

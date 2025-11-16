@@ -4,7 +4,7 @@ import time
 from abc import ABC, abstractmethod
 from gymnasium import Env
 from gymnasium import spaces
-from typing import Tuple, Dict
+from typing import Tuple, Dict, List
 from game_model.game_model import TrafficEnv
 from game_model.constants import MAX_ACC, MAX_DEC, TIME_PER_FRAME
 from gui.pyglet_gui import GameWindow
@@ -24,11 +24,19 @@ class MlslEnv(Env, ABC):
 
         self.agent_score: int = self.game_model.agent_car.score
 
-        self.observation_model = observation_model
+        self.observation_model: Observation = observation_model
 
         # accelaration = [0, MAX_DEC + MAX_ACC - 1] and lange changes = [0, 2]
         self.action_space = spaces.MultiDiscrete([MAX_ACC + MAX_DEC, 3])
         self.observation_space = self.observation_model.space()
+
+        self.done: bool = False
+        self.truncated: bool = False
+
+        self.map_history = self.game_model.game_history.map.copy()
+        self.car_history = self.game_model.game_history.list_of_cars.copy()
+        self.action_history = self.game_model.game_history.action_history_dict.copy()
+        self.action_length_history = self.game_model.game_history.action_length
 
     def reset(self, seed: None | int = None, options: None | Dict = None) -> Tuple[spaces.Space, Dict[str, any]]:
         self.game_model.reset()
@@ -47,17 +55,23 @@ class MlslEnv(Env, ABC):
 
         reward = self.compute_reward()
 
-        done = False
-        truncated = False
+        self.done = False
+        self.truncated = False
 
         if self.result == "game_over":
-            done = True
+            self.done = True
         elif self.result == "deadlock":
-            truncated = True
+            self.truncated = True
 
         info = self._get_info() # for debugging
 
-        return observation, reward, done, truncated, info
+        if self.done or self.truncated:
+            self.map_history = self.game_model.game_history.map.copy()
+            self.car_history = self.game_model.game_history.list_of_cars.copy()
+            self.action_history = self.game_model.game_history.action_history_dict.copy()
+            self.action_length_history = self.game_model.game_history.action_length
+
+        return observation, reward, self.done, self.truncated, info
     
     def render(self):
         if self.game_window:

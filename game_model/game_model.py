@@ -1,7 +1,7 @@
 import random
 import logging
 
-from typing import Optional, Tuple, List
+from typing import Optional, Tuple, List, Dict, Any
 from controller.astar_car_controller import AstarCarController
 from game_model.car import Car
 from game_model.car_types import CarType
@@ -9,8 +9,8 @@ from game_model.road_network import Direction, Goal, Road, LaneSegment, Problem,
 from game_model.helper_functions import create_random_car, overlap, reached_goal, collision_check
 from game_model.create_game import create_segments
 from game_model.constants import *
+from game_model.game_history import GameHistory
 from reinforcement_learning.rl_modes import RLMode
-
 
 class TrafficEnv:
     """
@@ -42,8 +42,22 @@ class TrafficEnv:
         super().__init__()
         self.roads = roads
         self.segments, self.intersections = create_segments(roads)
-        self.npcs = players
-        self.agent = False if rl_mode == None else True
+        self.npcs: int = players
+        self.agent: bool = False if rl_mode is None else True
+
+        # self.scores = None
+        self.moved: bool = True
+        self.time: int = 0
+
+        self.cars: List[Car] = []
+        self.npc_cars: List[Car] = []
+        self.agent_car: None | Car = None
+        self.controllers: List[AstarCarController] = []
+
+        self.total_crashes: int = 0
+        self.crashes: dict = {}
+
+        self.game_history: GameHistory = GameHistory()
 
         self.reset()
 
@@ -51,17 +65,18 @@ class TrafficEnv:
         """
         Reset the environment to its initial state.
         """
-        self.scores = None
         for seg in self.segments:
             seg.cars = []
         # init display
         self.moved = True
         self.time = 0
 
-        self.cars: List[Car] = []
-        self.npc_cars: List[Car] = []
-        self.agent_car: None | Car = None
-        self.controllers: List[AstarCarController] = []
+        self.cars = []
+        self.npc_cars = []
+        self.agent_car = None
+        self.controllers = []
+
+        self.game_history.reset_history()
 
         if self.agent:
             self.agent_car = create_random_car(self.segments, self.npc_cars, CarType.AGENT)
@@ -76,12 +91,11 @@ class TrafficEnv:
             self._place_goals(car)
             self.controllers.append(AstarCarController(car, car.goal))
 
+        self.game_history.set_list_of_cars(self.cars)
+        self.game_history.set_map(self.segments)
+
         self.total_crashes = 0
-        self.crashes: dict = {}
-        self.crashes[Direction.RIGHT] = 0
-        self.crashes[Direction.UP] = 0
-        self.crashes[Direction.LEFT] = 0
-        self.crashes[Direction.DOWN] = 0
+        self.crashes = {Direction.RIGHT: 0, Direction.UP: 0, Direction.LEFT: 0, Direction.DOWN: 0}
 
     def _place_goals(self, car: Car) -> None:
         """
@@ -127,13 +141,15 @@ class TrafficEnv:
             game_over.append(
                 self._execute_action(car=self.agent_car, action=action) if not self.agent_car.dead else True
             )
+            self.game_history.add_taken_action(self.agent_car, action)
 
         for controller in self.controllers:
             car = controller.car
-            test_action = controller.get_action()
+            npc_action = controller.get_action()
             game_over.append(
-                self._execute_action(car=car, action=test_action) if not car.dead else True
+                self._execute_action(car=car, action=npc_action) if not car.dead else True
             )
+            self.game_history.add_taken_action(car, npc_action)
 
         deadlock = [True if car.speed == 0 else False for car in self.cars]
         if not all(game_over) and all(deadlock):

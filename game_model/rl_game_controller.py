@@ -8,6 +8,7 @@ from game_model.game_model import TrafficEnv
 from game_model.road_network import Road
 from gui.render_mode import RenderMode
 from reinforcement_learning.gymnasium_env.mlsl_env import MlslEnv
+from reinforcement_learning.gymnasium_env.callbacks.game_history_callback import GameHistoryCallback
 from reinforcement_learning.gymnasium_env.reward_types import RewardType
 from reinforcement_learning.gymnasium_env.reward_registry import get_reward_model
 from reinforcement_learning.gymnasium_env.observation_spaces.observation_model_types import ObservationModelType
@@ -18,11 +19,11 @@ from reinforcement_learning.algorithms.rl_algorithm_types import RLAlgorithmType
 from reinforcement_learning.algorithms.rl_algo_registry import get_rl_algo
 from reinforcement_learning.rl_constants import TRAINING_TIMESTEPS
 from reinforcement_learning.rl_modes import RLMode
-from reinforcement_learning.rl_io import get_path_center, get_complete_path, load_best_params, load_best_model, save_best_params, save_study_materials
+from reinforcement_learning.rl_io import get_path_center, get_complete_path, load_best_params, load_best_model, save_best_params, save_study_materials, create_game_history
 from reinforcement_learning.hyperparameters.optuna_serach import OptunaSearch
 from stable_baselines3.common.monitor import Monitor
 from stable_baselines3.common.evaluation import evaluate_policy
-from stable_baselines3.common.callbacks import EvalCallback
+from stable_baselines3.common.callbacks import EvalCallback, CallbackList
 
 class RLGameController(AbstractGameController):
     mode_handlers: Dict[RLMode, Callable] = {}
@@ -104,9 +105,11 @@ class RLGameController(AbstractGameController):
                                      best_model_save_path=self.model_path,
                                      eval_freq=500,
                                      render=self.render_mode.value)
+        
+        history_callback = GameHistoryCallback(self.env.unwrapped, self.model_path)
 
         # Train the agent
-        self.rl_algorithm.algorithm.learn(total_timesteps=TRAINING_TIMESTEPS, callback=eval_callback, progress_bar=True)
+        self.rl_algorithm.algorithm.learn(total_timesteps=TRAINING_TIMESTEPS, callback=CallbackList([eval_callback, history_callback]), progress_bar=True)
         
         evaluate_policy(self.rl_algorithm.algorithm, self.env, n_eval_episodes=1, render=self.render_mode.value)
 
