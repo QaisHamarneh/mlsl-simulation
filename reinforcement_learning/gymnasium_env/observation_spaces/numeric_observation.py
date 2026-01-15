@@ -7,9 +7,10 @@ from reinforcement_learning.gymnasium_env.observation_spaces.observation_registr
 from gymnasium import spaces
 from game_model.constants import BLOCK_SIZE, WINDOW_WIDTH, WINDOW_HEIGHT
 from game_model.road_network import Direction, LaneSegment, CrossingSegment, Lane, SegmentInfo
+from scenarios.scenarios import SCENARIOS
 
-MAX_CARS = 22
-MAX_LANES = 24
+MAX_CARS = max([scenario["players"] for name, scenario in SCENARIOS.items()])
+MAX_LANES = max([sum([len(road.right_lanes) + len(road.left_lanes) for road in scenario["roads"]]) for name, scenario in SCENARIOS.items()])
 MAX_RES = 16
 
 LANES_INFO = 6

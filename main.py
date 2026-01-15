@@ -1,6 +1,6 @@
 import logging
 
-from scenarios.scenarios import CIRCUIT, STARTING_SCENARIO, TWO_CROSSING
+from scenarios.scenarios import SCENARIOS
 from game_model.abstract_game_controller import AbstractGameController
 from game_model.game_controller import GameController
 from game_model.rl_game_controller import RLGameController
@@ -52,10 +52,10 @@ def main(
 
 if __name__ == '__main__':
     main(
-        **TWO_CROSSING, 
+        **SCENARIOS["TWO_CROSSING"], 
         render_mode=RenderMode.GUI,
         show_reservation=True, 
-        rl_mode=None, 
+        rl_mode=RLMode.TRAIN, 
         rl_algorithm_type=RLAlgorithmType.PPO,
         observation_model_type=ObservationModelType.NUMERIC_OBSERVATION,
         reward_type=RewardType.INITIAL_REWARD,
