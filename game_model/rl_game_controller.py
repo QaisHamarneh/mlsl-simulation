@@ -6,6 +6,7 @@ from typing import List, Callable, Dict
 from game_model.abstract_game_controller import AbstractGameController
 from game_model.game_model import TrafficEnv
 from game_model.road_network import Road
+from game_model.game_history import GameHistory
 from gui.render_mode import RenderMode
 from reinforcement_learning.gymnasium_env.mlsl_env import MlslEnv
 from reinforcement_learning.gymnasium_env.callbacks.game_history_callback import GameHistoryCallback
@@ -19,7 +20,7 @@ from reinforcement_learning.algorithms.rl_algorithm_types import RLAlgorithmType
 from reinforcement_learning.algorithms.rl_algo_registry import get_rl_algo
 from reinforcement_learning.rl_constants import TRAINING_TIMESTEPS
 from reinforcement_learning.rl_modes import RLMode
-from reinforcement_learning.rl_io import get_path_center, get_complete_path, load_best_params, load_best_model, save_best_params, save_study_materials, create_game_history
+from reinforcement_learning.rl_io import get_path_center, get_complete_path, load_best_params, load_best_model, save_best_params, save_study_materials, load_game_history
 from reinforcement_learning.hyperparameters.optuna_serach import OptunaSearch
 from stable_baselines3.common.monitor import Monitor
 from stable_baselines3.common.evaluation import evaluate_policy
@@ -39,8 +40,11 @@ class RLGameController(AbstractGameController):
             observation_model_type: ObservationModelType,
             reward_type: RewardType,
             id_model: None | str = None,
+            id_history: None | str = None,
             id_hyperparams: None | str = None,
             ):
+
+            self.id_history = id_history
 
             self.game_model: TrafficEnv = TrafficEnv(roads=roads, players=players, rl_mode=rl_mode)
 
@@ -124,10 +128,24 @@ class RLGameController(AbstractGameController):
         evaluate_policy(self.rl_algorithm.algorithm, self.env, n_eval_episodes=1, render=self.render_mode.value)
 
 
-    @register_mode(mode_handlers, RLMode.LOAD)
-    def _load_model(self):  
+    @register_mode(mode_handlers, RLMode.LOAD_TRAINED_MODEL)
+    def _load_model(self):
         model = load_best_model(self.path_center, self.id_model, self.rl_algorithm, self.env)
         evaluate_policy(model, self.env, n_eval_episodes=1, render=self.render_mode.value)
+
+
+    @register_mode(mode_handlers, RLMode.LOAD_HISTORY)
+    def _load_history(self):
+        if self.id_history is not None:
+            map_history, car_history, action_history = load_game_history(self.path_center, self.id_model, self.id_history)
+
+            game_history = GameHistory()
+            game_history.set_map(map_history)
+            game_history.set_list_of_cars(car_history)
+            game_history.set_action_history_dict(action_history)
+
+            game_history.history_playback(False)
+            # play history_playback
 
 
     @register_mode(mode_handlers, RLMode.OPTIMIZE)

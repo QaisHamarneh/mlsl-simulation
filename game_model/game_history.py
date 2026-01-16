@@ -1,7 +1,12 @@
+import pyglet
+import time
+from copy import deepcopy
+
 from typing import Dict, List, Tuple
 from game_model.road_network import Road
 from game_model.car import Car
 from game_model.car_types import CarType
+from game_model.constants import TIME_PER_FRAME
 from gui.pyglet_gui import GameWindow
 
 
@@ -20,8 +25,12 @@ class GameHistory():
             self._create_new_car_entry(car.type, car.name)
 
 
-    def set_map(self, segments: List[Road]) -> None:
-        self.map = segments.copy()
+    def set_map(self, roads: List[Road]) -> None:
+        self.map = roads.copy()
+
+
+    def set_action_history_dict(self, action_history_dict: Dict) -> None:
+        self.action_history_dict = action_history_dict
 
 
     def add_taken_action(self, car: Car, action: Tuple[int, int]) -> None:
@@ -38,16 +47,35 @@ class GameHistory():
     
 
     def history_playback(self, show_reservations: bool) -> None:
-        window = GameWindow(cars=self.list_of_cars, roads=self.map, show_reservations=show_reservations)
-        
-        for i in range(self.action_length / len(self.list_of_cars)):
+        for car in self.list_of_cars:
+            car.reset()
+            print(type(car))
+
+        self.game_window = GameWindow(cars=self.list_of_cars, roads=self.map, show_reservations=show_reservations)
+
+        # for road in self.map:
+        #     for lane in road.left_lanes + road.right_lanes:
+        #         for segment in lane.segments:
+        #             print(segment.cars)
+        #             segment.cars = []
+
+        for i in range(len(list(self.action_history_dict.values())[0])):
             for car in self.list_of_cars:
-                acceleration, lane_change = self.action_history_dict.get(car.name)[i]
+                acceleration, lane_change = self.action_history_dict.get(self._car_entry_key(car.type, car.name))[i]
 
                 car.change_speed(acceleration)
                 car.change_lane(lane_change)
+                car.move()
 
-                window.on_draw()
+                self._render_frame()
+                time.sleep(1.0 / TIME_PER_FRAME)
+
+
+    def _render_frame(self):
+        self.game_window.dispatch_events()
+        self.game_window.on_draw()
+        pyglet.clock.tick()
+        self.game_window.flip()
 
 
     def reset_history(self) -> None:

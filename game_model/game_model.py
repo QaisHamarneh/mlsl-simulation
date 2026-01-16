@@ -92,7 +92,7 @@ class TrafficEnv:
             self.controllers.append(AstarCarController(car, car.goal))
 
         self.game_history.set_list_of_cars(self.cars)
-        self.game_history.set_map(self.segments)
+        self.game_history.set_map(self.roads)
 
         self.total_crashes = 0
         self.crashes = {Direction.RIGHT: 0, Direction.UP: 0, Direction.LEFT: 0, Direction.DOWN: 0}

@@ -24,6 +24,7 @@ def main(
         observation_model_type: None | ObservationModelType = None,
         reward_type: None | RewardType = None,
         id_model: None | str = None,
+        id_history: None | str = None,
         id_hyperparams: None | str = None,
         ):
     
@@ -45,6 +46,7 @@ def main(
             observation_model_type,
             reward_type,
             id_model,
+            id_history,
             id_hyperparams,
         )
     
@@ -55,10 +57,11 @@ if __name__ == '__main__':
         **SCENARIOS["TWO_CROSSING"], 
         render_mode=RenderMode.GUI,
         show_reservation=True, 
-        rl_mode=RLMode.TRAIN, 
+        rl_mode=RLMode.LOAD_HISTORY, 
         rl_algorithm_type=RLAlgorithmType.PPO,
         observation_model_type=ObservationModelType.NUMERIC_OBSERVATION,
         reward_type=RewardType.INITIAL_REWARD,
-        id_model="2025-10-29 18:26:52",
+        id_model="2026-01-15 23:38:57",
+        id_history="23:41:20_1768.pkl",
         id_hyperparams=None,
         )

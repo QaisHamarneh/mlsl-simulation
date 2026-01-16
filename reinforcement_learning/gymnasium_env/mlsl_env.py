@@ -4,7 +4,7 @@ import time
 from abc import ABC, abstractmethod
 from gymnasium import Env
 from gymnasium import spaces
-from typing import Tuple, Dict, List
+from typing import Tuple, Dict
 from game_model.game_model import TrafficEnv
 from game_model.constants import MAX_ACC, MAX_DEC, TIME_PER_FRAME
 from gui.pyglet_gui import GameWindow

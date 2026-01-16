@@ -1,6 +1,7 @@
 import math
 import numpy as np
 import logging
+import copy
 
 from game_model.car_types import CarType
 from game_model.constants import *
@@ -31,32 +32,45 @@ class Car:
             color (Color): The color of the car.
             max_speed (int): The maximum speed of the car.
         """
+        self.initial_name = name
+        self.initial_type = type
+        self.initial_loc = loc
+        self.initial_segment = segment
+        self.initial_speed = speed
+        self.initial_size = size
+        self.initial_color = color
+        self.initial_max_speed = max_speed
+
+        self.reset()
+
+
+    def reset(self) -> None:
         self.reserved_segment = None
         self.changing_lane = None
-        self.name = name
-        self.type = type
-        self.speed = speed
-        self.size = size
-        self.color = color
+        self.name = self.initial_name
+        self.type = self.initial_type
+        self.speed = self.initial_speed
+        self.size = self.initial_size
+        self.color = self.initial_color
         self._dead = False
         self.illegal_move = False
         self.goal = None
         self.second_goal = None
-        self.direction = segment.lane.direction
-        self.loc = loc
-        self.max_speed = max_speed
+        self.direction = self.initial_segment.lane.direction
+        self.loc = self.initial_loc
+        self.max_speed = self.initial_max_speed
         self.claimed_lane: dict = {}
         self.parallel_res: list[SegmentInfo] = []
         self.lane_change_counter: int = 0
         self.time: int = 0
         self.score: int = 0
-        self.last_loc: Point = loc
+        self.last_loc: Point = self.initial_loc
 
-        self.res: list[SegmentInfo] = [SegmentInfo(segment,
+        self.res: list[SegmentInfo] = [SegmentInfo(self.initial_segment,
                                                    self.loc, 
                                                    (1 if true_direction[self.direction] else -1) * self.get_braking_distance(),
                                                    self.direction)]
-        segment.cars.append(self)
+        self.initial_segment.cars.append(self)
         # self.extend_res()
 
         # For gui only
@@ -65,6 +79,8 @@ class Car:
         self.h = 0
 
         self._update_position()
+
+
 
     @property
     def dead(self):
@@ -81,6 +97,7 @@ class Car:
             self.speed = 0
 
         self._dead = _dead
+
 
     def move(self) -> bool:
         """
