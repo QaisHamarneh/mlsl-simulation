@@ -4,4 +4,6 @@ venv
 ./idea
 .idea
 *.DS_Store
-reinforcement_learning/results/
+build
+src/mlsl_simulation.egg-info
+src/mlsl_simulation/reinforcement_learning/results/

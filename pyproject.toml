@@ -1,0 +1,29 @@
+[project]
+name = "mlsl-simulation"
+version = "2026.5.2"
+requires-python = ">= 3"
+authors = [
+    {name = "Qais Hamarneh", email = "qais.hamarneh@kit.edu"},
+    {name = "Sven Löchte"},
+    {name = "Cornelius Niese", email = "cornelius.niese@student.kit.edu"}
+]
+readme = "README.md"
+dependencies = [
+    "pyglet>=2.0.9",
+    "numpy>=1.26.1"
+]
+
+[project.optional-dependencies]
+rl = [
+    "gymnasium>=1.2.0",
+    "stable-baselines3>=2.7.0",
+    "tqdm>=4.67.1",
+    "rich>=14.1.0",
+    "optuna>=4.5.0",
+    "pyarrow>=22.0.0",
+    "plotly>=6.5.2",
+    "scikit-learn>=1.8.0"
+]
+
+[project.urls]
+Repository = "https://github.com/QaisHamarneh/mlsl-simulation"

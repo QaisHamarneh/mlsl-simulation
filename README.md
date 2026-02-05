@@ -8,14 +8,14 @@ For normal set-up:
 ```
 python3 -m venv .env
 source .env/bin/activate
-pip install -r requirements.txt
+pip install .
 ```
 
 For a set-up using the reinforcement learning tools:
 ```
 python3 -m venv .env
 source .env/bin/activate
-pip install -r requirements_rl.txt
+pip install '.[rl]'
 ```
 
 ## Quick Start
@@ -356,7 +356,7 @@ main(
 Models and episodes are saved with timestamps. Find them in:
 
 ```
-reinforcement_learning/results/
+results/
 ├── models/
 │   └── {scenario}/PPO/NUMERIC_OBSERVATION/INITIAL_REWARD/
 │       ├── 2025-10-29 18:26:52/         ← model ID (timestamp)
@@ -392,7 +392,7 @@ OPTUNA_TRIALS = 2                        # Number of optimization trials
 After running with RL:
 
 ```
-reinforcement_learning/results/
+results/
 ├── models/
 │   └── two_crossings/PPO/NUMERIC_OBSERVATION/INITIAL_REWARD/
 │       └── 2025-10-29 18:26:52/
