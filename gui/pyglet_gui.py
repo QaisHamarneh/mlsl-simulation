@@ -2,7 +2,7 @@ import pyglet
 from pyglet import shapes
 from typing import List, Union
 from game_model.car import Car
-from game_model.road_network import Point, Road
+from game_model.road_network.road_network import Point, Road
 from game_model.reservations.reservation_management import ReservationManagement
 from gui.renderer import Renderer
 from gui.game_drawer import GameDrawer

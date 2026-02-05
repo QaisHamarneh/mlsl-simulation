@@ -1,7 +1,7 @@
 from pyglet import shapes
 from pyglet import text
 from typing import List, Tuple, Union
-from game_model.road_network import Road, Point, Direction, LaneSegment, CrossingSegment
+from game_model.road_network.road_network import Road, Point, Direction, LaneSegment, CrossingSegment
 from game_model.car import Car
 from game_model.constants import *
 from game_model.reservations.reservation_management import ReservationManagement

@@ -1,5 +1,5 @@
 from game_model.constants import WINDOW_WIDTH, BLOCK_SIZE, WINDOW_HEIGHT
-from game_model.road_network import Road
+from game_model.road_network.road_network import Road
 
 SCENARIOS = {
     "LEFT_RIGHT_OVERTAKE": {

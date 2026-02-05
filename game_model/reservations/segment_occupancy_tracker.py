@@ -1,5 +1,5 @@
 from typing import Dict, List
-from game_model.road_network import Segment
+from game_model.road_network.road_network import Segment
 
 class SegmentOccupancyTracker:
     def __init__(self):

@@ -4,8 +4,8 @@ from controller.astar_car_controller import AstarCarController
 from game_model.car import Car
 from game_model.constants import *
 from game_model.game_model import TrafficEnv
-from game_model.road_network import Goal
-from game_model.road_network import Road, LaneSegment
+from game_model.road_network.road_network import Goal
+from game_model.road_network.road_network import Road, LaneSegment
 from gui.pyglet_gui import CarsWindow
 from scenarios.scenarios import *
 

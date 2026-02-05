@@ -1,5 +1,5 @@
 from typing import Dict, List, Tuple
-from game_model.road_network import Segment, LaneSegment, CrossingSegment, SegmentInfo
+from game_model.road_network.road_network import Segment, LaneSegment, CrossingSegment, SegmentInfo
 
 from game_model.reservations.car_reservation_store import CarReservationStore
 from game_model.reservations.segment_occupancy_tracker import SegmentOccupancyTracker

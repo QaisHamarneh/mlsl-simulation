@@ -6,7 +6,7 @@ from reinforcement_learning.gymnasium_env.observation_spaces.observation_model_t
 from reinforcement_learning.gymnasium_env.observation_spaces.observation_registry import register_observation_model
 from gymnasium import spaces
 from game_model.constants import BLOCK_SIZE, WINDOW_WIDTH, WINDOW_HEIGHT
-from game_model.road_network import Direction, LaneSegment, CrossingSegment, Lane, SegmentInfo
+from game_model.road_network.road_network import Direction, LaneSegment, CrossingSegment, Lane, SegmentInfo
 from scenarios.scenarios import SCENARIOS
 
 MAX_CARS = max([scenario["players"] for _, scenario in SCENARIOS.items()])

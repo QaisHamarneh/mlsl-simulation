@@ -4,7 +4,7 @@ import logging
 
 from game_model.car_types import CarType
 from game_model.constants import *
-from game_model.road_network import Goal, Intersection, Segment, LaneSegment, CrossingSegment, SegmentInfo, Point, Problem, Direction, true_direction, right_direction, horiz_direction, Color
+from game_model.road_network.road_network import Goal, Intersection, Segment, LaneSegment, CrossingSegment, SegmentInfo, Point, Problem, Direction, true_direction, right_direction, horiz_direction, Color
 from game_model.reservations.reservation_management import ReservationManagement
 from typing import Optional, List, Dict
 

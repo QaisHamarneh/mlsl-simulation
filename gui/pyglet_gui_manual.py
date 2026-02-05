@@ -3,7 +3,7 @@ from pyglet import shapes
 
 from game_model.constants import *
 from game_model.game_model import TrafficEnv
-from game_model.road_network import Direction, Point, LaneSegment, Road
+from game_model.road_network.road_network import Direction, Point, LaneSegment, Road
 from gui.helpful_functions import draw_arrow, draw_dash_line
 from gui.map_colors import *
 

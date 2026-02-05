@@ -1,6 +1,6 @@
 from typing import List, Tuple
 
-from game_model.road_network import CrossingSegment, Direction, Intersection, LaneSegment, Road, Segment, true_direction
+from game_model.road_network.road_network import CrossingSegment, Direction, Intersection, LaneSegment, Road, Segment, true_direction
 
 def create_segments(roads: List[Road]) -> None | Tuple[List[Segment], List[Intersection]]:
     """

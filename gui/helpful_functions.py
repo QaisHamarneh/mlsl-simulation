@@ -1,5 +1,5 @@
 from game_model.constants import *
-from game_model.road_network import Direction, Road, LaneSegment, CrossingSegment, true_direction
+from game_model.road_network.road_network import Direction, Road, LaneSegment, CrossingSegment, true_direction
 from game_model.car import Car
 from typing import List, Tuple
 

@@ -4,8 +4,8 @@ from enum import Enum
 from typing import Optional, Dict, List
 
 from game_model.constants import *
-from game_model.intersection_state import IntersectionState
-from game_model.crossing_segment_state import CrossingSegmentState
+from game_model.road_network.intersection_state import IntersectionState
+from game_model.road_network.crossing_segment_state import CrossingSegmentState
 
 
 @dataclass

@@ -6,8 +6,8 @@ import numpy as np
 from game_model.car import Car
 from game_model.car_types import CarType
 from game_model.constants import *
-from game_model.road_network import true_direction, Goal, Point
-from game_model.road_network import LaneSegment, Segment
+from game_model.road_network.road_network import true_direction, Goal, Point
+from game_model.road_network.road_network import LaneSegment, Segment
 from game_model.game_history import GameHistory
 from game_model.reservations.reservation_management import ReservationManagement
 from gui.selected_colors import selected_colors

@@ -1,9 +1,9 @@
 import logging
 
 from scenarios.scenarios import SCENARIOS
-from game_model.abstract_game_controller import AbstractGameController
-from game_model.game_controller import GameController
-from game_model.rl_game_controller import RLGameController
+from game_model.controller.abstract_game_controller import AbstractGameController
+from game_model.controller.game_controller import GameController
+from game_model.controller.rl_game_controller import RLGameController
 from gui.render_mode import RenderMode
 from reinforcement_learning.rl_modes import RLMode
 from reinforcement_learning.algorithms.rl_algorithm_types import RLAlgorithmType

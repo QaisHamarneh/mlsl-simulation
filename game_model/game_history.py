@@ -3,7 +3,7 @@ import time
 from copy import deepcopy
 
 from typing import Dict, List, Tuple
-from game_model.road_network import Road
+from game_model.road_network.road_network import Road
 from game_model.car import Car
 from game_model.car_types import CarType
 from game_model.constants import TIME_PER_FRAME

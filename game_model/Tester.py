@@ -1,7 +1,7 @@
 from typing import List, Tuple, Optional
 
 from game_model.game_model import TrafficEnv
-from game_model.road_network import LaneSegment, CrossingSegment
+from game_model.road_network.road_network import LaneSegment, CrossingSegment
 
 
 class SimulationTester:

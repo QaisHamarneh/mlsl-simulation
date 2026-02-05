@@ -4,3 +4,4 @@ venv
 ./idea
 .idea
 *.DS_Store
+reinforcement_learning/results/

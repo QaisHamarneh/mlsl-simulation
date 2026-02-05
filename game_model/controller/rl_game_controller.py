@@ -3,9 +3,9 @@ import pandas as pd
 import datetime
 
 from typing import List, Callable, Dict
-from game_model.abstract_game_controller import AbstractGameController
+from game_model.controller.abstract_game_controller import AbstractGameController
 from game_model.game_model import TrafficEnv
-from game_model.road_network import Road
+from game_model.road_network.road_network import Road
 from game_model.game_history import GameHistory
 from gui.render_mode import RenderMode
 from reinforcement_learning.gymnasium_env.mlsl_env import MlslEnv

@@ -1,5 +1,5 @@
 from typing import Dict, List, Tuple
-from game_model.road_network import SegmentInfo
+from game_model.road_network.road_network import SegmentInfo
 
 class CarReservationStore:
     def __init__(self):

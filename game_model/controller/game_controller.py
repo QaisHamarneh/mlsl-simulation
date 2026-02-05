@@ -1,10 +1,10 @@
 import pyglet
 
 from typing import List
-from game_model.abstract_game_controller import AbstractGameController
+from game_model.controller.abstract_game_controller import AbstractGameController
 from game_model.constants import TIME_PER_FRAME
 from game_model.game_model import TrafficEnv
-from game_model.road_network import Road
+from game_model.road_network.road_network import Road
 from gui.pyglet_gui import GameWindow
 from gui.render_mode import RenderMode
 
@@ -40,7 +40,7 @@ class GameController(AbstractGameController):
 
     def _start_new_game(self) -> None:
         self.game_model.reset()
-        self.done = False
+        self.done = None
         self.frame_count = 0
 
         if hasattr(self, 'window') and self.window:
@@ -53,16 +53,15 @@ class GameController(AbstractGameController):
 
 
     def _update_gui(self, delta_time: float) -> None:
-        if not self.window.pause and self.frame_count % TIME_PER_FRAME == 0:
+        if not self.window.pause and not self.done == None:
+            self._start_new_game()
+        elif not self.window.pause and self.frame_count % TIME_PER_FRAME == 0:
             self.frame_count = 0
 
             self.done = self.game_model.play_step()
 
             if not self.done == None:
                 self.window.pause = True
-                while self.window.pause:
-                    pass
-                self._start_new_game()
 
         elif not self.window.pause:
             self.frame_count += TIME_PER_FRAME
