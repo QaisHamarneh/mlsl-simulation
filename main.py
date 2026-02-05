@@ -57,7 +57,7 @@ if __name__ == '__main__':
         **SCENARIOS["TWO_CROSSING"], 
         render_mode=RenderMode.GUI,
         show_reservation=True, 
-        rl_mode=RLMode.LOAD_HISTORY, 
+        rl_mode=RLMode.TRAIN, 
         rl_algorithm_type=RLAlgorithmType.PPO,
         observation_model_type=ObservationModelType.NUMERIC_OBSERVATION,
         reward_type=RewardType.INITIAL_REWARD,

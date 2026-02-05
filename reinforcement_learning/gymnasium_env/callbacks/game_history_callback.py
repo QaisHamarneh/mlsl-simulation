@@ -1,5 +1,4 @@
 from stable_baselines3.common.callbacks import BaseCallback
-from stable_baselines3.common.monitor import Monitor
 from reinforcement_learning.gymnasium_env.mlsl_env import MlslEnv
 from reinforcement_learning.rl_io import create_game_history
 

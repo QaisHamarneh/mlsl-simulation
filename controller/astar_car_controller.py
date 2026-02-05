@@ -3,13 +3,15 @@ from typing import Tuple
 
 from game_model.car import Car 
 from game_model.helper_functions import reservation_check
-from game_model.road_network import LaneSegment, CrossingSegment, SegmentInfo, Goal, true_direction
+from game_model.road_network import Intersection, Segment, LaneSegment, CrossingSegment, SegmentInfo, Goal, \
+    true_direction
 from game_model.constants import MAX_ACC, MAX_DEC, LANE_MAX_SPEED, CROSSING_MAX_SPEED, LEFT_LANE_CHANGE, \
       RIGHT_LANE_CHANGE, NO_LANE_CHANGE, JUMP_TIME_STEPS, LANECHANGE_TIME_STEPS
+from game_model.reservations.reservation_management import ReservationManagement
 
 
 class AstarCarController:
-    def __init__(self, car: Car, goal: Goal) -> None:
+    def __init__(self, car: Car, goal: Goal, reservation_management: ReservationManagement) -> None:
         """
         Initialize the AstarCarController.
 
@@ -20,11 +22,14 @@ class AstarCarController:
         self.car = car
         self.goal = goal
         self.first_go = True
+        self.reservation_management: ReservationManagement = reservation_management
 
-    def get_action(self) -> Tuple[int, int]:
+    def get_action(self, other_cars: list[Car]) -> Tuple[int, int]:
         """
         Determine the next action for the car.
 
+        Args:
+            other_cars (list[car]): A list of all other cars in the game model.
         Returns:
             Tuple[int, int]: A tuple containing the acceleration and lane change values.
         """
@@ -34,61 +39,63 @@ class AstarCarController:
         
         # safety check for changing lanes:
         if self.car.changing_lane:
-            for car in self.car.reserved_segment[1].cars:
+            lane_change_segment = self.reservation_management.get_reserved_lane_change_segment(self.car)[1]
+            for car_id in self.reservation_management.get_cars_on_segment(lane_change_segment):
 
-                if car != self and reservation_check(self.car):
+                if car_id != self.car.id and reservation_check(self.car):
                     self.car.changing_lane = False
-                    self.car.reserved_segment = None
+                    self.reservation_management.update_reserved_lange_change_segment(self.car.id, None)
                     break
         
         lane_change = NO_LANE_CHANGE
+        reservations = self.reservation_management.iterate_car_reservations(self.car.id)
         # This should be changed to check res and parallel_res separately.
-        current_lane_acc = min(self.get_accelerate(self.car.res), self.get_accelerate(self.car.parallel_res))
+        current_lane_acc = self.get_accelerate(reservations, other_cars)
         max_possible_acc = current_lane_acc
-        if isinstance(self.car.res[0].segment, LaneSegment) \
-                and max_possible_acc < MAX_ACC and len(self.car.res) == 1 \
-                and self.car.res[0].segment != self.goal.lane_segment \
+        if isinstance(reservations[0].segment, LaneSegment) \
+                and max_possible_acc < MAX_ACC and len(reservations) == 1 \
+                and reservations[0].segment != self.goal.lane_segment \
                 and not self.car.changing_lane:
             # try left lane
-            left_lane = self.car.get_adjacent_lane_segment(1)
+            left_lane = self.car.get_adjacent_lane_segment(self.reservation_management, 1)
             if left_lane is not None:
                 left_segment = SegmentInfo(
                         left_lane,
-                        self.car.res[0].begin,
-                        self.car.res[0].end,
+                        reservations[0].begin,
+                        reservations[0].end,
                         self.car.direction
                     )
-                if not self.check_collision(left_segment):
-                    left_lane_acceleration = self.get_accelerate([left_segment])
+                if not self._check_collision(left_segment):
+                    left_lane_acceleration = self.get_accelerate([left_segment], other_cars)
                     if left_lane_acceleration > max_possible_acc:
                         lane_change = LEFT_LANE_CHANGE
                         max_possible_acc = left_lane_acceleration
                 
             # try right lane
-            right_lane = self.car.get_adjacent_lane_segment(-1)
+            right_lane = self.car.get_adjacent_lane_segment(self.reservation_management, -1)
             if right_lane is not None:
                 right_segment = SegmentInfo(
                         right_lane,
-                        self.car.res[0].begin,
-                        self.car.res[0].end,
+                        reservations[0].begin,
+                        reservations[0].end,
                         self.car.direction
                     )
-                if not self.check_collision(right_segment):
-                    right_lane_acceleration = self.get_accelerate([right_segment])
+                if not self._check_collision(right_segment):
+                    right_lane_acceleration = self.get_accelerate([right_segment], other_cars)
                     if right_lane_acceleration >= max_possible_acc:
                         lane_change = RIGHT_LANE_CHANGE
                         max_possible_acc = right_lane_acceleration
                         
         return min(max_possible_acc, max_possible_acc), lane_change
 
-    def get_accelerate(self, segments: list[SegmentInfo]) -> int:
+    def get_accelerate(self, segments: list[SegmentInfo], other_cars: list[Car]) -> int:
         """
         Calculate the optimal acceleration for the car based on the given segments, the car's speed and other cars on the
         road. The value is limited by the car's maximum speed and the maximum acceleration and deceleration values.
 
         Args:
             segments (list[dict]): A list of segment dictionaries containing information about the segments.
-
+            other_cars (list[car]): A list of all other cars in the game model.
         Returns:
             int: The optimal acceleration value
         """
@@ -112,7 +119,7 @@ class AstarCarController:
 
             # check if car is changing lane
             if self.car.changing_lane:
-                remaining_time = LANECHANGE_TIME_STEPS - (self.car.time - self.car.reserved_segment[0])
+                remaining_time = LANECHANGE_TIME_STEPS - (self.car.time - self.reservation_management.get_reserved_lane_change_segment(self.car.id)[0])
                 required_space_in_segment = (self.car.speed + acceleration) * remaining_time
                 remaining_space_in_segment = segments[-1].segment.length - segments[-1].end
                 if remaining_space_in_segment < required_space_in_segment:
@@ -125,7 +132,7 @@ class AstarCarController:
                 potential_jump = new_brk_dist - reserved_length
                 if potential_jump + abs(segments[-1].end) >= segments[-1].segment.length:
                 # potential_jump -= extended_segments[-1].segment.length
-                    next_segments = self.car.get_next_segment(segments[-1].segment)
+                    next_segments = self.car.get_next_segment(self.reservation_management, segments[-1].segment)
                     if not next_segments:
                         print("NO next segments in get_accelerate - Bug?")
                         print(self.car.name)
@@ -168,19 +175,20 @@ class AstarCarController:
 
             # Case 0: Already in a crossing
             for i, seg_info in enumerate(segments):
-                seg = seg_info.segment
+                seg: Segment = seg_info.segment
                 if isinstance(seg, CrossingSegment):
-                    if len(seg.cars) > 1:
+                    if len(self.reservation_management.get_cars_on_segment(seg)) > 1:
                         # collision = True
                         # break
                         time_to_enter = \
                             math.ceil((sum([abs(seg_info.end - seg_info.begin) 
                                             for seg_info in segments[0:i]]) / max(new_speed, CROSSING_MAX_SPEED)))
-                        for other_car in seg.cars[0:seg.cars.index(self.car)]:
+                        for other_car_id in self.reservation_management.get_cars_on_segment(seg)[0:self.reservation_management.get_cars_on_segment(seg).index(self.car.id)]: 
+                            other_car = [car for car in other_cars if car.id == other_car_id][0]
                             if new_speed > other_car.speed:
                                 collision = True
                                 break
-                            if  time_to_enter <= seg.time_to_leave[other_car]:
+                            if time_to_enter <= seg.crossing_segment_state.get_time_to_leave(other_car_id):
                                 collision = True
                                 break
 
@@ -191,33 +199,35 @@ class AstarCarController:
                     if isinstance(seg, CrossingSegment):
                         # if self.car not in intersection.priority:
                         #     intersection.priority[self.car] = self.car.time
-                        if len(seg.cars) > 0:
+                        if len(self.reservation_management.get_cars_on_segment(seg)) > 0:
                             time_to_enter = \
                                 math.ceil((sum([abs(added_seg.end - added_seg.begin) 
                                                 for seg_info in added_segments[0:i]]) / max(new_speed, CROSSING_MAX_SPEED)))
-                            for other_car in seg.cars:
+                            for other_car_id in self.reservation_management.get_cars_on_segment(seg):
+                                other_car = [car for car in other_cars if car.id == other_car_id][0]
                                 if new_speed > other_car.speed:
                                     collision = True
                                     break
-                                if  time_to_enter <= seg.time_to_leave[other_car]:
+                                if  time_to_enter <= seg.crossing_segment_state.get_time_to_leave(other_car_id):
                                     collision = True
                                     break
                 if not collision:
                     if isinstance(added_segments[1].segment, CrossingSegment):
-                        intersection = added_segments[1].segment.intersection
-                        for other_car, time in intersection.priority.items():
-                            if other_car != self.car and time < intersection.priority[self.car]:
+                        intersection: Intersection = added_segments[1].segment.intersection
+                        for other_car_id, time in intersection.intersection_state.iterate_priority_items():
+                            if other_car_id != self.car.id and time < intersection.intersection_state.get_car_priority(self.car.id):
                                 collision = True
 
             # Case 2: Extension within a lane segment
             if not collision:
                 last_seg = added_segments[-1]
-                for other_car in last_seg.segment.cars:
-                    if other_car != self.car:
-                        other_car_seg_info = next(seg_info for seg_info in other_car.res 
+                for other_car_id in self.reservation_management.get_cars_on_segment(last_seg.segment):
+                    if other_car_id != self.car.id:
+                        other_car_seg_info = next(seg_info for seg_info in self.reservation_management.iterate_car_reservations(other_car_id)
                                                   if seg_info.segment == last_seg.segment)
                         begin = abs(last_seg.begin)
                         end = abs(last_seg.end)
+                        other_car = [car for car in other_cars if car.id == other_car_id][0]
                         o_max_dec = - min(MAX_DEC, other_car.speed)
                         o_begin = abs(other_car_seg_info.begin) + other_car.speed - o_max_dec
                         o_end = abs(other_car_seg_info.end) + other_car.speed - o_max_dec
@@ -233,17 +243,17 @@ class AstarCarController:
             
         return max_dec
     
-    def check_collision(self, seg_info: SegmentInfo):
-        for other_car in seg_info.segment.cars:
-            if other_car != self.car:
-                other_car_seg_info = next(o_seg_info for o_seg_info in other_car.res if o_seg_info.segment == seg_info.segment)
+    def _check_collision(self, seg_info: SegmentInfo):
+        for other_car_id in self.reservation_management.get_cars_on_segment(seg_info.segment):
+            if other_car_id != self.car.id:
+                other_car_seg_info = next(o_seg_info for o_seg_info in self.reservation_management.iterate_car_reservations(other_car_id) if o_seg_info.segment == seg_info.segment)
                 begin = abs(seg_info.begin)
                 end = abs(seg_info.end)
                 o_begin = abs(other_car_seg_info.begin)
                 o_end = abs(other_car_seg_info.end)
                 if self.getOverlap(min(begin, end), max(begin, end), 
                                min(o_begin, end), max(o_begin, o_end)) > 0: 
-                    return True, other_car
+                    return True, other_car_id
         return None, None
     
     def getOverlap(self, begin_1, end_1, begin_2, end_2):

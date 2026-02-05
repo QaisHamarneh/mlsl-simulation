@@ -13,7 +13,7 @@ class InitialReward(MlslEnv):
             return -1
         elif self.result == "deadlock":
             return -5
-        elif self.game_model.agent_car.dead:
+        elif self.game_model.agent_car.get_death_status():
             return -10
         else:
             return 0

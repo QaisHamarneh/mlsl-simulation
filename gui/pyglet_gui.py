@@ -1,7 +1,9 @@
 import pyglet
-from typing import List
+from pyglet import shapes
+from typing import List, Union
 from game_model.car import Car
 from game_model.road_network import Point, Road
+from game_model.reservations.reservation_management import ReservationManagement
 from gui.renderer import Renderer
 from gui.game_drawer import GameDrawer
 from gui.helpful_functions import *
@@ -12,6 +14,7 @@ class GameWindow(pyglet.window.Window):
             self, 
             cars: List[Car],
             roads: List[Road],
+            reservation_management: ReservationManagement,
             show_reservations: bool, 
             debug: bool = False
             ) -> None:
@@ -33,6 +36,8 @@ class GameWindow(pyglet.window.Window):
         self.cars = cars
         self.roads = roads
         self.map_shapes: List[Union[shapes.Line, shapes.Rectangle]] = GameDrawer.draw_map(self.roads)
+
+        self.reservation_management = reservation_management
 
         self.show_reservations: bool = show_reservations
 
@@ -68,7 +73,7 @@ class GameWindow(pyglet.window.Window):
         game_shapes = []
         game_shapes += self.map_shapes
         game_shapes += GameDrawer.draw_goals(self.cars)
-        game_shapes += GameDrawer.draw_cars(self.cars, self.flash_count, self.show_reservations, self.debug)
+        game_shapes += GameDrawer.draw_cars(self.cars, self.flash_count, self.show_reservations, self.reservation_management, self.debug)
         game_shapes.append(GameDrawer.draw_test_results(self.roads, self.test_results))
         self.renderer.render(game_shapes)
 

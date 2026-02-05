@@ -46,7 +46,7 @@ class GameController(AbstractGameController):
         if hasattr(self, 'window') and self.window:
             self.window.reset_model(self.game_model.cars, self.game_model.roads)
         else:
-            self.window = GameWindow(self.game_model.cars, self.game_model.roads, show_reservations=self.show_reservation)
+            self.window = GameWindow(self.game_model.cars, self.game_model.roads, self.game_model.reservation_management, show_reservations=self.show_reservation)
 
         pyglet.clock.unschedule(self._update_gui)
         pyglet.clock.schedule_interval(self._update_gui, (1 / TIME_PER_FRAME))

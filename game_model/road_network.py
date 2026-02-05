@@ -4,6 +4,8 @@ from enum import Enum
 from typing import Optional, Dict, List
 
 from game_model.constants import *
+from game_model.intersection_state import IntersectionState
+from game_model.crossing_segment_state import CrossingSegmentState
 
 
 @dataclass
@@ -113,7 +115,7 @@ class Intersection:
         self.horizontal_road: Road = horizontal_road
         self.vertical_road: Road = vertical_road
         self.segments: list[CrossingSegment] = []
-        self.priority: dict['Car', int] = {}
+        self.intersection_state = IntersectionState()
     
     def __str__(self):
         return f"Horizontal: {self.horizontal_road.name} - Vertical: {self.vertical_road.name} - Crossing Segments {len(self.segments)}"
@@ -142,7 +144,6 @@ class Segment(ABC):
         Initialize a Segment object.
         """
         self.length: int = 0
-        self.cars: List['Car'] = []
         self.max_speed: int = 0
 
 
@@ -199,8 +200,7 @@ class CrossingSegment(Segment):
         self.horiz_num: Optional[int] = None
         self.vert_num: Optional[int] = None
         self.max_speed: int = CROSSING_MAX_SPEED
-        self.time_to_leave: dict['Car', int] = {}
-        self.time_to_enter: dict['Car', int] = {}
+        self.crossing_segment_state: CrossingSegmentState = CrossingSegmentState()
 
     def get_road(self, direction: Direction, opposite: bool = False) -> Road:
         """

@@ -4,6 +4,7 @@ from typing import List, Tuple, Union
 from game_model.road_network import Road, Point, Direction, LaneSegment, CrossingSegment
 from game_model.car import Car
 from game_model.constants import *
+from game_model.reservations.reservation_management import ReservationManagement
 from gui.map_colors import *
 from gui.helpful_functions import get_xy_crossingseg, return_updated_position, find_greatest_gap
 import gui.map_colors
@@ -11,16 +12,22 @@ import gui.map_colors
 class GameDrawer():
 
     @classmethod
-    def draw_cars(cls, cars: List[Car], flash_count: int, show_reservations: bool, debug: bool = False) -> List[shapes.Rectangle]:
+    def draw_cars(cls, 
+                  cars: List[Car], 
+                  flash_count: int, 
+                  show_reservations: bool, 
+                  reservation_management: ReservationManagement, 
+                  debug: bool = False) -> List[shapes.Rectangle]:
+        
         car_shapes = []
 
         for car in cars:
-            color = car.color if not car.dead or flash_count <= FLASH_CYCLE / 2 else DEAD_GREY
+            color = car.color if not car.get_death_status() or flash_count <= FLASH_CYCLE / 2 else DEAD_GREY
 
             car_rect = GameDrawer.draw_car_rect(car, color)
 
             car_res_box = None
-            if car.res[0].direction == Direction.RIGHT:
+            if reservation_management.get_car_reservation(car.id, 0).direction == Direction.RIGHT:
 
                 if car.changing_lane:
                     x, y, w, h = return_updated_position(car)
@@ -29,7 +36,7 @@ class GameDrawer():
                                             x, y + h, x, y,
                                             color=color, width=2)
 
-            elif car.res[0].direction == Direction.LEFT:
+            elif reservation_management.get_car_reservation(car.id, 0).direction == Direction.LEFT:
 
                 if car.changing_lane:
                     x, y, w, h = return_updated_position(car)
@@ -38,7 +45,7 @@ class GameDrawer():
                                             x + w, y + h, x + w, y,
                                             color=color, width=2)
 
-            elif car.res[0].direction == Direction.UP:
+            elif reservation_management.get_car_reservation(car.id, 0).direction == Direction.UP:
                 if car.changing_lane:
                     x, y, w, h = return_updated_position(car)
                     car_res_box = GameDrawer.draw_lines(x, y, x, y + car.get_braking_distance(),
@@ -46,7 +53,7 @@ class GameDrawer():
                                             x + w, y, x, y,
                                             color=color, width=2)
 
-            elif car.res[0].direction == Direction.DOWN:
+            elif reservation_management.get_car_reservation(car.id, 0).direction == Direction.DOWN:
                 if car.changing_lane:
                     x, y, w, h = return_updated_position(car)
                     car_res_box = GameDrawer.draw_lines(x, y + h, x, y - car.get_braking_distance() + h,
@@ -57,7 +64,7 @@ class GameDrawer():
             car_shapes.append(car_rect)
 
             if show_reservations:
-                brake_box_points = GameDrawer.draw_brake_box(car, color, debug)
+                brake_box_points = GameDrawer.draw_brake_box(car, color, reservation_management, debug)
                 car_shapes += brake_box_points
                 if car_res_box is not None:
                     car_shapes += car_res_box
@@ -285,7 +292,7 @@ class GameDrawer():
         return lines
     
     @classmethod
-    def draw_brake_box(cls, car: Car, color: gui.map_colors, debug: bool) -> List[Union[shapes.Line, shapes.Rectangle]]:
+    def draw_brake_box(cls, car: Car, color: gui.map_colors, reservation_management: ReservationManagement, debug: bool) -> List[Union[shapes.Line, shapes.Rectangle]]:
         """
         Creates a brake box for a car. This is done collecting all points of the brake box on the left and right side separately.
 
@@ -301,31 +308,34 @@ class GameDrawer():
         interesting_points = []
         (car_x, car_y) = car.pos.x, car.pos.y
 
-        w = car.w if car.res[0].direction == Direction.UP or car.res[0].direction == Direction.DOWN else car.h
+        car_reservation_direction = reservation_management.get_car_reservation(car.id, 0).direction
+
+        w = car.w if car_reservation_direction == Direction.UP or car_reservation_direction == Direction.DOWN else car.h
 
         # left back corner of car based on direction, append points as starting points for the brake box
-        if car.res[0].direction == Direction.RIGHT:
+        if car_reservation_direction == Direction.RIGHT:
             car_y = car_y + car.h
             car_x2, car_y2 = (car_x, car_y - car.h)
-        if car.res[0].direction == Direction.DOWN:
+        if car_reservation_direction == Direction.DOWN:
             car_x = car_x + car.w
             car_y = car_y + car.h
             car_x2, car_y2 = (car_x - car.w, car_y)
-        if car.res[0].direction == Direction.LEFT:
+        if car_reservation_direction == Direction.LEFT:
             car_x = car_x + car.w
             car_x2, car_y2 = (car_x, car_y + car.h)
-        if car.res[0].direction == Direction.UP:
+        if car_reservation_direction == Direction.UP:
             car_x2, car_y2 = (car_x + car.w, car_y)
 
         left_points.append((car_x, car_y))
         right_points.append((car_x2, car_y2))
 
         remaining_distance = car.get_braking_distance()
-        last_dir = car.res[0].direction
+        last_dir = car_reservation_direction
 
         # iterate over all segments of the car's path
-        for i in range(0, len(car.res)):
-            segment = car.res[i]
+        car_reservations = reservation_management.iterate_car_reservations(car.id)
+        for i in range(0, len(car_reservations)):
+            segment = car_reservations[i]
             seg = segment.segment
 
             # case 1: LaneSegment
@@ -449,19 +459,19 @@ class GameDrawer():
 
                         else:
 
-                            if car.res[i - 1].direction == Direction.RIGHT:
+                            if car_reservations[i - 1].direction == Direction.RIGHT:
                                 car_x += BLOCK_SIZE
                                 car_x2 += BLOCK_SIZE
 
-                            elif car.res[i - 1].direction == Direction.LEFT:
+                            elif car_reservations[i - 1].direction == Direction.LEFT:
                                 car_x -= BLOCK_SIZE
                                 car_x2 -= BLOCK_SIZE
 
-                            elif car.res[i - 1].direction == Direction.UP:
+                            elif car_reservations[i - 1].direction == Direction.UP:
                                 car_y += BLOCK_SIZE
                                 car_y2 += BLOCK_SIZE
 
-                            elif car.res[i - 1].direction == Direction.DOWN:
+                            elif car_reservations[i - 1].direction == Direction.DOWN:
                                 car_y -= BLOCK_SIZE
                                 car_y2 -= BLOCK_SIZE
 
@@ -470,10 +480,10 @@ class GameDrawer():
                             right_points.append((car_x2, car_y2))
                             last_dir = segment.direction
 
-                    elif car.res[i - 1].direction.value - segment.direction.value == 1 or car.res[i - 1].direction.value - \
+                    elif car_reservations[i - 1].direction.value - segment.direction.value == 1 or car_reservations[i - 1].direction.value - \
                             segment.direction.value == -3:  # left turn
 
-                        if car.res[i - 1].direction == Direction.RIGHT:
+                        if car_reservations[i - 1].direction == Direction.RIGHT:
                             car_x2 = car_x2 + BLOCK_SIZE + LANE_DISPLACEMENT
                             right_points.append((car_x2, car_y2))
                             car_y2 = car_y2 + BLOCK_SIZE + LANE_DISPLACEMENT
@@ -485,7 +495,7 @@ class GameDrawer():
                             left_points.append((car_x, car_y))
 
 
-                        if car.res[i - 1].direction == Direction.DOWN:
+                        if car_reservations[i - 1].direction == Direction.DOWN:
                             car_y2 = car_y2 - BLOCK_SIZE - LANE_DISPLACEMENT
                             right_points.append((car_x2, car_y2))
                             car_x2 = car_x2 + BLOCK_SIZE + LANE_DISPLACEMENT
@@ -497,7 +507,7 @@ class GameDrawer():
                             left_points.append((car_x, car_y))
 
 
-                        if car.res[i - 1].direction == Direction.LEFT:
+                        if car_reservations[i - 1].direction == Direction.LEFT:
                             car_x2 = car_x2 - BLOCK_SIZE - LANE_DISPLACEMENT
                             right_points.append((car_x2, car_y2))
                             car_y2 = car_y2 - BLOCK_SIZE - LANE_DISPLACEMENT
@@ -510,7 +520,7 @@ class GameDrawer():
                             left_points.append((car_x, car_y))
 
 
-                        if car.res[i - 1].direction == Direction.UP:
+                        if car_reservations[i - 1].direction == Direction.UP:
                             car_y2 = car_y2 + BLOCK_SIZE + LANE_DISPLACEMENT
                             right_points.append((car_x2, car_y2))
                             car_x2 = car_x2 - BLOCK_SIZE - LANE_DISPLACEMENT
@@ -527,9 +537,9 @@ class GameDrawer():
                         remaining_distance -= LANE_DISPLACEMENT
                         last_dir = segment.direction
 
-                    elif car.res[i - 1].direction.value - segment.direction.value == -1 or car.res[i - 1].direction.value - \
+                    elif car_reservations[i - 1].direction.value - segment.direction.value == -1 or car_reservations[i - 1].direction.value - \
                             segment.direction.value == +3:  # right turn
-                        if car.res[i - 1].direction == Direction.RIGHT:
+                        if car_reservations[i - 1].direction == Direction.RIGHT:
                             car_x = car_x + BLOCK_SIZE + LANE_DISPLACEMENT
                             left_points.append((car_x, car_y))
                             car_y = car_y - BLOCK_SIZE - LANE_DISPLACEMENT
@@ -540,7 +550,7 @@ class GameDrawer():
                             car_y2 = car_y2 - LANE_DISPLACEMENT
                             right_points.append((car_x2, car_y2))
 
-                        if car.res[i - 1].direction == Direction.DOWN:
+                        if car_reservations[i - 1].direction == Direction.DOWN:
                             car_y = car_y - BLOCK_SIZE - LANE_DISPLACEMENT
                             left_points.append((car_x, car_y))
                             car_x = car_x - BLOCK_SIZE - LANE_DISPLACEMENT
@@ -552,7 +562,7 @@ class GameDrawer():
                             right_points.append((car_x2, car_y2))
 
 
-                        if car.res[i - 1].direction == Direction.LEFT:
+                        if car_reservations[i - 1].direction == Direction.LEFT:
                             car_x = car_x - BLOCK_SIZE - LANE_DISPLACEMENT
                             left_points.append((car_x, car_y))
                             car_y = car_y + BLOCK_SIZE + LANE_DISPLACEMENT
@@ -563,7 +573,7 @@ class GameDrawer():
                             car_y2 = car_y2 + LANE_DISPLACEMENT
                             right_points.append((car_x2, car_y2))
 
-                        if car.res[i - 1].direction == Direction.UP:
+                        if car_reservations[i - 1].direction == Direction.UP:
                             car_y = car_y + BLOCK_SIZE + LANE_DISPLACEMENT
                             left_points.append((car_x, car_y))
                             car_x = car_x + BLOCK_SIZE + LANE_DISPLACEMENT
@@ -579,7 +589,7 @@ class GameDrawer():
                         last_dir = segment.direction
 
                     else:
-                        print("error, not a valid turn", car.res[i - 1].direction, segment.direction)
+                        print("error, not a valid turn", car_reservations[i - 1].direction, segment.direction)
 
         left_points.append((car_x, car_y))
 

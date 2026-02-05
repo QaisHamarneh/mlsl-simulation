@@ -9,6 +9,7 @@ from game_model.road_network import Direction, Goal, Road, LaneSegment, Problem,
 from game_model.helper_functions import create_random_car, overlap, reached_goal, collision_check
 from game_model.create_game import create_segments
 from game_model.constants import *
+from game_model.reservations.reservation_management import ReservationManagement
 from game_model.game_history import GameHistory
 from reinforcement_learning.rl_modes import RLMode
 
@@ -57,6 +58,7 @@ class TrafficEnv:
         self.total_crashes: int = 0
         self.crashes: dict = {}
 
+        self.reservation_management: ReservationManagement = ReservationManagement()
         self.game_history: GameHistory = GameHistory()
 
         self.reset()
@@ -65,8 +67,11 @@ class TrafficEnv:
         """
         Reset the environment to its initial state.
         """
-        for seg in self.segments:
-            seg.cars = []
+        for intersection in self.intersections:
+            intersection.intersection_state.reset()
+            for crossing_segment in intersection.segments:
+                crossing_segment.crossing_segment_state.reset()
+
         # init display
         self.moved = True
         self.time = 0
@@ -76,20 +81,21 @@ class TrafficEnv:
         self.agent_car = None
         self.controllers = []
 
+        self.reservation_management.reset() 
         self.game_history.reset_history()
 
         if self.agent:
-            self.agent_car = create_random_car(self.segments, self.npc_cars, CarType.AGENT)
+            self.agent_car = create_random_car(self.segments, self.npc_cars, CarType.AGENT, self.reservation_management)
             self._place_goals(self.agent_car)
             self.cars.append(self.agent_car)
 
         for i in range(self.npcs):
-            car = create_random_car(self.segments, self.cars, CarType.NPC)
+            car = create_random_car(self.segments, self.cars, CarType.NPC, self.reservation_management)
             self.cars.append(car)
             self.npc_cars.append(car)
         for car in self.npc_cars:
             self._place_goals(car)
-            self.controllers.append(AstarCarController(car, car.goal))
+            self.controllers.append(AstarCarController(car, car.goal, self.reservation_management))
 
         self.game_history.set_list_of_cars(self.cars)
         self.game_history.set_map(self.roads)
@@ -139,15 +145,15 @@ class TrafficEnv:
 
         if self.agent:
             game_over.append(
-                self._execute_action(car=self.agent_car, action=action) if not self.agent_car.dead else True
+                self._execute_action(car=self.agent_car, action=action) if not self.agent_car.get_death_status() else True
             )
             self.game_history.add_taken_action(self.agent_car, action)
 
         for controller in self.controllers:
             car = controller.car
-            npc_action = controller.get_action()
+            npc_action = controller.get_action(self.cars)
             game_over.append(
-                self._execute_action(car=car, action=npc_action) if not car.dead else True
+                self._execute_action(car=car, action=npc_action) if not car.get_death_status() else True
             )
             self.game_history.add_taken_action(car, npc_action)
 
@@ -180,13 +186,13 @@ class TrafficEnv:
             if car is self.agent_car:
                 car.illegal_move = True
             else:
-                car.dead = True
+                car.handle_car_death(self.reservation_management)
                 return True
 
         # Crash detection:
         for other_car in self.cars:
             if other_car != car:
-                if collision_check(car, other_car):
+                if collision_check(car, other_car, self.reservation_management):
                     self.total_crashes += 1
                     self.crashes[car.direction] += 1
                     # log_msg = (
@@ -194,12 +200,12 @@ class TrafficEnv:
                     #     f"First car {car.type}:{car.name} Second car {other_car.type}:{other_car.name}\n"
                     # )
                     # logging.warning(log_msg)
-                    car.dead = True
-                    other_car.dead = True
+                    car.handle_car_death(self.reservation_management)
+                    other_car.handle_car_death(self.reservation_management)
                     return True
 
         # Place new goal if the goal is reached
-        if reached_goal(car, car.goal):
+        if reached_goal(car, car.goal, self.reservation_management):
             car.score += 1
             self._place_goals(car)
 
@@ -222,9 +228,10 @@ class TrafficEnv:
 
         action_worked = True
         if lane_change != 0:
-            action_worked = action_worked and car.change_lane(lane_change)
+            action_worked = action_worked and car.change_lane(self.reservation_management, lane_change)
 
-        action_worked = car.move() and action_worked
+        action_worked = car.move(self.reservation_management) and action_worked
+
         return action_worked
 
 
@@ -254,8 +261,8 @@ class TrafficEnv:
         game_over = True
 
         for car in self.cars:
-            print(f"{car.type}: {car.name} | Score: {car.score} | Dead: {car.dead}")
-            game_over = car.dead and game_over
+            print(f"{car.type}: {car.name} | Score: {car.score} | Dead: {car.get_death_status()}")
+            game_over = car.get_death_status() and game_over
 
         print(f"\nWinning Score -> {WINNING_SCORE}")
         print(f"Game Over -> {game_over}")

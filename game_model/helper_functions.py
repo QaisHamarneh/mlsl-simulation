@@ -9,6 +9,7 @@ from game_model.constants import *
 from game_model.road_network import true_direction, Goal, Point
 from game_model.road_network import LaneSegment, Segment
 from game_model.game_history import GameHistory
+from game_model.reservations.reservation_management import ReservationManagement
 from gui.selected_colors import selected_colors
 from gui.colors import colors
 
@@ -53,7 +54,7 @@ def overlap(p1: Point, w1: int, h1: int, p2: Point, w2: int, h2: int) -> bool:
     return True
 
 
-def reached_goal(car: Car, goal: Goal) -> bool:
+def reached_goal(car: Car, goal: Goal, reservation_management: ReservationManagement) -> bool:
     """
     Check if a car has reached its goal.
 
@@ -64,13 +65,13 @@ def reached_goal(car: Car, goal: Goal) -> bool:
     Returns:
         bool: True if the car has reached the goal, False otherwise.
     """
-    if car.res[0].segment == goal.lane_segment:
-        if dist(car.get_center(), goal.pos) < car.size // 2 + BLOCK_SIZE // 2:
+    if reservation_management.get_car_reservation(car.id, 0).segment == goal.lane_segment:
+        if dist(car.get_center(reservation_management), goal.pos) < car.size // 2 + BLOCK_SIZE // 2:
             return True
     return False
 
 
-def create_random_car(segments: List[Segment], cars: List[Car], car_type: CarType) -> Car:
+def create_random_car(segments: List[Segment], cars: List[Car], car_type: CarType, reservation_management: ReservationManagement) -> Car:
     """
     Create a random car that does not overlap with existing cars.
     Randomly selects a color, lane segment, speed, size. The location is set to 0.
@@ -100,7 +101,7 @@ def create_random_car(segments: List[Segment], cars: List[Car], car_type: CarTyp
 
     lane_segment = random.choice([seg for seg in segments
                                   if isinstance(seg, LaneSegment) and
-                                  not any([seg == car.res[0].segment for car in cars])])
+                                  not any([seg == reservation_management.get_car_reservation(car.id, 0).segment for car in cars])])
 
     max_speed = random.randint(BLOCK_SIZE // 4, BLOCK_SIZE // 3)
     speed = random.randint(BLOCK_SIZE // 10, max_speed)
@@ -115,9 +116,10 @@ def create_random_car(segments: List[Segment], cars: List[Car], car_type: CarTyp
                speed=speed,
                size=size,
                color=color,
-               max_speed=max_speed)
+               max_speed=max_speed,
+               reservation_management=reservation_management)
 
-def collision_check(car1: Car, car2:Car) -> bool:
+def collision_check(car1: Car, car2:Car, reservation_managemnent: ReservationManagement) -> bool:
     """
     Check if a car is in collision with any other car.
 
@@ -127,8 +129,8 @@ def collision_check(car1: Car, car2:Car) -> bool:
     Returns:
         bool: True if there is a collision, False otherwise.
     """
-    car1_segments = car1.get_size_segments()
-    car2_segments = car2.get_size_segments()
+    car1_segments = car1.get_size_segments(reservation_managemnent)
+    car2_segments = car2.get_size_segments(reservation_managemnent)
     for segment_car1 in car1_segments:
         segment_car2 = next((seg for seg in car2_segments if segment_car1.segment == seg.segment), None)
         if segment_car2 is not None:
