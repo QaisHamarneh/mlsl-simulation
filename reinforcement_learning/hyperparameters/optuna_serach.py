@@ -42,17 +42,6 @@ class OptunaSearch:
     - Performance of each trial
     - Parameter importance analysis
     
-    ## Typical Workflow
-    
-    ```python
-    search = OptunaSearch(rl_algorithm)
-    study = search.search_params()  # Run optimization
-    
-    # Analyze results
-    print(f"Best params: {study.best_params}")
-    print(f"Best score: {study.best_value}")
-    ```
-    
     ## Configuration
     
     See `rl_constants.py`:

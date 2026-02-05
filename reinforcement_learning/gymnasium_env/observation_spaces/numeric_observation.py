@@ -20,8 +20,7 @@ CAR_RES_INFO = 6
 class NumbericObservation(Observation):
     """Numeric observation model for RL environment.
     
-    Converts the game state into a flattened numeric observation suitable for
-    reinforcement learning algorithms. The observation includes information about
+    Converts the game state into a flattened numeric observation. The observation includes information about
     lanes (their position and direction) and car reservations (speed and segment
     reservations along their path).
     

@@ -8,7 +8,7 @@ from stable_baselines3.common.base_class import BaseAlgorithm
 class RLAlgorithm(ABC):
     """Abstract base class for reinforcement learning algorithms.
     
-    This class provides a unified interface for different RL algorithms (currently PPO).
+    This class provides a unified interface for different RL algorithms.
     It manages algorithm instantiation, parameter changes, and Optuna integration for
     hyperparameter optimization.
     
@@ -27,18 +27,9 @@ class RLAlgorithm(ABC):
         class DQNAlgorithm(RLAlgorithm):
             def create_algorithm(self, params=None):
                 # Return a Stable Baselines3 DQN instance
-                if params is None:
-                    return DQN("MlpPolicy", self.env)
-                else:
-                    return DQN("MlpPolicy", self.env, **params)
             
             def get_sample_params(self, trial):
                 # Sample hyperparameters for this algorithm
-                return {
-                    'learning_rate': trial.suggest_float('learning_rate', 1e-5, 1),
-                    'buffer_size': trial.suggest_categorical('buffer_size', [1000, 10000, 100000]),
-                    # ... other hyperparameters
-                }
         ```
     
     3. The decorator automatically registers it with `rl_algo_registry`.

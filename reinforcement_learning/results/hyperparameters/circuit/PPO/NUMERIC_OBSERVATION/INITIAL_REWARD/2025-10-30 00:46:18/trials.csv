@@ -1,3 +1,0 @@
-number,value,datetime_start,datetime_complete,duration,params_batch_size,params_clip_range,params_ent_coef,params_gae_lambda,params_gamma,params_learning_rate,params_lr_schedule,params_max_grad_norm,params_n_epochs,params_n_steps,params_vf_coef,state
-0,-163.2,2025-10-30 00:46:18.544112,2025-10-30 00:46:20.856825,0 days 00:00:02.312713,256,0.2,2.089926569930796e-06,0.92,0.9999,2.0233050035356278e-05,constant,0.5,10,16,0.7932200990597175,COMPLETE
-1,-14.2,2025-10-30 00:46:20.857093,2025-10-30 00:46:24.068438,0 days 00:00:03.211345,16,0.1,0.012782020333833065,0.8,0.9999,0.000282153807427309,constant,0.6,10,8,0.1139195609979593,COMPLETE

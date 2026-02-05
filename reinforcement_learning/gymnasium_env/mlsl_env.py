@@ -41,7 +41,7 @@ class MlslEnv(Env, ABC):
             elif reached_goal:
                 return 100.0
             else:
-                return -0.01  # small step penalty
+                return -0.01
     ```
     
     The decorator automatically registers it with the reward_registry for easy lookup.
@@ -118,7 +118,7 @@ class MlslEnv(Env, ABC):
         self.game_model.reset()
         return (self.observation_model.observe(), self._get_info())
     
-    def step(self, actions: Tuple[int, int]):
+    def step(self, actions: Tuple[int, int]) -> Tuple[spaces.Space, float, bool, bool, Dict[str, any]]:
         """Execute one environment step.
         
         Processes the agent's action, updates the simulation, and returns the

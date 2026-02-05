@@ -9,10 +9,7 @@ from reinforcement_learning.algorithms.sample_ppo_params import sample_ppo_param
 
 @register_rl_algorithm(RLAlgorithmType.PPO)
 class PPOAlgorithm(RLAlgorithm):
-    """Proximal Policy Optimization algorithm implementation.
-    
-    PPO is a state-of-the-art policy gradient method that is stable and sample-efficient.
-    It works well with both discrete and continuous action spaces.
+    """Proximal Policy Optimization algorithm implementation. 
     
     ## Key PPO Hyperparameters
     
@@ -24,13 +21,6 @@ class PPOAlgorithm(RLAlgorithm):
     - **gae_lambda**: Generalized Advantage Estimation parameter (0.95-0.99 typical)
     - **clip_range**: PPO clipping range (prevents drastic policy changes)
     - **ent_coef**: Entropy coefficient (encourages exploration)
-    
-    ## Why PPO?
-    
-    - **Stable**: Trust region optimization prevents huge policy changes
-    - **Sample efficient**: Reuses data multiple times per rollout
-    - **Robust**: Works well across different problem types
-    - **Easy to tune**: Good default hyperparameters exist
     
     ## References
     

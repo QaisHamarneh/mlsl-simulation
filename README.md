@@ -1,95 +1,411 @@
-# A Traffic Environment
+# A Traffic Environemnt
 
 ## Setup
 
 We recommend starting a new virtual environment: 
 
+For normal set-up:
 ```
 python3 -m venv .env
 source .env/bin/activate
 pip install -r requirements.txt
 ```
 
-## Run Normal
+For a set-up using the reinforcement learning tools:
+```
+python3 -m venv .env
+source .env/bin/activate
+pip install -r requirements_rl.txt
+```
 
-To run the code, just run the `main.py` file. You can change the `render_mode` parameter to switch between gui and non_gui mode. The `show_reservations` can be changed between True and False.
-You can also test some properties of the environment manually using the files `gui/pyglet_class_test.py` and `gui/pyglet_gui_manual.py`.
+## Quick Start
 
-## Run Reinforcement Learning Mode
+To run a simple traffic simulation without AI (interactive driving):
 
-All previously explained parameters are used in the same way but additionaly the parameters **rl_mode**, **rl_algorithm_type**, **observation_model_type**, **reward_type**, **id_model**, and **id_hyperparams** can be used. If one of **rl_mode**, **rl_algorithm_type**, **observation_model_type** or **reward_type** is not set to None all the others also have to be a non None type.
+```python
+from main import main
+from gui.render_mode import RenderMode
 
-### rl_mode
+main(
+    **SCENARIOS["TWO_CROSSING"],   # Use predefined scenario
+    render_mode=RenderMode.GUI,    # Show GUI window
+    show_reservation=True          # Display segments reserved by cars
+)
+```
 
-With this parameter the reinforcement learning mode can be selected.
+## Function Parameters
 
-RLMode.TRAIN is used for training of a new model.
+### `main()` Function Signature
 
-RLMode.LOAD is used for loading of a previously trained model and can only be used in combination with the id_model parameter. 
+```python
+def main(
+    players,                          # Number of traffic agents
+    roads,                            # List of Road objects
+    segmentation,                     # Road segmentation flag
+    scenario_name,                    # Name of the scenario
+    render_mode,                      # RenderMode.GUI or RenderMode.NO_GUI
+    show_reservation,                 # Show segment reservations
+    rl_mode=None,                     # RLMode for RL-based control (None for manual)
+    rl_algorithm_type=None,           # Which RL algorithm to use
+    observation_model_type=None,      # How agent perceives the world
+    reward_type=None,                 # Reward strategy for learning
+    id_model=None,                    # ID of saved model to load
+    id_history=None,                  # ID of saved episode to replay
+    id_hyperparams=None               # ID of saved hyperparameters
+)
+```
 
-RLMode.OPTIMIZE is used for hyperparameter optimization. 
+### Core Parameters
 
-RLMode.OPTIMIZE_AND_TRAIN is used for optimizing hyperparameters and then useing them directly to train a new model.
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `players` | int | Yes | Number of autonomous vehicles in simulation |
+| `roads` | list | Yes | Road network configuration (from SCENARIOS) |
+| `segmentation` | bool | Yes | Enable road segmentation (from SCENARIOS) |
+| `scenario_name` | str | Yes | Name of scenario (for logging/saving) |
+| `render_mode` | RenderMode | Yes | `RenderMode.GUI` (show window) or `RenderMode.NO_GUI` (headless) |
+| `show_reservation` | bool | Yes | Show reservation segments on display |
 
-### rl_algorithm_type
+### Reinforcement Learning Parameters
 
-This parameter is used to select the underlying reinforcement learning algorithm for training (e.g. PPO).
+| Parameter | Type | Required | Description |
+|-----------|------|---------|-------------|
+| `rl_mode` | RLMode | No | Control mode (see [RL Modes](#rl-modes) below) |
+| `rl_algorithm_type` | RLAlgorithmType | No | Learning algorithm |
+| `observation_model_type` | ObservationModelType | No | How agent sees the world |
+| `reward_type` | RewardType | No | How agent is rewarded |
+| `id_model` | str | No | Timestamp to load saved model |
+| `id_history` | str | No | Filename to replay saved episode |
+| `id_hyperparams` | str | No | Timestamp to load optimized hyperparameters |
 
-### observation_model_type
+---
 
-This parameter is used to select the observations model to be used in training (e.g. NUMERIC_OBSERVATION).
+### Example: Run Different Scenarios
 
-### reward_type
+```python
+from main import main
+from gui.render_mode import RenderMode
+from scenarios.scenarios import SCENARIOS
 
-This paraemeter is used to select the reward type to be used in training (e.g. INITIAL_REWARD).
+# Simple circuit
+main(**SCENARIOS["CIRCUIT"], render_mode=RenderMode.GUI, show_reservation=True)
 
-### id_model and id_hyperparams
+# More complex
+main(**SCENARIOS["TWO_CROSSING"], render_mode=RenderMode.GUI, show_reservation=True)
 
-These two parameters are used to load previously stored models or hyperparameters. 
+# Advanced
+main(**SCENARIOS["BIG_SCENARIO"], render_mode=RenderMode.GUI, show_reservation=True)
+```
 
-### Results Structure
+---
 
-In the results directory we have the two sub-directories hyperparameters and models. To save results of the rl_modes RLMode.TRAIN, RLMode.OPTIMIZE and RLMode.OPTIMIZE_AND_TRAIN in these sub-directories, we make use of the selected parameters in main. 
+## RL Modes
 
-If a model would be trained with the parameters 
-- scenario=CIRCUIT
-- rl_mode=RLMode.TRAIN
-- rl_algorithm_type=RLAlgorithmType.PPO
-- observation_model_type=ObservationModelType.NUMERIC_OBSERVATION
-- reward_type=RewardType.INITIAL_REWARD
+Control how the simulation runs. Use with `rl_mode` parameter:
 
-the results would be saved in this structure: *results/models/circuit/PPO/NUMERIC_OBSERVATION/INITIAL_REWARD/* timestamp */best_model.zip*
+### `RLMode.TRAIN`
 
-timestamp: Each time a model or hyperparameters are saved a timestamp is created which can be used to load these model or hyperparameters later (see Examples).
+Train an agent from scratch with default hyperparameters.
 
-If rl_mode would have been RLMode.OPTIMIZE the results structure would have been as follows: 
+```python
+main(
+    **SCENARIOS["TWO_CROSSING"],
+    render_mode=RenderMode.GUI,
+    show_reservation=True,
+    rl_mode=RLMode.TRAIN,
+    rl_algorithm_type=RLAlgorithmType.PPO,
+    observation_model_type=ObservationModelType.NUMERIC_OBSERVATION,
+    reward_type=RewardType.INITIAL_REWARD
+)
+```
 
-*results/hyperparameters/circuit/PPO/NUMERIC_OBSERVATION/INITIAL_REWARD/timestamp/best_params.csv param_importance.html trials.csv*
+**Output:** Saves trained model to `reinforcement_learning/results/models/`
 
-### Examples
+### `RLMode.OPTIMIZE`
 
-**Load Model**
+Find best hyperparameters using Optuna.
 
-If one wants to load model a with the path 
+```python
+main(
+    **SCENARIOS["TWO_CROSSING"],
+    render_mode=RenderMode.NO_GUI,  # Faster without rendering
+    show_reservation=False,
+    rl_mode=RLMode.OPTIMIZE,
+    rl_algorithm_type=RLAlgorithmType.PPO,
+    observation_model_type=ObservationModelType.NUMERIC_OBSERVATION,
+    reward_type=RewardType.INITIAL_REWARD
+)
+```
 
-*results/models/circuit/PPO/NUMERIC_OBSERVATION/INITIAL_REWARD/2025-10-29 18:26:52/best_model.zip*, 
+**Output:** Saves best hyperparameters to `reinforcement_learning/results/hyperparameters/`
 
-the parameters have to be set to: 
-- rl_mode=RLMode.LOAD
-- rl_algorithm_type=RLAlgorithmType.PPO
-- observation_model_type=ObservationModelType.NUMERIC_OBSERVATION
-- reward_type=RewardType.INITIAL_REWARD
-- id_model="2025-10-29 18:26:52"
+### `RLMode.OPTIMIZE_AND_TRAIN`
 
-**Train Model with specific hyperparameters**
+Find best hyperparameters, then train model with them.
 
-If one wants to train a model with a set of previously optimized hyperparameters located at 
+```python
+main(
+    **SCENARIOS["TWO_CROSSING"],
+    render_mode=RenderMode.NO_GUI,
+    show_reservation=False,
+    rl_mode=RLMode.OPTIMIZE_AND_TRAIN,
+    rl_algorithm_type=RLAlgorithmType.PPO,
+    observation_model_type=ObservationModelType.NUMERIC_OBSERVATION,
+    reward_type=RewardType.INITIAL_REWARD
+)
+```
 
-*results/hyperparameters/circuit/PPO/NUMERIC_OBSERVATION/INITIAL_REWARD/2025-10-29 18:26:52/*, 
+**Output:** Both hyperparameters and trained model saved
 
-the parameters have to be set to: 
-- rl_mode=RLMode.TRAIN
-- rl_algorithm_type=RLAlgorithmType.PPO 
-- observation_model_type=ObservationModelType.NUMERIC_OBSERVATION 
-- reward_type=RewardType.INITIAL_REWARD
-- id_hyperparams="2025-10-29 18:26:52"
+### `RLMode.LOAD_TRAINED_MODEL`
+
+Load and run a previously trained model.
+
+```python
+main(
+    **SCENARIOS["TWO_CROSSING"],
+    render_mode=RenderMode.GUI,
+    show_reservation=True,
+    rl_mode=RLMode.LOAD_TRAINED_MODEL,
+    rl_algorithm_type=RLAlgorithmType.PPO,
+    observation_model_type=ObservationModelType.NUMERIC_OBSERVATION,
+    reward_type=RewardType.INITIAL_REWARD,
+    id_model="2025-10-29 18:26:52"  # Timestamp of saved model
+)
+```
+
+### `RLMode.LOAD_HISTORY`
+
+Replay a recorded episode.
+
+```python
+main(
+    **SCENARIOS["TWO_CROSSING"],
+    render_mode=RenderMode.GUI,
+    show_reservation=True,
+    rl_mode=RLMode.LOAD_HISTORY,
+    id_model="2025-10-29 18:26:52",      # Model that created recording
+    id_history="23:41:20_1768.pkl"       # Episode to replay
+)
+```
+
+---
+
+## Rendering Modes
+
+### `RenderMode.GUI`
+
+Shows interactive visualization window.
+
+```python
+render_mode=RenderMode.GUI
+```
+
+### `RenderMode.NO_GUI`
+
+Headless mode (no window).
+
+```python
+render_mode=RenderMode.NO_GUI
+```
+
+---
+
+## RL Algorithms
+
+Currently supported (expand with more algorithms):
+
+### `RLAlgorithmType.PPO`
+
+Proximal Policy Optimization.
+
+```python
+rl_algorithm_type=RLAlgorithmType.PPO
+```
+
+---
+
+## Observation Models
+
+How the agent perceives the world. Currently supported (expand with other observation models):
+
+### `ObservationModelType.NUMERIC_OBSERVATION`
+
+Flattened vector of normalized numeric values:
+- Lane positions and directions
+- Car speeds and positions
+- Segment reservations
+
+```python
+observation_model_type=ObservationModelType.NUMERIC_OBSERVATION
+```
+
+---
+
+## Reward Functions
+
+Guidance signal for learning. Currently supported (expand with other reward types):
+
+### `RewardType.INITIAL_REWARD`
+
+Default reward strategy.
+
+```python
+reward_type=RewardType.INITIAL_REWARD
+```
+
+---
+
+## Common Workflows
+
+### Workflow 1: Quick Test of New Scenario
+
+```python
+
+# Test scenario visually
+main(
+    **SCENARIOS["TWO_CROSSING"],
+    render_mode=RenderMode.GUI,
+    show_reservation=True
+)
+```
+
+### Workflow 2: Train New Agent
+
+```python
+
+# Train agent from scratch
+main(
+    **SCENARIOS["TWO_CROSSING"],
+    render_mode=RenderMode.NO_GUI,
+    show_reservation=False,
+    rl_mode=RLMode.TRAIN,
+    rl_algorithm_type=RLAlgorithmType.PPO,
+    observation_model_type=ObservationModelType.NUMERIC_OBSERVATION,
+    reward_type=RewardType.INITIAL_REWARD
+)
+```
+
+### Workflow 3: Optimize Hyperparameters
+
+```python
+
+main(
+    **SCENARIOS["TWO_CROSSING"],
+    render_mode=RenderMode.NO_GUI,
+    show_reservation=False,
+    rl_mode=RLMode.OPTIMIZE,
+    rl_algorithm_type=RLAlgorithmType.PPO,
+    observation_model_type=ObservationModelType.NUMERIC_OBSERVATION,
+    reward_type=RewardType.INITIAL_REWARD
+)
+```
+
+### Workflow 4: Optimize Then Train
+
+```python
+
+# Optimize hyperparameters, then train with best ones
+main(
+    **SCENARIOS["TWO_CROSSING"],
+    render_mode=RenderMode.NO_GUI,
+    show_reservation=False,
+    rl_mode=RLMode.OPTIMIZE_AND_TRAIN,
+    rl_algorithm_type=RLAlgorithmType.PPO,
+    observation_model_type=ObservationModelType.NUMERIC_OBSERVATION,
+    reward_type=RewardType.INITIAL_REWARD
+)
+```
+
+### Workflow 5: Test Trained Agent
+
+```python
+
+# Load and visualize trained model
+main(
+    **SCENARIOS["TWO_CROSSING"],
+    render_mode=RenderMode.GUI,
+    show_reservation=True,
+    rl_mode=RLMode.LOAD_TRAINED_MODEL,
+    rl_algorithm_type=RLAlgorithmType.PPO,
+    observation_model_type=ObservationModelType.NUMERIC_OBSERVATION,
+    reward_type=RewardType.INITIAL_REWARD,
+    id_model="2025-10-29 18:26:52"  # Replace with your model timestamp
+)
+```
+
+### Workflow 6: Replay Episode
+
+```python
+
+# Replay a recorded episode
+main(
+    **SCENARIOS["TWO_CROSSING"],
+    render_mode=RenderMode.GUI,
+    show_reservation=True,
+    rl_mode=RLMode.LOAD_HISTORY,
+    id_model="2025-10-29 18:26:52",
+    id_history="23:41:20_1768.pkl"
+)
+```
+
+---
+
+## Finding Model/History IDs
+
+Models and episodes are saved with timestamps. Find them in:
+
+```
+reinforcement_learning/results/
+├── models/
+│   └── {scenario}/PPO/NUMERIC_OBSERVATION/INITIAL_REWARD/
+│       ├── 2025-10-29 18:26:52/         ← model ID (timestamp)
+│       │   ├── best_model
+│       │   └── history/
+│       │       ├── 23:41:20_1768.pkl    ← history ID (episode file)
+│       │       └── ...
+│       └── ...
+└── hyperparameters/
+    └── ...
+```
+
+Use the exact timestamp format: `"YYYY-MM-DD HH:MM:SS"`
+
+---
+
+## Advanced Usage
+
+### Hyperparameter Configuration
+
+Edit `reinforcement_learning/rl_constants.py`:
+
+```python
+TRAINING_TIMESTEPS = 10_000              # Training length
+HYPERPARAMS_TRAINING_TIMESTEPS = 1_000   # Optuna trial length
+OPTUNA_TRIALS = 2                        # Number of optimization trials
+```
+
+---
+
+## Output Structure
+
+After running with RL:
+
+```
+reinforcement_learning/results/
+├── models/
+│   └── two_crossings/PPO/NUMERIC_OBSERVATION/INITIAL_REWARD/
+│       └── 2025-10-29 18:26:52/
+│           ├── best_model              # Trained agent
+│           └── history/                # Recorded episodes
+│               ├── 23:41:20_1768.pkl
+│               └── ...
+└── hyperparameters/
+    └── two_crossings/PPO/NUMERIC_OBSERVATION/INITIAL_REWARD/
+        └── 2025-10-29 18:26:52/
+            ├── best_params.parquet     # Optimized settings
+            ├── trials.csv              # All trial results
+            └── param_importance.html   # Visualization
+```
+
+---
