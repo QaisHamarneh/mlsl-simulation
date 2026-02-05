@@ -6,4 +6,4 @@ venv
 *.DS_Store
 build
 src/mlsl_simulation.egg-info
-src/mlsl_simulation/reinforcement_learning/results/
+rl_results/

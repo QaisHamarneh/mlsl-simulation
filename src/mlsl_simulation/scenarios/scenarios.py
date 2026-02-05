@@ -80,7 +80,7 @@ SCENARIOS = {
         "scenario_name": "starting_scenario"
     },
 
-    "TWO_CROSSING": {
+    "TWO_CROSSINGS": {
         "roads": [
             Road("bottom", True, 0, 1, 0),
             Road("right", False, WINDOW_WIDTH - BLOCK_SIZE, 0, 1),

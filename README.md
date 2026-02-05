@@ -27,7 +27,7 @@ from main import main
 from gui.render_mode import RenderMode
 
 main(
-    **SCENARIOS["TWO_CROSSING"],   # Use predefined scenario
+    **SCENARIOS["TWO_CROSSINGS"],   # Use predefined scenario
     render_mode=RenderMode.GUI,    # Show GUI window
     show_reservation=True          # Display segments reserved by cars
 )
@@ -39,13 +39,13 @@ main(
 
 ```python
 def main(
-    players,                          # Number of traffic agents
+    players,                          # Number of cars
     roads,                            # List of Road objects
     segmentation,                     # Road segmentation flag
     scenario_name,                    # Name of the scenario
     render_mode,                      # RenderMode.GUI or RenderMode.NO_GUI
-    show_reservation,                 # Show segment reservations
-    rl_mode=None,                     # RLMode for RL-based control (None for manual)
+    show_reservation,                 # Show reserved segments of cars
+    rl_mode=None,                     # Which RL mode to use (train, optimize_hyperparams, etc.)
     rl_algorithm_type=None,           # Which RL algorithm to use
     observation_model_type=None,      # How agent perceives the world
     reward_type=None,                 # Reward strategy for learning
@@ -59,12 +59,12 @@ def main(
 
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
-| `players` | int | Yes | Number of autonomous vehicles in simulation |
+| `players` | int | Yes | Number of a* controlled vehicles in simulation |
 | `roads` | list | Yes | Road network configuration (from SCENARIOS) |
 | `segmentation` | bool | Yes | Enable road segmentation (from SCENARIOS) |
 | `scenario_name` | str | Yes | Name of scenario (for logging/saving) |
 | `render_mode` | RenderMode | Yes | `RenderMode.GUI` (show window) or `RenderMode.NO_GUI` (headless) |
-| `show_reservation` | bool | Yes | Show reservation segments on display |
+| `show_reservation` | bool | Yes | Show reserved segments of cars |
 
 ### Reinforcement Learning Parameters
 
@@ -91,7 +91,7 @@ from scenarios.scenarios import SCENARIOS
 main(**SCENARIOS["CIRCUIT"], render_mode=RenderMode.GUI, show_reservation=True)
 
 # More complex
-main(**SCENARIOS["TWO_CROSSING"], render_mode=RenderMode.GUI, show_reservation=True)
+main(**SCENARIOS["TWO_CROSSINGS"], render_mode=RenderMode.GUI, show_reservation=True)
 
 # Advanced
 main(**SCENARIOS["BIG_SCENARIO"], render_mode=RenderMode.GUI, show_reservation=True)
@@ -109,7 +109,7 @@ Train an agent from scratch with default hyperparameters.
 
 ```python
 main(
-    **SCENARIOS["TWO_CROSSING"],
+    **SCENARIOS["TWO_CROSSINGS"],
     render_mode=RenderMode.GUI,
     show_reservation=True,
     rl_mode=RLMode.TRAIN,
@@ -119,7 +119,7 @@ main(
 )
 ```
 
-**Output:** Saves trained model to `reinforcement_learning/results/models/`
+**Output:** Saves trained model to `rl_results/models/`
 
 ### `RLMode.OPTIMIZE`
 
@@ -127,7 +127,7 @@ Find best hyperparameters using Optuna.
 
 ```python
 main(
-    **SCENARIOS["TWO_CROSSING"],
+    **SCENARIOS["TWO_CROSSINGS"],
     render_mode=RenderMode.NO_GUI,  # Faster without rendering
     show_reservation=False,
     rl_mode=RLMode.OPTIMIZE,
@@ -137,7 +137,7 @@ main(
 )
 ```
 
-**Output:** Saves best hyperparameters to `reinforcement_learning/results/hyperparameters/`
+**Output:** Saves best hyperparameters to `rl_results/hyperparameters/`
 
 ### `RLMode.OPTIMIZE_AND_TRAIN`
 
@@ -145,7 +145,7 @@ Find best hyperparameters, then train model with them.
 
 ```python
 main(
-    **SCENARIOS["TWO_CROSSING"],
+    **SCENARIOS["TWO_CROSSINGS"],
     render_mode=RenderMode.NO_GUI,
     show_reservation=False,
     rl_mode=RLMode.OPTIMIZE_AND_TRAIN,
@@ -163,7 +163,7 @@ Load and run a previously trained model.
 
 ```python
 main(
-    **SCENARIOS["TWO_CROSSING"],
+    **SCENARIOS["TWO_CROSSINGS"],
     render_mode=RenderMode.GUI,
     show_reservation=True,
     rl_mode=RLMode.LOAD_TRAINED_MODEL,
@@ -180,7 +180,7 @@ Replay a recorded episode.
 
 ```python
 main(
-    **SCENARIOS["TWO_CROSSING"],
+    **SCENARIOS["TWO_CROSSINGS"],
     render_mode=RenderMode.GUI,
     show_reservation=True,
     rl_mode=RLMode.LOAD_HISTORY,
@@ -264,7 +264,7 @@ reward_type=RewardType.INITIAL_REWARD
 
 # Test scenario visually
 main(
-    **SCENARIOS["TWO_CROSSING"],
+    **SCENARIOS["TWO_CROSSINGS"],
     render_mode=RenderMode.GUI,
     show_reservation=True
 )
@@ -276,7 +276,7 @@ main(
 
 # Train agent from scratch
 main(
-    **SCENARIOS["TWO_CROSSING"],
+    **SCENARIOS["TWO_CROSSINGS"],
     render_mode=RenderMode.NO_GUI,
     show_reservation=False,
     rl_mode=RLMode.TRAIN,
@@ -291,7 +291,7 @@ main(
 ```python
 
 main(
-    **SCENARIOS["TWO_CROSSING"],
+    **SCENARIOS["TWO_CROSSINGS"],
     render_mode=RenderMode.NO_GUI,
     show_reservation=False,
     rl_mode=RLMode.OPTIMIZE,
@@ -307,7 +307,7 @@ main(
 
 # Optimize hyperparameters, then train with best ones
 main(
-    **SCENARIOS["TWO_CROSSING"],
+    **SCENARIOS["TWO_CROSSINGS"],
     render_mode=RenderMode.NO_GUI,
     show_reservation=False,
     rl_mode=RLMode.OPTIMIZE_AND_TRAIN,
@@ -323,7 +323,7 @@ main(
 
 # Load and visualize trained model
 main(
-    **SCENARIOS["TWO_CROSSING"],
+    **SCENARIOS["TWO_CROSSINGS"],
     render_mode=RenderMode.GUI,
     show_reservation=True,
     rl_mode=RLMode.LOAD_TRAINED_MODEL,
@@ -340,7 +340,7 @@ main(
 
 # Replay a recorded episode
 main(
-    **SCENARIOS["TWO_CROSSING"],
+    **SCENARIOS["TWO_CROSSINGS"],
     render_mode=RenderMode.GUI,
     show_reservation=True,
     rl_mode=RLMode.LOAD_HISTORY,
@@ -356,7 +356,7 @@ main(
 Models and episodes are saved with timestamps. Find them in:
 
 ```
-results/
+rl_results/
 ├── models/
 │   └── {scenario}/PPO/NUMERIC_OBSERVATION/INITIAL_REWARD/
 │       ├── 2025-10-29 18:26:52/         ← model ID (timestamp)
@@ -392,7 +392,7 @@ OPTUNA_TRIALS = 2                        # Number of optimization trials
 After running with RL:
 
 ```
-results/
+rl_results/
 ├── models/
 │   └── two_crossings/PPO/NUMERIC_OBSERVATION/INITIAL_REWARD/
 │       └── 2025-10-29 18:26:52/
