@@ -76,10 +76,10 @@ class TrafficEnv:
         self.moved = True
         self.time = 0
 
-        self.cars = []
-        self.npc_cars = []
+        self.cars.clear()
+        self.npc_cars.clear()
         self.agent_car = None
-        self.controllers = []
+        self.controllers.clear()
 
         self.reservation_management.reset() 
         self.game_history.reset_history()

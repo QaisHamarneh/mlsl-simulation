@@ -6,7 +6,7 @@ from mlsl_simulation.game_model.car import Car
 from mlsl_simulation.game_model.constants import *
 from mlsl_simulation.game_model.reservations.reservation_management import ReservationManagement
 from mlsl_simulation.gui.map_colors import *
-from mlsl_simulation.gui.helpful_functions import get_xy_crossingseg, return_updated_position, find_greatest_gap
+from mlsl_simulation.gui.helpful_functions import get_xy_crossingseg, find_greatest_gap
 import mlsl_simulation.gui.map_colors
 
 class GameDrawer():
@@ -30,7 +30,7 @@ class GameDrawer():
             if reservation_management.get_car_reservation(car.id, 0).direction == Direction.RIGHT:
 
                 if car.changing_lane:
-                    x, y, w, h = return_updated_position(car)
+                    x, y, w, h = car.update_position(reservation_management)
                     car_res_box = GameDrawer.draw_lines(x, y, x + car.get_braking_distance(), y,
                                             x + car.get_braking_distance(), y + h,
                                             x, y + h, x, y,
@@ -39,7 +39,7 @@ class GameDrawer():
             elif reservation_management.get_car_reservation(car.id, 0).direction == Direction.LEFT:
 
                 if car.changing_lane:
-                    x, y, w, h = return_updated_position(car)
+                    x, y, w, h = car.update_position(reservation_management)
                     car_res_box = GameDrawer.draw_lines(x + w, y, x + w - car.get_braking_distance(), y,
                                             x + w - car.get_braking_distance(), y + h,
                                             x + w, y + h, x + w, y,
@@ -47,7 +47,7 @@ class GameDrawer():
 
             elif reservation_management.get_car_reservation(car.id, 0).direction == Direction.UP:
                 if car.changing_lane:
-                    x, y, w, h = return_updated_position(car)
+                    x, y, w, h = car.update_position(reservation_management)
                     car_res_box = GameDrawer.draw_lines(x, y, x, y + car.get_braking_distance(),
                                             x + w, y + car.get_braking_distance(),
                                             x + w, y, x, y,
@@ -55,7 +55,7 @@ class GameDrawer():
 
             elif reservation_management.get_car_reservation(car.id, 0).direction == Direction.DOWN:
                 if car.changing_lane:
-                    x, y, w, h = return_updated_position(car)
+                    x, y, w, h = car.update_position(reservation_management)
                     car_res_box = GameDrawer.draw_lines(x, y + h, x, y - car.get_braking_distance() + h,
                                             x + w, y - car.get_braking_distance() + h,
                                             x + w, y + h, x, y + h,

@@ -16,10 +16,10 @@ class GameController(AbstractGameController):
             render_mode: RenderMode,
             show_reservation: bool, 
             ):
+        
+        super().__init__(roads, players, render_mode, show_reservation) 
 
-        self.render_mode = render_mode
-        self.show_reservation = show_reservation
-        self.game_model: TrafficEnv = TrafficEnv(roads=roads, players=players)
+        self.game_model: TrafficEnv = TrafficEnv(roads=self.roads, players=self.players)
         self.done = None
 
 

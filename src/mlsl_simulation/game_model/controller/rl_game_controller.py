@@ -31,10 +31,11 @@ class RLGameController(AbstractGameController):
 
     def __init__(
             self,
-            scenario_name: str, 
             roads: List[Road], 
             players: int,
-            render_mode: RenderMode, 
+            render_mode: RenderMode,
+            show_reservation: bool,
+            scenario_name: str, 
             rl_mode: RLMode, 
             rl_algorithm_type: RLAlgorithmType,
             observation_model_type: ObservationModelType,
@@ -44,12 +45,10 @@ class RLGameController(AbstractGameController):
             id_hyperparams: None | str = None,
             ):
 
-            self.id_history = id_history
-
-            self.game_model: TrafficEnv = TrafficEnv(roads=roads, players=players, rl_mode=rl_mode)
-
+            super().__init__(roads, players, render_mode, show_reservation)
             self.scenario_name = scenario_name
-            self.render_mode = render_mode
+
+            self.id_history = id_history
 
             self.rl_mode = rl_mode
             self.rl_algorithm_type = rl_algorithm_type
@@ -57,6 +56,8 @@ class RLGameController(AbstractGameController):
             self.reward_type = reward_type
             self.id_model = id_model
             self.id_hyperparams = id_hyperparams
+
+            self.game_model: TrafficEnv = TrafficEnv(roads=self.roads, players=self.players, rl_mode=self.rl_mode)
 
             self.path_center = get_path_center(
                 scenario=self.scenario_name,
@@ -71,7 +72,12 @@ class RLGameController(AbstractGameController):
             self.observation_model: Observation = observation_model_class(self.game_model)
 
             env_class: MlslEnv = get_reward_model(self.reward_type)
-            self.env: MlslEnv = env_class(game_model=self.game_model, observation_model=self.observation_model, render_mode=self.render_mode)
+            self.env: MlslEnv = env_class(
+                game_model=self.game_model, 
+                observation_model=self.observation_model, 
+                render_mode=self.render_mode,
+                show_reservation=self.show_reservation,
+                )
             self.env = Monitor(self.env) # Used to know the episode reward, length, time and other data
 
             rl_algo_class: RLAlgorithm = get_rl_algo(self.rl_algorithm_type)

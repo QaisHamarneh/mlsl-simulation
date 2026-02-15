@@ -79,7 +79,7 @@ class GameHistory():
 
 
     def reset_history(self) -> None:
-        self.map = list()
-        self.list_of_cars = list()
-        self.action_history_dict = dict()
+        self.map.clear()
+        self.list_of_cars.clear()
+        self.action_history_dict.clear()
         self.action_length = 0

@@ -8,6 +8,7 @@ from typing import Tuple, Dict
 from mlsl_simulation.game_model.game_model import TrafficEnv
 from mlsl_simulation.game_model.constants import MAX_ACC, MAX_DEC, TIME_PER_FRAME
 from mlsl_simulation.gui.pyglet_gui import GameWindow
+from mlsl_simulation.gui.render_mode import RenderMode
 from mlsl_simulation.reinforcement_learning.gymnasium_env.observation_spaces.abstract_observation import Observation
 
 class MlslEnv(Env, ABC):
@@ -70,7 +71,9 @@ class MlslEnv(Env, ABC):
     def __init__(self, 
                  game_model: TrafficEnv,
                  observation_model: Observation,
-                 render_mode: None | str = None):
+                 render_mode: None | RenderMode = None,
+                 show_reservation: bool = True,
+                 ):
         """Initialize the Gymnasium environment.
         
         Args:
@@ -80,9 +83,19 @@ class MlslEnv(Env, ABC):
         """
         
         self.render_mode = render_mode
+        self.show_reservation = show_reservation
 
         self.game_model: TrafficEnv = game_model
-        self.game_window: None | GameWindow = GameWindow(self.game_model) if self.render_mode == 'human' else None
+
+        if self.render_mode == RenderMode.GUI:
+            self.game_window = GameWindow(
+                self.game_model.cars, 
+                self.game_model.roads, 
+                self.game_model.reservation_management, 
+                self.show_reservation
+                )
+        else:
+            self.game_window = None
 
         self.agent_score: int = self.game_model.agent_car.score
 
@@ -170,7 +183,7 @@ class MlslEnv(Env, ABC):
     def render(self):
         """Render the current game state visually.
         
-        If render_mode is 'human', displays the traffic simulation on screen
+        If render_mode is RenderMode.GUI, displays the traffic simulation on screen
         with appropriate frame rate control. Does nothing if render_mode is None.
         """
         if self.game_window:

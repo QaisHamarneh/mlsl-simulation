@@ -40,10 +40,11 @@ def main(
         )
     else:
         controller: AbstractGameController = RLGameController(
-            scenario_name,
             roads,
             players,
             render_mode,
+            show_reservation,
+            scenario_name,
             rl_mode,
             rl_algorithm_type,
             observation_model_type,
@@ -57,13 +58,13 @@ def main(
 
 if __name__ == '__main__':
     main(
-        **SCENARIOS["TWO_CROSSINGS"], 
+        **SCENARIOS["CIRCUIT"], 
         render_mode=RenderMode.GUI,
         show_reservation=True, 
         rl_mode=None, 
-        rl_algorithm_type=None,
-        observation_model_type=None,
-        reward_type=None,
+        rl_algorithm_type=RLAlgorithmType.PPO,
+        observation_model_type=ObservationModelType.NUMERIC_OBSERVATION,
+        reward_type=RewardType.INITIAL_REWARD,
         id_model="2026-02-05 20:02:23",
         id_history="19:47:27_1345.pkl",
         id_hyperparams=None,

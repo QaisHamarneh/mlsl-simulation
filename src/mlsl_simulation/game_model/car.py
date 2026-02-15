@@ -65,7 +65,7 @@ class Car:
                                            direction=self.direction)
         reservation_management.add_car_reservation(car_id=self.id, segment_info=initial_segment_info)
 
-        self._update_position(reservation_management)
+        self.update_position(reservation_management)
 
 
     def handle_car_death(self, reservation_management: ReservationManagement) -> None:
@@ -135,7 +135,7 @@ class Car:
                                                           index=-1,
                                                           end=(1 if true_direction[reservations[-1].direction] else -1) * (end + abs(reservations[-1].begin)))
 
-        self._update_position(reservation_management)
+        self.update_position(reservation_management)
         return True
 
     def get_next_segment(self, reservation_management: ReservationManagement, last_seg: Segment) -> List[Segment]:
@@ -319,7 +319,7 @@ class Car:
                                                         reservations[0].end,
                                                         reservations[0].direction))
             self.extend_res(reservations_management)
-            self._update_position(reservations_management)
+            self.update_position(reservations_management)
             return True
 
         if self.time - reserved_lane_change_segment[0] > LANECHANGE_TIME_STEPS:
@@ -327,9 +327,12 @@ class Car:
             reservations_management.update_reserved_lange_change_segment(self.id, None)
             return False
 
-    def _update_position(self, reservation_management: ReservationManagement) -> None:
+    def update_position(self, reservation_management: ReservationManagement) -> None:
         """
         Update the position of the car, based on the current lane segment, location, direction and speed.
+
+        Returns:
+            tuple[int, int, int, int]: The updated position (x, y, w, h) of the car.
         """
         """ Returns the bottom left corner of the car """
         segment_info = reservation_management.get_car_reservation(self.id, 0)
@@ -363,6 +366,8 @@ class Car:
             # BLOCK_SIZE // 6 for the triangle
             self.w = BLOCK_SIZE
             self.h = self.size - BLOCK_SIZE // 6
+
+        return self.pos.x, self.pos.y, self.w, self.h
 
     def get_center(self, reservation_management: ReservationManagement) -> Point:
         """

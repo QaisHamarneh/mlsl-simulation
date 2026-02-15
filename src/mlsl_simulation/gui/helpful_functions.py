@@ -1,6 +1,5 @@
 from mlsl_simulation.game_model.constants import *
 from mlsl_simulation.game_model.road_network.road_network import Direction, Road, LaneSegment, CrossingSegment, true_direction
-from mlsl_simulation.game_model.car import Car
 from typing import List, Tuple
 
 from mlsl_simulation.gui.map_colors import *
@@ -104,33 +103,3 @@ def find_greatest_gap(roads: List[Road]) -> Tuple[int, int, int, int]:
     y = horizontal_roads[horizontal_index].bottom
 
     return x, y, max_vertical_gap, max_horizontal_gap
-
-
-def return_updated_position(car: Car) -> tuple[int, int, int, int]:
-    """
-    Return the updated position of the car.
-
-    Args:
-        seg (Segment): The segment the car is on.
-
-    Returns:
-        tuple[int, int, int, int]: The updated position (x, y, w, h) of the car.
-    """
-    """ Returns the bottom left corner of the car """
-    direction = car.res[0].direction
-    seg = car.reserved_segment[1]
-    road = seg.lane.road
-    seg_begin = seg.begin
-    if road.horizontal:
-        y = seg.lane.top + car.lane_change_counter * (BLOCK_SIZE // LANE_CHANGE_STEPS)
-        x = seg_begin + car.loc - (0 if true_direction[direction] else car.size)
-        # BLOCK_SIZE // 6 for the triangle
-        w = car.size - BLOCK_SIZE // 6
-        h = BLOCK_SIZE
-    else:
-        x = seg.lane.top + car.lane_change_counter * (BLOCK_SIZE // LANE_CHANGE_STEPS)
-        y = seg_begin + car.loc - (0 if true_direction[direction] else car.size)
-        # BLOCK_SIZE // 6 for the triangle
-        w = BLOCK_SIZE
-        h = car.size - BLOCK_SIZE // 6
-    return x, y, w, h
