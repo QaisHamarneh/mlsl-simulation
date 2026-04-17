@@ -5,18 +5,28 @@ from mlsl_simulation.game_model.constants import *
 from mlsl_simulation.game_model.create_game import create_segments
 from mlsl_simulation.game_model.road_network.road_network import Direction, Point, LaneSegment, CrossingSegment, true_direction, Road
 from mlsl_simulation.gui.colors import colors
-from mlsl_simulation.gui.helpful_functions import draw_dash_line, draw_arrow
+from mlsl_simulation.gui.game_drawer import GameDrawer
 from mlsl_simulation.gui.map_colors import *
 
 
 class CarsWindowTest(pyglet.window.Window):
     def __init__(self, roads):
-        super().__init__()
-        self.set_size(WINDOW_WIDTH, WINDOW_HEIGHT)
-        self.set_minimum_size(WINDOW_WIDTH, WINDOW_HEIGHT)
-        self.pos = Point(0, 0)
-        self.pos.x, self.pos.y = self.get_location()
-        self.set_location(self.pos.x - 300, self.pos.y - 200)
+        super().__init__(WINDOW_WIDTH, WINDOW_HEIGHT)
+
+        # Get the display scale factor (2.0 on Retina, 1.0 on standard displays)
+        scale = self.get_pixel_ratio()
+        
+        scaled_width = int(WINDOW_WIDTH / scale)
+        scaled_height = int(WINDOW_HEIGHT / scale)
+        
+        self.set_size(scaled_width, scaled_height)
+        self.set_minimum_size(scaled_width, scaled_height)
+
+        # Center the window on the screen
+        screen = self.display.get_default_screen()
+        x = (screen.width - scaled_width) // 2
+        y = (screen.height - scaled_height) // 2
+        self.set_location(x, y)
 
         self.roads = roads
         self.background = shapes.Rectangle(x=0, y=0, width=WINDOW_WIDTH, height=WINDOW_HEIGHT, color=PALE_GREEN)
@@ -27,6 +37,8 @@ class CarsWindowTest(pyglet.window.Window):
 
         self.road_shapes = []
         self.seg = roads[0].right_lanes[0].segments[0]
+
+        self.drawer = GameDrawer()
 
         self.car = shapes.Rectangle(x=self.seg.vert_lane.top, y=self.seg.horiz_lane.top,
                                     width=BLOCK_SIZE, height=BLOCK_SIZE,
@@ -124,11 +136,11 @@ class CarsWindowTest(pyglet.window.Window):
                                                         WINDOW_WIDTH, lane.top + BLOCK_SIZE,
                                                         LANE_DISPLACEMENT, color=WHITE))
                 elif i < len(road.right_lanes + road.left_lanes) - 1:
-                    dashed_lines = draw_dash_line(Point(0, lane.top + BLOCK_SIZE),
+                    dashed_lines = self.drawer.draw_dash_line(Point(0, lane.top + BLOCK_SIZE),
                                                   Point(WINDOW_WIDTH, lane.top + BLOCK_SIZE))
                     for line in dashed_lines:
                         self.road_shapes.append(line)
-                arrow = draw_arrow(Point(1.5 * BLOCK_SIZE, lane.top + BLOCK_SIZE // 2),
+                arrow = self.drawer.draw_arrow(Point(1.5 * BLOCK_SIZE, lane.top + BLOCK_SIZE // 2),
                                    Point(3 * BLOCK_SIZE, lane.top + BLOCK_SIZE // 2), True, lane.direction)
                 for line in arrow:
                     self.road_shapes.append(line)
@@ -138,11 +150,11 @@ class CarsWindowTest(pyglet.window.Window):
                                                         lane.top + BLOCK_SIZE, WINDOW_HEIGHT,
                                                         color=WHITE))
                 elif i < len(road.right_lanes + road.left_lanes) - 1:
-                    dashed_lines = draw_dash_line(Point(lane.top + BLOCK_SIZE, 0),
+                    dashed_lines = self.drawer.draw_dash_line(Point(lane.top + BLOCK_SIZE, 0),
                                                   Point(lane.top + BLOCK_SIZE, WINDOW_HEIGHT))
                     for line in dashed_lines:
                         self.road_shapes.append(line)
-                arrow = draw_arrow(Point(lane.top + BLOCK_SIZE // 2, 1.5 * BLOCK_SIZE),
+                arrow = self.drawer.draw_arrow(Point(lane.top + BLOCK_SIZE // 2, 1.5 * BLOCK_SIZE),
                                    Point(lane.top + BLOCK_SIZE // 2, 3 * BLOCK_SIZE), False, lane.direction)
                 for line in arrow:
                     self.road_shapes.append(line)

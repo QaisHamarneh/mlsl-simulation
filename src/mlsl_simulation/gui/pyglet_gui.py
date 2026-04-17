@@ -26,11 +26,14 @@ class GameWindow(pyglet.window.Window):
             debug (bool, optional): Flag for debug mode. Defaults to False.
         """
         super().__init__()
-        self.set_size(WINDOW_WIDTH, WINDOW_HEIGHT)
-        self.set_minimum_size(WINDOW_WIDTH, WINDOW_HEIGHT)
-        self.pos: Point = Point(0, 0)
-        self.pos.x, self.pos.y = self.get_location()
-        self.set_location(self.pos.x - 300, self.pos.y - 200)
+        scale = self.get_pixel_ratio()
+        
+        logical_width = int(WINDOW_WIDTH / scale)
+        logical_height = int(WINDOW_HEIGHT / scale)
+        
+        self.set_size(logical_width, logical_height)
+        self.set_minimum_size(logical_width, logical_height)
+        self.set_location(0, 0)
         self.renderer = Renderer(self)
         
         self.cars = cars
