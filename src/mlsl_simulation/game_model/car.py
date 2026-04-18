@@ -237,6 +237,27 @@ class Car:
         """
         self.speed = max(min(self.speed + speed_diff, self.max_speed), 0)
 
+    def get_adjacent_lane_segments(self, reservation_management: ReservationManagement, lane_segment: LaneSegment = None) -> List[LaneSegment]:
+        """
+        Get the adjacent lane segment.
+
+        Args:
+            lane_diff (int): The difference in lane number.
+            lane_segment (LaneSegment, optional): The current lane segment. Defaults to using the first lane segment in the reservation.
+
+        Returns:
+            LaneSegment: The adjacent lane segment.
+        """
+        reservations = reservation_management.iterate_car_reservations(self.id)
+        if lane_segment is None and isinstance(reservations[0].segment, LaneSegment):
+            segment: LaneSegment = reservations[0].segment
+
+        lene_num = segment.lane.num
+        lanes = segment.lane.road.right_lanes if right_direction[self.direction] \
+            else segment.lane.road.left_lanes
+        current_seg_num = segment.num
+        return [lane.segments[current_seg_num] for lane in lanes]
+    
     def get_adjacent_lane_segment(self, reservation_management: ReservationManagement, lane_diff: int, lane_segment: LaneSegment = None) -> LaneSegment:
         """
         Get the adjacent lane segment.
@@ -262,7 +283,7 @@ class Car:
             return lanes[num + actual_lane_diff].segments[current_seg_num]
         return None
 
-    def change_lane(self, reservations_management: ReservationManagement, lane_diff: int) -> bool:
+    def change_lane(self, reservations_management: ReservationManagement, lane_diff: int) -> bool | Problem:
         """
         Change the lane of the car.
 
@@ -285,14 +306,14 @@ class Car:
         if lane_diff == 0:
             return False
 
-        next_lane_seg = self.get_adjacent_lane_segment(reservations_management, lane_diff)
+        adjacent_lane_seg = self.get_adjacent_lane_segment(reservations_management, lane_diff)
 
         # case 3: there is no adjacent lane segment -> return problem
-        if next_lane_seg is None:
+        if adjacent_lane_seg is None:
             return Problem.NO_ADJACENT_LANE
 
         self.changing_lane = True
-        reservations_management.update_reserved_lange_change_segment(self.id, (self.time, next_lane_seg))
+        reservations_management.update_reserved_lane_change_segment(self.id, (self.time, adjacent_lane_seg))
         return True
 
     def check_reservation(self, reservations_management: ReservationManagement) -> bool:
@@ -303,29 +324,29 @@ class Car:
             bool: True if the reservation is valid, False otherwise.
         """
         if not self.changing_lane:
-            return
+            return False
         
-        reserved_lane_change_segment = reservations_management.iterate_reserved_lane_change_segments(self.id)
+        reserved_lane_change_segment = reservations_management.get_reserved_lane_change_segment(self.id)
         reservations = reservations_management.iterate_car_reservations(self.id)
 
-        if self.time - reserved_lane_change_segment[0] == LANECHANGE_TIME_STEPS:
+        if reserved_lane_change_segment is not None and \
+            self.time - reserved_lane_change_segment[0] == LANECHANGE_TIME_STEPS:
             self.changing_lane = False
+
+            new_reserve = SegmentInfo(reserved_lane_change_segment[1],
+                                                        reservations[0].begin,
+                                                        reservations[0].end,
+                                                        reservations[0].direction)
             for _ in reservations:
                 reservations_management.pop_car_reservation(self.id, 0)
 
-            reservations_management.add_car_reservation(self.id,
-                                                        SegmentInfo(reserved_lane_change_segment[1],
-                                                        reservations[0].begin,
-                                                        reservations[0].end,
-                                                        reservations[0].direction))
+            reservations_management.add_car_reservation(self.id, new_reserve)
+            reservations_management.remove_reserved_lane_change_segment(self.id)
+            
             self.extend_res(reservations_management)
             self.update_position(reservations_management)
-            return True
 
-        if self.time - reserved_lane_change_segment[0] > LANECHANGE_TIME_STEPS:
-            self.changing_lane = False
-            reservations_management.update_reserved_lange_change_segment(self.id, None)
-            return False
+            return True
 
     def update_position(self, reservation_management: ReservationManagement) -> None:
         """

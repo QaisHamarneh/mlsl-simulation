@@ -9,7 +9,7 @@ class ReservationManagement:
         self.__car_reservation_store: CarReservationStore = CarReservationStore()
         self.__segment_occupancy_tracker: SegmentOccupancyTracker = SegmentOccupancyTracker()
 
-        self.__reserved_lane_change_segments: Dict[str, Tuple[int, LaneSegment]] = {}
+        self.__reserved_lane_change_segments: Dict[str, Tuple[int, LaneSegment] | None] = {}
 
     def add_car_reservation(self, car_id: str, segment_info: SegmentInfo) -> None:
         self.__car_reservation_store.add_reservation(car_id, segment_info)
@@ -30,36 +30,31 @@ class ReservationManagement:
         return segment_info
 
     
-    def get_cars_on_segment(self, segment: Segment) -> List[int]:
+    def get_cars_on_segment(self, segment: Segment) -> List[str]:
         return self.__segment_occupancy_tracker.get_cars_on_segment(segment)
 
-
-    def update_reserved_lange_change_segment(self, car_id: str, update: Tuple[int, LaneSegment] | None) -> None:
-        self.__reserved_lane_change_segments[car_id] = update
-
-
-    def get_reserved_lane_change_segment(self, car_id: str) -> Tuple[int, LaneSegment]:
+    def get_reserved_lane_change_segment(self, car_id: str) -> Tuple[int, LaneSegment] | None:
         return self.__reserved_lane_change_segments[car_id] 
-    
+
+    def update_reserved_lane_change_segment(self, car_id: str, segment: Tuple[int, LaneSegment]) -> None:
+        self.__reserved_lane_change_segments[car_id] = segment
+
+    def remove_reserved_lane_change_segment(self, car_id: str) -> None:
+        self.__reserved_lane_change_segments[car_id] = None
+
 
     def update_car_reservation_begin(self, car_id: str, index: int, begin: int) -> None:
         self.__car_reservation_store.update_begin(car_id, index, begin)
 
-
     def update_car_reservation_end(self, car_id: str, index: int, end: int) -> None:
         self.__car_reservation_store.update_end(car_id, index, end)
-
 
     def update_car_reservation_turn(self, car_id: str, index: int, turn: bool) -> None:
         self.__car_reservation_store.update_turn(car_id, index, turn)
 
 
-    def iterate_car_reservations(self, car_id: str) -> Tuple[SegmentInfo, ...]:
+    def iterate_car_reservations(self, car_id: str) -> List[SegmentInfo]:
         return self.__car_reservation_store.iterate(car_id)
-    
-
-    def iterate_reserved_lane_change_segments(self, car_id: str) -> Tuple[Tuple[int, LaneSegment], ...]:
-        return tuple(self.__reserved_lane_change_segments[car_id])
     
 
     def reset(self) -> None:

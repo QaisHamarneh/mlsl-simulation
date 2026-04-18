@@ -37,27 +37,35 @@ class AstarCarController:
             self.first_go = False
             return 0, 0
         
-        # safety check for changing lanes:
-        if self.car.changing_lane:
-            lane_change_segment = self.reservation_management.get_reserved_lane_change_segment(self.car)[1]
-            for car_id in self.reservation_management.get_cars_on_segment(lane_change_segment):
-
-                if car_id != self.car.id and reservation_check(self.car):
-                    self.car.changing_lane = False
-                    self.reservation_management.update_reserved_lange_change_segment(self.car.id, None)
-                    break
-        
         lane_change = NO_LANE_CHANGE
         reservations = self.reservation_management.iterate_car_reservations(self.car.id)
         # This should be changed to check res and parallel_res separately.
-        current_lane_acc = self.get_accelerate(reservations, other_cars)
-        max_possible_acc = current_lane_acc
-        if isinstance(reservations[0].segment, LaneSegment) \
-                and max_possible_acc < MAX_ACC and len(reservations) == 1 \
-                and reservations[0].segment != self.goal.lane_segment \
-                and not self.car.changing_lane:
+        max_possible_acc = self.get_accelerate(reservations, other_cars)
+        # print("Car ", self.car.name, " Max acceleration = ", max_possible_acc)
+        if self.car.changing_lane:
+            lane_change_segment = self.reservation_management.get_reserved_lane_change_segment(self.car.id)[1]
+            lane_change_segment_info = SegmentInfo(
+                    lane_change_segment,
+                    reservations[0].begin,
+                    reservations[0].end,
+                    self.car.direction
+                )
+            max_possible_acc = min(self.get_accelerate(reservations, other_cars), self.get_accelerate([lane_change_segment_info], other_cars))
+
+
+        elif max_possible_acc < MAX_ACC and len(reservations) == 1  \
+                and isinstance(reservations[0].segment, LaneSegment) \
+                and reservations[0].segment != self.goal.lane_segment:
+            # lane_segments = self.car.get_adjacent_lane_segments(self.reservation_management)
+            # accelerations = [self.get_accelerate([SegmentInfo(
+            #                     lane_segment,
+            #                     reservations[0].begin,
+            #                     reservations[0].end,
+            #                     self.car.direction
+            #                 )], other_cars) for lane_segment in lane_segments]
+
             # try left lane
-            left_lane = self.car.get_adjacent_lane_segment(self.reservation_management, 1)
+            left_lane = self.car.get_adjacent_lane_segment(self.reservation_management, LEFT_LANE_CHANGE)
             if left_lane is not None:
                 left_segment = SegmentInfo(
                         left_lane,
@@ -72,7 +80,7 @@ class AstarCarController:
                         max_possible_acc = left_lane_acceleration
                 
             # try right lane
-            right_lane = self.car.get_adjacent_lane_segment(self.reservation_management, -1)
+            right_lane = self.car.get_adjacent_lane_segment(self.reservation_management, RIGHT_LANE_CHANGE)
             if right_lane is not None:
                 right_segment = SegmentInfo(
                         right_lane,
@@ -86,7 +94,7 @@ class AstarCarController:
                         lane_change = RIGHT_LANE_CHANGE
                         max_possible_acc = right_lane_acceleration
                         
-        return min(max_possible_acc, max_possible_acc), lane_change
+        return min(max_possible_acc, MAX_ACC), lane_change
 
     def get_accelerate(self, segments: list[SegmentInfo], other_cars: list[Car]) -> int:
         """
@@ -105,7 +113,7 @@ class AstarCarController:
         reserved_length = sum([abs(seg_info.end - seg_info.begin) for seg_info in segments])
         upto_last_seg_reserved_length = reserved_length- abs(segments[-1].end - segments[-1].begin)
         # limit max_acc to the max speed of the car
-        max_acc  = min(MAX_ACC, self.car.max_speed - self.car.speed)
+        max_acc  = min(MAX_ACC, self.car.max_speed - self.car.speed, min([seg_info.segment.max_speed for seg_info in segments]))
         max_dec = - min(MAX_DEC, self.car.speed)
 
         # iterate over all acceleration values between max_acc and max_dec
@@ -114,12 +122,13 @@ class AstarCarController:
             new_speed = self.car.speed + acceleration
 
             # check if car exceeds max speed of the current segment
-            if self.car.speed + acceleration > min([seg_info.segment.max_speed for seg_info in segments]):
-                continue
+            # if self.car.speed + acceleration > min([seg_info.segment.max_speed for seg_info in segments]):
+            #     continue
 
             # check if car is changing lane
-            if self.car.changing_lane:
-                remaining_time = LANECHANGE_TIME_STEPS - (self.car.time - self.reservation_management.get_reserved_lane_change_segment(self.car.id)[0])
+            lane_change_info = self.reservation_management.get_reserved_lane_change_segment(self.car.id)
+            if lane_change_info is not None:
+                remaining_time = LANECHANGE_TIME_STEPS - (self.car.time - lane_change_info[0])
                 required_space_in_segment = (self.car.speed + acceleration) * remaining_time
                 remaining_space_in_segment = segments[-1].segment.length - segments[-1].end
                 if remaining_space_in_segment < required_space_in_segment:
@@ -253,8 +262,8 @@ class AstarCarController:
                 o_end = abs(other_car_seg_info.end)
                 if self.getOverlap(min(begin, end), max(begin, end), 
                                min(o_begin, end), max(o_begin, o_end)) > 0: 
-                    return True, other_car_id
-        return None, None
+                    return True
+        return False
     
     def getOverlap(self, begin_1, end_1, begin_2, end_2):
         return max(0, min(end_1, end_2) - max(begin_1, begin_2))

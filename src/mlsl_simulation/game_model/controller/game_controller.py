@@ -1,6 +1,7 @@
 import pyglet
 
 from typing import List
+from mlsl_simulation.game_model.car import Car
 from mlsl_simulation.game_model.controller.abstract_game_controller import AbstractGameController
 from mlsl_simulation.game_model.constants import TIME_PER_FRAME
 from mlsl_simulation.game_model.game_model import TrafficEnv
@@ -14,12 +15,13 @@ class GameController(AbstractGameController):
             roads: List[Road], 
             players: int,
             render_mode: RenderMode,
-            show_reservation: bool, 
+            show_reservation: bool = True, 
+            npc_cars: None | List[Car] = None, 
             ):
         
         super().__init__(roads, players, render_mode, show_reservation) 
 
-        self.game_model: TrafficEnv = TrafficEnv(roads=self.roads, players=self.players)
+        self.game_model: TrafficEnv = TrafficEnv(roads=self.roads, players=self.players, npc_cars=npc_cars)
         self.done = None
 
 

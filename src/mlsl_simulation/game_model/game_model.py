@@ -29,7 +29,8 @@ class TrafficEnv:
 
     def __init__(self, 
                  roads: List[Road], 
-                 players: int, 
+                 players: int,
+                 npc_cars: None | List[Car] = None, 
                  rl_mode: None | RLMode = None):
         """
         Initialize the TrafficEnv.
@@ -51,6 +52,7 @@ class TrafficEnv:
         self.time: int = 0
 
         self.cars: List[Car] = []
+        self.npc_cars_init = npc_cars
         self.npc_cars: List[Car] = []
         self.agent_car: None | Car = None
         self.controllers: List[AstarCarController] = []
@@ -89,10 +91,14 @@ class TrafficEnv:
             self._place_goals(self.agent_car)
             self.cars.append(self.agent_car)
 
-        for i in range(self.npcs):
-            car = create_random_car(self.segments, self.cars, CarType.NPC, self.reservation_management)
-            self.cars.append(car)
-            self.npc_cars.append(car)
+        if self.npc_cars_init is None:
+            for i in range(self.npcs):
+                car = create_random_car(self.segments, self.cars, CarType.NPC, self.reservation_management)
+                self.cars.append(car)
+                self.npc_cars.append(car)
+        else:
+            self.npc_cars = self.npc_cars_init.copy()
+            
         for car in self.npc_cars:
             self._place_goals(car)
             self.controllers.append(AstarCarController(car, car.goal, self.reservation_management))

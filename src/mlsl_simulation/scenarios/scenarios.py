@@ -10,7 +10,6 @@ SCENARIOS = {
             Road("left", False, 0, 1, 0),
             Road("h1", True, 330, 3, 3),
         ],
-        "segmentation": False,
         "players": 2,
         "scenario_name": "left_right_overtake"
     },
@@ -24,7 +23,6 @@ SCENARIOS = {
             Road("v1", False, 330, 1, 1),
             Road("h1", True, 330, 3, 3),
         ],
-        "segmentation": False,
         "players": 6,
         "scenario_name": "left_right_overtake_2"
     },
@@ -37,7 +35,6 @@ SCENARIOS = {
             Road("left", False, 0, 1, 0),
             Road("v1", False, 680, 3, 3),
         ],
-        "segmentation": False,
         "players": 2,
         "scenario_name": "up_down_overtake"
     },
@@ -57,7 +54,6 @@ SCENARIOS = {
             Road("v2", False, WINDOW_WIDTH // 2 - 2 * BLOCK_SIZE, 2, 2),
             Road("v3", False, 3 * WINDOW_WIDTH // 4 - 1 * BLOCK_SIZE, 2, 0)
         ],
-        "segmentation": False,
         "players": 80,
         "scenario_name": "big_scenario"
     },
@@ -75,7 +71,6 @@ SCENARIOS = {
             Road("v2", False, WINDOW_WIDTH // 2 - 3 * BLOCK_SIZE, 3, 3),
             Road("v3", False, 3 * WINDOW_WIDTH // 4 - 1 * BLOCK_SIZE, 2, 0)
         ],
-        "segmentation": False,
         "players": 21,
         "scenario_name": "starting_scenario"
     },
@@ -91,7 +86,6 @@ SCENARIOS = {
             Road("v1", False, 9 * BLOCK_SIZE, 3, 3),
             Road("v2", False, 23 * BLOCK_SIZE, 3, 4)
         ],
-        "segmentation": False,
         "players": 21,
         "scenario_name": "two_crossings"
     },
@@ -105,7 +99,6 @@ SCENARIOS = {
             Road("v1", False, WINDOW_WIDTH // 2 - 3 * BLOCK_SIZE, 1, 1),
             Road("h1", True, WINDOW_HEIGHT // 2 - 3 * BLOCK_SIZE, 1, 1),
         ],
-        "segmentation": False,
         "players": 16,
         "scenario_name": "one_crossing"
     },
@@ -118,7 +111,6 @@ SCENARIOS = {
             Road("left", False, 0, 1, 0),
             Road("r1", True, 400, 6, 0)
         ],
-        "segmentation": False,
         "players": 5,
         "scenario_name": "one_road"
     },
@@ -129,7 +121,6 @@ SCENARIOS = {
             Road("v1", False, 190, 2, 2),
             Road("v2", False, 540, 2, 2)
         ],
-        "segmentation": False,
         "players": 25,
         "scenario_name": "horizontal_vertical"
     },
@@ -141,7 +132,6 @@ SCENARIOS = {
             Road("top", True, WINDOW_HEIGHT - BLOCK_SIZE, 0, 1),
             Road("left", False, 0, 1, 0),
         ],
-        "segmentation": False,
         "players": 3,
         "scenario_name": "circuit"
     },

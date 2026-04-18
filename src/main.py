@@ -18,7 +18,6 @@ logging.basicConfig(level=logging.DEBUG, format='%(asctime)s | %(levelname)s | %
 def main(
         players, 
         roads, 
-        segmentation,
         scenario_name, 
         render_mode: RenderMode,
         show_reservation: bool, 

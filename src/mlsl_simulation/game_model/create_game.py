@@ -1,8 +1,9 @@
+import sys
 from typing import List, Tuple
 
 from mlsl_simulation.game_model.road_network.road_network import CrossingSegment, Direction, Intersection, LaneSegment, Road, Segment, true_direction
 
-def create_segments(roads: List[Road]) -> None | Tuple[List[Segment], List[Intersection]]:
+def create_segments(roads: List[Road]) -> Tuple[List[Segment], List[Intersection]]:
     """
     Create segments for the given roads.
 
@@ -20,13 +21,13 @@ def create_segments(roads: List[Road]) -> None | Tuple[List[Segment], List[Inter
     for horiz_road in horiz_roads:
         if last_horiz > horiz_road.top:
             print(f"\nRoad {horiz_road.name} overlaps with the previous road")
-            return None
+            sys.exit(1)
         last_vert = 0
         vert_roads = (road for road in roads if not road.horizontal)
         for vert_road in vert_roads:
             if last_vert > vert_road.top:
                 print(f"\nRoad {vert_road.name} {vert_road.top} overlaps with previous road {last_vert}")
-                return None
+                sys.exit(1)
             
             intersection:Intersection = Intersection(horiz_road, vert_road)
             intersections.append(intersection)

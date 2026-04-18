@@ -28,12 +28,17 @@ class GameWindow(pyglet.window.Window):
         super().__init__()
         scale = self.get_pixel_ratio()
         
-        logical_width = int(WINDOW_WIDTH / scale)
-        logical_height = int(WINDOW_HEIGHT / scale)
+        scaled_width = int(WINDOW_WIDTH / scale)
+        scaled_height = int(WINDOW_HEIGHT / scale)
         
-        self.set_size(logical_width, logical_height)
-        self.set_minimum_size(logical_width, logical_height)
-        self.set_location(0, 0)
+        self.set_size(scaled_width, scaled_height)
+        self.set_minimum_size(scaled_width, scaled_height)
+
+        # Center the window on the screen
+        screen = self.display.get_default_screen()
+        x = (screen.width - scaled_width) // 2
+        y = (screen.height - scaled_height) // 2
+        self.set_location(x, y)
         self.renderer = Renderer(self)
         
         self.cars = cars
