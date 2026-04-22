@@ -126,8 +126,8 @@ class AstarCarController:
             #     continue
 
             # check if car is changing lane
-            lane_change_info = self.reservation_management.get_reserved_lane_change_segment(self.car.id)
-            if lane_change_info is not None:
+            if self.car.changing_lane:
+                lane_change_info = self.reservation_management.get_reserved_lane_change_segment(self.car.id)
                 remaining_time = LANECHANGE_TIME_STEPS - (self.car.time - lane_change_info[0])
                 required_space_in_segment = (self.car.speed + acceleration) * remaining_time
                 remaining_space_in_segment = segments[-1].segment.length - segments[-1].end
