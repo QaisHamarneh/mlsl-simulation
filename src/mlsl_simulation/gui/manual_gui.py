@@ -3,7 +3,7 @@ from pyglet import shapes
 
 from mlsl_simulation.game_model.constants import *
 from mlsl_simulation.game_model.create_items.create_segments import create_segments
-from mlsl_simulation.game_model.road_network.road_network import Direction, Point, LaneSegment, CrossingSegment, true_direction, Road
+from mlsl_simulation.game_model.road_network.road_network import Direction, Point, LaneSegment, CrossingSegment, true_direction, horiz_direction, right_direction
 from mlsl_simulation.gui.colors import colors
 from mlsl_simulation.gui.game_drawer import GameDrawer
 from mlsl_simulation.gui.map_colors import *
@@ -15,6 +15,8 @@ class CarsWindowManual(pyglet.window.Window):
 
         # Get the display scale factor (2.0 on Retina, 1.0 on standard displays)
         scale = self.get_pixel_ratio()
+
+        self.direction = Direction.UP
         
         scaled_width = int(WINDOW_WIDTH / scale)
         scaled_height = int(WINDOW_HEIGHT / scale)
@@ -58,12 +60,15 @@ class CarsWindowManual(pyglet.window.Window):
         for shape in self.road_shapes:
             shape.draw()
         self.car.draw()
+        line, arrow_head = self.draw_arrow()
+        line.draw()
+        arrow_head.draw()
 
     def _manual_update_game(self):
         if isinstance(self.seg, CrossingSegment):
             x = self.seg.vert_lane.top
             y = self.seg.horiz_lane.top
-        else:
+        elif isinstance(self.seg, LaneSegment):
             if self.seg.lane.road.horizontal:
                 x = self.seg.begin if true_direction[self.seg.lane.direction] else self.seg.begin - BLOCK_SIZE
                 y = self.seg.lane.top
@@ -78,45 +83,55 @@ class CarsWindowManual(pyglet.window.Window):
         if symbol == pyglet.window.key.RIGHT:
             match self.seg:
                 case LaneSegment():
-                    if self.seg.lane.road.horizontal:
-                        if self.seg.lane.direction == Direction.RIGHT:
-                            if self.seg.end_crossing is not None:
-                                self.seg = self.seg.end_crossing
+                    if right_direction[self.direction] and self.seg.lane.num > 0:
+                        lane = self.seg.lane.road.right_lanes[self.seg.lane.num - 1]
+                        self.seg = lane.segments[self.seg.num]
+                    elif not right_direction[self.direction] and self.seg.lane.num < len(self.seg.lane.road.left_lanes) - 1:
+                        lane = self.seg.lane.road.left_lanes[self.seg.lane.num + 1]
+                        self.seg = lane.segments[self.seg.num]
                 case CrossingSegment():
-                    if self.seg.connected_segments[Direction.RIGHT] is not None:
-                        self.seg = self.seg.connected_segments[Direction.RIGHT]
+                    self.direction = Direction(self.direction.value % len(Direction) + 1)
         if symbol == pyglet.window.key.LEFT:
             match self.seg:
                 case LaneSegment():
-                    if self.seg.lane.road.horizontal:
-                        if self.seg.lane.direction == Direction.LEFT:
-                            if self.seg.end_crossing is not None:
-                                self.seg = self.seg.end_crossing
+                    if right_direction[self.direction] and self.seg.lane.num < len(self.seg.lane.road.right_lanes) - 1:
+                        lane = self.seg.lane.road.right_lanes[self.seg.lane.num + 1]
+                        self.seg = lane.segments[self.seg.num]
+                    elif not right_direction[self.direction] and self.seg.lane.num > 0:
+                        lane = self.seg.lane.road.left_lanes[self.seg.lane.num - 1]
+                        self.seg = lane.segments[self.seg.num]
                 case CrossingSegment():
-                    if self.seg.connected_segments[Direction.LEFT] is not None:
-                        self.seg = self.seg.connected_segments[Direction.LEFT]
-        elif symbol == pyglet.window.key.DOWN:
-            match self.seg:
-                case LaneSegment():
-                    if not self.seg.lane.road.horizontal:
-                        if self.seg.lane.direction == Direction.DOWN:
-                            if self.seg.end_crossing is not None:
-                                self.seg = self.seg.end_crossing
-                case CrossingSegment():
-                    if self.seg.connected_segments[Direction.DOWN] is not None:
-                        self.seg = self.seg.connected_segments[Direction.DOWN]
+                    if self.direction == Direction.RIGHT:
+                        self.direction = Direction.UP
+                    else:
+                        self.direction = Direction((self.direction.value - 1) % len(Direction))
         elif symbol == pyglet.window.key.UP:
             match self.seg:
                 case LaneSegment():
-                    if not self.seg.lane.road.horizontal:
-                        if self.seg.lane.direction == Direction.UP:
-                            if self.seg.end_crossing is not None:
-                                self.seg = self.seg.end_crossing
+                    self.seg = self.seg.end_crossing
                 case CrossingSegment():
-                    if self.seg.connected_segments[Direction.UP] is not None:
-                        self.seg = self.seg.connected_segments[Direction.UP]
+                    if self.seg.connected_segments[self.direction] is not None:
+                        self.seg = self.seg.connected_segments[self.direction]
 
         self._manual_update_game()
+
+    def draw_arrow(self):
+        x=self.car.x
+        y=self.car.y
+        line = shapes.Rectangle(x=x + 5 if horiz_direction[self.direction] else x + BLOCK_SIZE // 2 - 1, 
+                                y=y + 5 if not horiz_direction[self.direction] else y + BLOCK_SIZE // 2 - 1,
+                                    width=BLOCK_SIZE - 10 if horiz_direction[self.direction] else 2, 
+                                    height=BLOCK_SIZE - 10 if not horiz_direction[self.direction] else 2,
+                                    color=colors["black"])
+        if true_direction[self.direction]:
+            tip = BLOCK_SIZE - 5 
+        else:
+            tip = 5
+        arrow_head = shapes.Circle(x=x + tip if horiz_direction[self.direction] else x + BLOCK_SIZE // 2, 
+                                   y=y + tip if not horiz_direction[self.direction] else y + BLOCK_SIZE // 2,
+                                    radius=4,
+                                    color=colors["black"])
+        return line, arrow_head
 
     def _draw_road(self, road):
         if road.horizontal:
@@ -140,7 +155,7 @@ class CarsWindowManual(pyglet.window.Window):
                                                   Point(WINDOW_WIDTH, lane.top + BLOCK_SIZE))
                     for line in dashed_lines:
                         self.road_shapes.append(line)
-                arrow = self.drawer.draw_arrow(Point(1.5 * BLOCK_SIZE, lane.top + BLOCK_SIZE // 2),
+                arrow = self.drawer.draw_arrow(Point(3 * BLOCK_SIZE // 2, lane.top + BLOCK_SIZE // 2),
                                    Point(3 * BLOCK_SIZE, lane.top + BLOCK_SIZE // 2), True, lane.direction)
                 for line in arrow:
                     self.road_shapes.append(line)
@@ -154,7 +169,7 @@ class CarsWindowManual(pyglet.window.Window):
                                                   Point(lane.top + BLOCK_SIZE, WINDOW_HEIGHT))
                     for line in dashed_lines:
                         self.road_shapes.append(line)
-                arrow = self.drawer.draw_arrow(Point(lane.top + BLOCK_SIZE // 2, 1.5 * BLOCK_SIZE),
+                arrow = self.drawer.draw_arrow(Point(lane.top + BLOCK_SIZE // 2, 3 * BLOCK_SIZE // 2),
                                    Point(lane.top + BLOCK_SIZE // 2, 3 * BLOCK_SIZE), False, lane.direction)
                 for line in arrow:
                     self.road_shapes.append(line)

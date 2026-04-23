@@ -141,7 +141,7 @@ class Segment(ABC):
 
 
 class LaneSegment(Segment):
-    def __init__(self, lane: Lane, begin: int, end: int) -> None:
+    def __init__(self, lane: Lane, begin: int, end: int, num) -> None:
         """
         Initialize a LaneSegment object.
 
@@ -155,9 +155,10 @@ class LaneSegment(Segment):
         self.lane: Lane = lane
         self.begin: int = begin
         self.end: int = end
+        self.num: int = num
         self.end_crossing: Optional[CrossingSegment] = None
+        self.begin_crossing: Optional[CrossingSegment] = None
         self.length: int = abs(self.end - self.begin)
-        self.num: Optional[int] = None
         self.max_speed: int = LANE_MAX_SPEED
 
     def __str__(self) -> str:

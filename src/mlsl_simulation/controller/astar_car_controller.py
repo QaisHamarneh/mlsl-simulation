@@ -10,7 +10,7 @@ from mlsl_simulation.game_model.reservations.reservation_management import Reser
 
 
 class AstarCarController:
-    def __init__(self, car: Car, reservation_management: ReservationManagement) -> None:
+    def __init__(self, car: Car, cars:list[Car], reservation_management: ReservationManagement) -> None:
         """
         Initialize the AstarCarController.
 
@@ -19,15 +19,16 @@ class AstarCarController:
             player (int): The player index.
         """
         self.car = car
+        self.cars = cars
         self.first_go = True
         self.reservation_management: ReservationManagement = reservation_management
 
-    def get_action(self, other_cars: list[Car]) -> Tuple[int, int]:
+    def get_action(self) -> Tuple[int, int]:
         """
         Determine the next action for the car.
 
         Args:
-            other_cars (list[car]): A list of all other cars in the game model.
+            cars (list[car]): A list of all other cars in the game model.
         Returns:
             Tuple[int, int]: A tuple containing the acceleration and lane change values.
         """
@@ -37,46 +38,26 @@ class AstarCarController:
         
         lane_change = NO_LANE_CHANGE
         reservations = self.reservation_management.get_car_reservations(self.car.id)
+
         # This should be changed to check res and parallel_res separately.
-        max_possible_acc = self.get_accelerate(reservations, other_cars)
-        # print("Car ", self.car.name, " Max acceleration = ", max_possible_acc)
+        max_possible_acc = self.get_accelerate(reservations)
         if self.car.changing_lane:
-            lane_change_segment = self.reservation_management.get_reserved_lane_change_segment(self.car.id)[1]
-            lane_change_segment_info = SegmentInfo(
-                    lane_change_segment,
-                    reservations[0].begin,
-                    reservations[0].end,
-                    self.car.direction
-                )
-            max_possible_acc = min(self.get_accelerate(reservations, other_cars), self.get_accelerate([lane_change_segment_info], other_cars))
-
-
-        elif max_possible_acc < MAX_ACC and len(reservations) == 1  \
-                and isinstance(reservations[0].segment, LaneSegment) \
-                and reservations[0].segment != self.car.goal.lane_segment:
-            # lane_segments = self.car.get_adjacent_lane_segments(self.reservation_management)
-            # accelerations = [self.get_accelerate([SegmentInfo(
-            #                     lane_segment,
-            #                     reservations[0].begin,
-            #                     reservations[0].end,
-            #                     self.car.direction
-            #                 )], other_cars) for lane_segment in lane_segments]
-
-            # try left lane
-            left_lane = self.car.get_adjacent_lane_segment(self.reservation_management, LEFT_LANE_CHANGE)
-            if left_lane is not None:
-                left_segment = SegmentInfo(
-                        left_lane,
+            lane_change_segment = self.reservation_management.get_reserved_lane_change_segment(self.car.id)
+            if lane_change_segment is None:
+                print(f"Issue 4: {self.car.name}")
+            else:
+                lane_change_segment_info = SegmentInfo(
+                        lane_change_segment[1],
                         reservations[0].begin,
                         reservations[0].end,
                         self.car.direction
                     )
-                if not self._check_collision(left_segment):
-                    left_lane_acceleration = self.get_accelerate([left_segment], other_cars)
-                    if left_lane_acceleration > max_possible_acc:
-                        lane_change = LEFT_LANE_CHANGE
-                        max_possible_acc = left_lane_acceleration
-                
+                max_possible_acc = min(self.get_accelerate(reservations), 
+                                       self.get_accelerate([lane_change_segment_info]))
+
+        elif max_possible_acc < MAX_ACC and len(reservations) == 1  \
+                and isinstance(reservations[0].segment, LaneSegment) \
+                and reservations[0].segment != self.car.goal.lane_segment:
             # try right lane
             right_lane = self.car.get_adjacent_lane_segment(self.reservation_management, RIGHT_LANE_CHANGE)
             if right_lane is not None:
@@ -87,21 +68,36 @@ class AstarCarController:
                         self.car.direction
                     )
                 if not self._check_collision(right_segment):
-                    right_lane_acceleration = self.get_accelerate([right_segment], other_cars)
+                    right_lane_acceleration = self.get_accelerate([right_segment])
                     if right_lane_acceleration >= max_possible_acc:
                         lane_change = RIGHT_LANE_CHANGE
                         max_possible_acc = right_lane_acceleration
+                
+            if max_possible_acc < MAX_ACC:
+                # try left lane
+                left_lane = self.car.get_adjacent_lane_segment(self.reservation_management, LEFT_LANE_CHANGE)
+                if left_lane is not None:
+                    left_segment = SegmentInfo(
+                            left_lane,
+                            reservations[0].begin,
+                            reservations[0].end,
+                            self.car.direction
+                        )
+                    if not self._check_collision(left_segment):
+                        left_lane_acceleration = self.get_accelerate([left_segment])
+                        if left_lane_acceleration > max_possible_acc:
+                            lane_change = LEFT_LANE_CHANGE
+                            max_possible_acc = left_lane_acceleration
                         
-        return min(max_possible_acc, MAX_ACC), lane_change
+        return max_possible_acc, lane_change
 
-    def get_accelerate(self, segments: list[SegmentInfo], other_cars: list[Car]) -> int:
+    def get_accelerate(self, segments: list[SegmentInfo]) -> int:
         """
         Calculate the optimal acceleration for the car based on the given segments, the car's speed and other cars on the
         road. The value is limited by the car's maximum speed and the maximum acceleration and deceleration values.
 
         Args:
             segments (list[dict]): A list of segment dictionaries containing information about the segments.
-            other_cars (list[car]): A list of all other cars in the game model.
         Returns:
             int: The optimal acceleration value
         """
@@ -118,10 +114,6 @@ class AstarCarController:
         for acceleration in range(max_acc, max_dec - 1, -1):
 
             new_speed = self.car.speed + acceleration
-
-            # check if car exceeds max speed of the current segment
-            # if self.car.speed + acceleration > min([seg_info.segment.max_speed for seg_info in segments]):
-            #     continue
 
             # check if car is changing lane
             if self.car.changing_lane:
@@ -191,7 +183,7 @@ class AstarCarController:
                             math.ceil((sum([abs(seg_info.end - seg_info.begin) 
                                             for seg_info in segments[0:i]]) / max(new_speed, CROSSING_MAX_SPEED)))
                         for other_car_id in self.reservation_management.get_cars_on_segment(seg)[0:self.reservation_management.get_cars_on_segment(seg).index(self.car.id)]: 
-                            other_car = [car for car in other_cars if car.id == other_car_id][0]
+                            other_car = [car for car in self.cars if car.id == other_car_id][0]
                             if new_speed > other_car.speed:
                                 collision = True
                                 break
@@ -211,7 +203,7 @@ class AstarCarController:
                                 math.ceil((sum([abs(added_seg.end - added_seg.begin) 
                                                 for seg_info in added_segments[0:i]]) / max(new_speed, CROSSING_MAX_SPEED)))
                             for other_car_id in self.reservation_management.get_cars_on_segment(seg):
-                                other_car = [car for car in other_cars if car.id == other_car_id][0]
+                                other_car = [car for car in self.cars if car.id == other_car_id][0]
                                 if new_speed > other_car.speed:
                                     collision = True
                                     break
@@ -234,7 +226,7 @@ class AstarCarController:
                                                   if seg_info.segment == last_seg.segment)
                         begin = abs(last_seg.begin)
                         end = abs(last_seg.end)
-                        other_car = [car for car in other_cars if car.id == other_car_id][0]
+                        other_car = [car for car in self.cars if car.id == other_car_id][0]
                         o_max_dec = - min(MAX_DEC, other_car.speed)
                         o_begin = abs(other_car_seg_info.begin) + other_car.speed - o_max_dec
                         o_end = abs(other_car_seg_info.end) + other_car.speed - o_max_dec

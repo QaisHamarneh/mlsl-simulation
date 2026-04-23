@@ -238,28 +238,7 @@ class Car:
         """
         self.speed = max(min(self.speed + speed_diff, self.max_speed), 0)
 
-    def get_adjacent_lane_segments(self, reservation_management: ReservationManagement, lane_segment: LaneSegment = None) -> List[LaneSegment]:
-        """
-        Get the adjacent lane segment.
-
-        Args:
-            lane_diff (int): The difference in lane number.
-            lane_segment (LaneSegment, optional): The current lane segment. Defaults to using the first lane segment in the reservation.
-
-        Returns:
-            LaneSegment: The adjacent lane segment.
-        """
-        reservations = reservation_management.get_car_reservations(self.id)
-        if lane_segment is None and isinstance(reservations[0].segment, LaneSegment):
-            segment: LaneSegment = reservations[0].segment
-
-        lene_num = segment.lane.num
-        lanes = segment.lane.road.right_lanes if right_direction[self.direction] \
-            else segment.lane.road.left_lanes
-        current_seg_num = segment.num
-        return [lane.segments[current_seg_num] for lane in lanes]
-    
-    def get_adjacent_lane_segment(self, reservation_management: ReservationManagement, lane_diff: int, lane_segment: LaneSegment = None) -> LaneSegment:
+    def get_adjacent_lane_segments(self, reservation_management: ReservationManagement, lane_segment: None | LaneSegment = None) -> None | List[LaneSegment]:
         """
         Get the adjacent lane segment.
 
@@ -272,16 +251,44 @@ class Car:
         """
         reservations = reservation_management.get_car_reservations(self.id)
         if lane_segment is None:
-            lane_segment = reservations[0].segment
-        actual_lane_diff = (-1 if right_direction[self.direction] else 1) * lane_diff
-        num = lane_segment.lane.num
+            if isinstance(reservations[0].segment, LaneSegment):
+                lane_segment = reservations[0].segment
+            else:
+                return None
+
+        lene_num = lane_segment.lane.num
         lanes = lane_segment.lane.road.right_lanes if right_direction[self.direction] \
             else lane_segment.lane.road.left_lanes
-        if 0 <= num + actual_lane_diff < len(lanes):
-            current_seg_num = reservations[0].segment.num
-            if reservations[0].direction != lanes[num + actual_lane_diff].direction:
+        current_seg_num = lane_segment.num
+        return [lane.segments[current_seg_num] for lane in lanes]
+    
+    def get_adjacent_lane_segment(self, reservation_management: ReservationManagement, lane_diff: int, lane_segment: None | LaneSegment = None) -> None | LaneSegment:
+        """
+        Get the adjacent lane segment.
+
+        Args:
+            lane_diff (int): The difference in lane number.
+            lane_segment (LaneSegment, optional): The current lane segment. Defaults to using the first lane segment in the reservation.
+
+        Returns:
+            LaneSegment: The adjacent lane segment.
+        """
+        reservations = reservation_management.get_car_reservations(self.id)
+        if lane_segment is None:
+            if isinstance(reservations[0].segment, LaneSegment):
+                lane_segment = reservations[0].segment
+            else:
                 return None
-            return lanes[num + actual_lane_diff].segments[current_seg_num]
+
+        lanes = lane_segment.lane.road.right_lanes if right_direction[lane_segment.lane.direction] \
+            else lane_segment.lane.road.left_lanes
+        
+        actual_lane_diff = (1 if right_direction[self.direction] else -1) * lane_diff
+        lane_num = lane_segment.lane.num + actual_lane_diff
+        current_seg_num = lane_segment.num
+
+        if 0 <= lane_num < len(lanes):
+            return  lanes[lane_num].segments[current_seg_num]
         return None
 
     def change_lane(self, reservations_management: ReservationManagement, lane_diff: int) -> bool | Problem:
@@ -300,9 +307,9 @@ class Car:
         if not (isinstance(reservations[0].segment, LaneSegment) and \
                 len(reservations) == 1):
             return Problem.CHANGE_LANE_WHILE_CROSSING
-        # case 2: car is not in lane segment in LANECHANGE time steps -> return problem
-        if abs(self.loc) + self.get_braking_distance() + LANECHANGE_TIME_STEPS * self.speed > reservations[0].segment.length:
-            return False
+        # # case 2: car will not be in lane segment in LANECHANGE time steps -> return problem
+        # if abs(self.loc) + self.get_braking_distance() + LANECHANGE_TIME_STEPS * self.speed > reservations[0].segment.length:
+        #     return False
 
         if lane_diff == 0:
             return False

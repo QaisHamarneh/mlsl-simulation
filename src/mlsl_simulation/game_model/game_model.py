@@ -97,9 +97,10 @@ class TrafficEnv:
                 car = create_random_car(self.roads, self.cars, CarType.NPC, self.reservation_management)
                 self.cars.append(car)
                 self.npc_cars.append(car)
-                self.controllers.append(AstarCarController(car, self.reservation_management))
         else:
             self.npc_cars = self.npc_cars_init.copy()
+        for car in self.npc_cars:
+            self.controllers.append(AstarCarController(car, self.cars, self.reservation_management))
 
         self.game_history.set_list_of_cars(self.cars)
         self.game_history.set_map(self.roads)
@@ -117,14 +118,15 @@ class TrafficEnv:
         game_over = []
 
         if self.agent:
-            game_over.append(
-                self._execute_action(car=self.agent_car, action=action) if not self.agent_car.get_death_status() else True
-            )
-            self.game_history.add_taken_action(self.agent_car, action)
+            if self.agent_car is not None and action is not None:
+                game_over.append(
+                    self._execute_action(car=self.agent_car, action=action) if not self.agent_car.get_death_status() else True
+                )
+                self.game_history.add_taken_action(self.agent_car, action)
 
         for controller in self.controllers:
             car = controller.car
-            npc_action = controller.get_action(self.cars)
+            npc_action = controller.get_action()
             game_over.append(
                 self._execute_action(car=car, action=npc_action) if not car.get_death_status() else True
             )
@@ -136,6 +138,20 @@ class TrafficEnv:
         if all(deadlock):
             return 'deadlock'
         
+        for controller in self.controllers:
+            car = controller.car
+            reservations = self.reservation_management.get_car_reservations(car.id)
+            for i, res_seg in enumerate(reservations):
+                issues = False
+                if i == 0 and abs(res_seg.end) < res_seg.segment.length and len(reservations) > 1:
+                    print(f"Issue 1: {car.name} - {res_seg.end} {res_seg.segment.length} - {len(reservations)}")
+                    issues = True
+                elif i > 0 and abs(res_seg.begin) > 0:
+                    print(f"Issue 2: {car.name} - {i} - {res_seg.begin}")
+                    issues = True
+                if issues:
+                    print("------------------")
+
         return None
     
     def _execute_action(self, car: Car, action: Tuple[int, int]) -> bool:
@@ -173,7 +189,11 @@ class TrafficEnv:
         if reached_goal(car, self.reservation_management):
             car.score += 1
             car.goal = car.second_goal
-            car.second_goal = create_goal(car.color, self.reservation_management.get_car_reservation(car.id, 0).segment, self.roads)
+            car_segment = self.reservation_management.get_car_reservation(car.id, 0).segment
+            if isinstance(car_segment, LaneSegment):
+                car.second_goal = create_goal(car.color, car_segment, self.roads)
+            else:
+                print(f"Issue 3: {car.name} - {car_segment}")
 
         # Player won!
         return car.score > WINNING_SCORE

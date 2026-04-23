@@ -41,23 +41,23 @@ def create_segments(roads: List[Road]) -> Tuple[List[Segment], List[Intersection
                     if vert_road.top > last_vert and \
                             (vert_lane.num == 0 and
                                 (vert_lane.direction == Direction.DOWN or len(vert_road.right_lanes) == 0)):
-                        horiz_lane_segment = LaneSegment(horiz_lane, last_vert, vert_road.top) \
+                        horiz_lane_segment = LaneSegment(horiz_lane, last_vert, vert_road.top, len(horiz_lane.segments)) \
                             if true_direction[horiz_lane.direction] \
-                            else LaneSegment(horiz_lane, vert_road.top, last_vert)
+                            else LaneSegment(horiz_lane, vert_road.top, last_vert, len(horiz_lane.segments))
                     if horiz_road.top > last_horiz and \
                             (horiz_lane.num == 0 and
                                 (horiz_lane.direction == Direction.RIGHT or len(horiz_road.right_lanes) == 0)):
-                        vert_lane_segment = LaneSegment(vert_lane, last_horiz, horiz_road.top) \
+                        vert_lane_segment = LaneSegment(vert_lane, last_horiz, horiz_road.top, len(vert_lane.segments)) \
                             if true_direction[vert_lane.direction] \
-                            else LaneSegment(vert_lane, horiz_road.top, last_horiz)
+                            else LaneSegment(vert_lane, horiz_road.top, last_horiz, len(vert_lane.segments))
 
                     if horiz_lane_segment is not None:
                         horiz_lane.segments.append(horiz_lane_segment)
-                        horiz_lane_segment.num = len(horiz_lane.segments) - 1
+                        # horiz_lane_segment.num = len(horiz_lane.segments) - 1
                         segments.append(horiz_lane_segment)
                     if vert_lane_segment is not None:
                         vert_lane.segments.append(vert_lane_segment)
-                        vert_lane_segment.num = len(vert_lane.segments) - 1
+                        # vert_lane_segment.num = len(vert_lane.segments) - 1
                         segments.append(vert_lane_segment)
 
                     crossing_segment = CrossingSegment(horiz_lane, vert_lane, intersection)
@@ -79,6 +79,7 @@ def create_segments(roads: List[Road]) -> Tuple[List[Segment], List[Intersection
                     match lane.segments[i]:
                         case LaneSegment():
                             lane.segments[i].end_crossing = lane.segments[(i + 1) % len(lane.segments)]
+                            lane.segments[i].begin_crossing = lane.segments[(i - 1) % len(lane.segments)]
                         case CrossingSegment():
                             if lane.direction == Direction.RIGHT:
                                 lane.segments[i].connected_segments[Direction.RIGHT] = lane.segments[(i + 1) % len(lane.segments)]
@@ -93,6 +94,7 @@ def create_segments(roads: List[Road]) -> Tuple[List[Segment], List[Intersection
                     match lane.segments[j]:
                         case LaneSegment():
                             lane.segments[j].end_crossing = lane.segments[(j - 1) % len(lane.segments)]
+                            lane.segments[j].begin_crossing = lane.segments[(j + 1) % len(lane.segments)]
                         case CrossingSegment():
                             if lane.direction == Direction.LEFT:
                                 lane.segments[j].connected_segments[Direction.LEFT] = lane.segments[(j - 1) % len(lane.segments)]
