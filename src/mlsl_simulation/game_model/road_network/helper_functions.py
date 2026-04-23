@@ -1,14 +1,14 @@
 import random
-from typing import Optional, List
+from typing import TYPE_CHECKING, Optional, List
 
 import numpy as np
 
-from mlsl_simulation.game_model.car import Car
+if TYPE_CHECKING:
+    from mlsl_simulation.game_model.car import Car
 from mlsl_simulation.game_model.car_types import CarType
 from mlsl_simulation.game_model.constants import *
 from mlsl_simulation.game_model.road_network.road_network import true_direction, Goal, Point
 from mlsl_simulation.game_model.road_network.road_network import LaneSegment, Segment
-from mlsl_simulation.game_model.game_history import GameHistory
 from mlsl_simulation.game_model.reservations.reservation_management import ReservationManagement
 from mlsl_simulation.gui.selected_colors import selected_colors
 from mlsl_simulation.gui.colors import colors
@@ -71,7 +71,38 @@ def reached_goal(car: Car, goal: Goal, reservation_management: ReservationManage
     return False
 
 
-def create_random_car(segments: List[Segment], cars: List[Car], car_type: CarType, reservation_management: ReservationManagement) -> Car:
+def create_fixed_npc(color_name:str,
+                     lane_segment: LaneSegment, 
+                     reservation_management: ReservationManagement,
+                     size:int = BLOCK_SIZE,
+                     max_speed:int = BLOCK_SIZE) -> Car:
+    """
+    Create a car based on the given criteria. The location is set to 0.
+
+    Args:
+        segments (List[Segment]): The list of segments to place the car in.
+        cars (List[Car]): The list of existing cars.
+
+    Returns:
+        Car: The randomly created car.
+    """
+    from mlsl_simulation.game_model.car import Car
+    color = selected_colors[color_name]
+
+    speed = 0
+    loc = 0
+
+    return Car(name=color_name,
+               type=CarType.NPC,
+               loc=loc,
+               segment=lane_segment,
+               speed=speed,
+               size=size,
+               color=color,
+               max_speed=max_speed,
+               reservation_management=reservation_management)
+
+def create_random_car(segments: List[Segment], cars: List['Car'], car_type: CarType, reservation_management: ReservationManagement) -> 'Car':
     """
     Create a random car that does not overlap with existing cars.
     Randomly selects a color, lane segment, speed, size. The location is set to 0.
@@ -83,6 +114,7 @@ def create_random_car(segments: List[Segment], cars: List[Car], car_type: CarTyp
     Returns:
         Car: The randomly created car.
     """
+    from mlsl_simulation.game_model.car import Car
     name = ""
     color = (0, 0, 0)
     for c in selected_colors:
@@ -149,27 +181,4 @@ def collision_check(car1: Car, car2:Car, reservation_managemnent: ReservationMan
             elif begin1 < end2 < end1:
                 return True
 
-    return False
-
-
-def reservation_check(car: Car) -> bool:
-    """
-    Check if a car's reservation overlaps with any other car's reservation.
-
-    Args:
-        car (Car): The car to check.
-
-    Returns:
-        bool: True if there is an overlap, False otherwise.
-    """
-    seg = car.reserved_segment[1]
-    car_loc = abs(car.loc)
-    for other_car in seg.cars:
-        if other_car != car:
-            other_seg = other_car.get_size_segments()
-            o_begin = abs(other_seg[0].begin)
-            o_end = o_begin + other_car.get_braking_distance()
-            if o_begin <= car_loc <= o_end or o_begin <= car_loc + car.get_braking_distance() <= \
-                    o_end or car_loc <= o_begin <= car_loc + car.get_braking_distance() or car_loc <= o_end <= car_loc + car.get_braking_distance():
-                return True
     return False

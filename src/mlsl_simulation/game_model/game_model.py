@@ -6,8 +6,8 @@ from mlsl_simulation.controller.astar_car_controller import AstarCarController
 from mlsl_simulation.game_model.car import Car
 from mlsl_simulation.game_model.car_types import CarType
 from mlsl_simulation.game_model.road_network.road_network import Direction, Goal, Road, LaneSegment, Problem, Point
-from mlsl_simulation.game_model.helper_functions import create_random_car, overlap, reached_goal, collision_check
-from mlsl_simulation.game_model.create_game import create_segments
+from mlsl_simulation.game_model.road_network.helper_functions import create_random_car, overlap, reached_goal, collision_check
+from mlsl_simulation.game_model.road_network.create_segments import create_segments
 from mlsl_simulation.game_model.constants import *
 from mlsl_simulation.game_model.reservations.reservation_management import ReservationManagement
 from mlsl_simulation.game_model.game_history import GameHistory

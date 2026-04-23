@@ -2,7 +2,6 @@ import math
 from typing import Tuple
 
 from mlsl_simulation.game_model.car import Car 
-from mlsl_simulation.game_model.helper_functions import reservation_check
 from mlsl_simulation.game_model.road_network.road_network import Intersection, Segment, LaneSegment, CrossingSegment, SegmentInfo, Goal, \
     true_direction
 from mlsl_simulation.game_model.constants import MAX_ACC, MAX_DEC, LANE_MAX_SPEED, CROSSING_MAX_SPEED, LEFT_LANE_CHANGE, \

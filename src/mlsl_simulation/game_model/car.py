@@ -4,6 +4,7 @@ import logging
 
 from mlsl_simulation.game_model.car_types import CarType
 from mlsl_simulation.game_model.constants import *
+from mlsl_simulation.game_model.road_network.helper_functions import dist
 from mlsl_simulation.game_model.road_network.road_network import Goal, Intersection, Segment, LaneSegment, CrossingSegment, SegmentInfo, Point, Problem, Direction, true_direction, right_direction, horiz_direction, Color
 from mlsl_simulation.game_model.reservations.reservation_management import ReservationManagement
 from typing import Optional, List, Dict
@@ -460,19 +461,6 @@ class Car:
         Returns:
             Optional[List[Segment]]: The list of segments representing the shortest path from the current segment to the goal segment, or None if no path is found.
         """
-
-        def dist(p1: Point, p2: Point) -> float:
-            """
-            Calculate the Euclidean distance between two points.
-
-            Args:
-                p1 (Point): The first point.
-                p2 (Point): The second point.
-
-            Returns:
-                float: The Euclidean distance between the two points.
-            """
-            return np.linalg.norm([p1.x - p2.x, p1.y - p2.y])
 
         def astar_heuristic(current_seg: Segment, goal_seg: LaneSegment) -> float:
             """
