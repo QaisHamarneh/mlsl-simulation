@@ -4,7 +4,6 @@ import logging
 
 from mlsl_simulation.game_model.car_types import CarType
 from mlsl_simulation.game_model.constants import *
-from mlsl_simulation.game_model.road_network.helper_functions import dist
 from mlsl_simulation.game_model.road_network.road_network import Goal, Intersection, Segment, LaneSegment, CrossingSegment, SegmentInfo, Point, Problem, Direction, true_direction, right_direction, horiz_direction, Color
 from mlsl_simulation.game_model.reservations.reservation_management import ReservationManagement
 from typing import Optional, List, Dict
@@ -20,6 +19,8 @@ class Car:
                  size: int,
                  color: Color,
                  max_speed: int,
+                 first_goal: Goal,
+                 second_goal: Goal,
                  reservation_management: ReservationManagement) -> None:
         """
         Initialize a Car object.
@@ -42,14 +43,13 @@ class Car:
         self.max_speed = max_speed
 
         # dynamic variables
-        self.goal = None
-        self.second_goal = None
+        self.goal = first_goal
+        self.second_goal = second_goal
         self.__dead = False
         self.speed = speed
         self.direction = segment.lane.direction
         self.changing_lane = None
         self.loc = loc
-        self.last_loc: Point = loc
         self.illegal_move = False
 
         self.time: int = 0
@@ -71,7 +71,7 @@ class Car:
 
     def handle_car_death(self, reservation_management: ReservationManagement) -> None:
         index = len(self.get_size_segments(reservation_management))
-        while index < len(reservation_management.iterate_car_reservations(self.id)):
+        while index < len(reservation_management.get_car_reservations(self.id)):
             reservation_management.pop_car_reservation(self.id, index)
         self.speed = 0
         self.__dead = True
@@ -110,7 +110,7 @@ class Car:
 
         reservation_management.update_car_reservation_begin(car_id=self.id, index=0, begin=self.loc)
 
-        reservations = reservation_management.iterate_car_reservations(self.id)
+        reservations = reservation_management.get_car_reservations(self.id)
 
         for i, seg_info in enumerate(reservations):
             if isinstance(seg_info.segment, CrossingSegment):
@@ -148,7 +148,7 @@ class Car:
         Returns:
              List[Segment]: The next segments for the car to move to, up to the next Lanesegment
         """
-        reservations = reservation_management.iterate_car_reservations(self.id)
+        reservations = reservation_management.get_car_reservations(self.id)
 
         if reservations[0].segment == self.goal.lane_segment:
             #case 1: cur seg == goal seg -> preplan path to second goal
@@ -180,7 +180,7 @@ class Car:
         Extend the reservation of the car to the next segments.
         """
         breaking_distance = self.get_braking_distance()
-        reservations = reservations_management.iterate_car_reservations(self.id)
+        reservations = reservations_management.get_car_reservations(self.id)
         reserved_length = sum([abs(seg_info.end - seg_info.begin) for seg_info in reservations])
         if abs(self.loc) + breaking_distance >= sum([seg_info.segment.length for seg_info in reservations]):
             breaking_distance -= reserved_length 
@@ -199,7 +199,7 @@ class Car:
                     next_segs = next_segs[1:i + 1]
                     break 
 
-            next_segs[0].intersection.intersection_state.remove_car_priority(self.id)
+            next_segs[0].intersection.intersection_state.pop_car_priority(self.id)
             for i, next_seg in enumerate(next_segs):
                 extra = abs(self.loc) + self.get_braking_distance() - sum([seg_info.segment.length for seg_info in reservations])
                 next_dir = None
@@ -249,7 +249,7 @@ class Car:
         Returns:
             LaneSegment: The adjacent lane segment.
         """
-        reservations = reservation_management.iterate_car_reservations(self.id)
+        reservations = reservation_management.get_car_reservations(self.id)
         if lane_segment is None and isinstance(reservations[0].segment, LaneSegment):
             segment: LaneSegment = reservations[0].segment
 
@@ -270,7 +270,7 @@ class Car:
         Returns:
             LaneSegment: The adjacent lane segment.
         """
-        reservations = reservation_management.iterate_car_reservations(self.id)
+        reservations = reservation_management.get_car_reservations(self.id)
         if lane_segment is None:
             lane_segment = reservations[0].segment
         actual_lane_diff = (-1 if right_direction[self.direction] else 1) * lane_diff
@@ -294,7 +294,7 @@ class Car:
         Returns:
             bool: True if the lane was changed successfully, False otherwise.
         """
-        reservations = reservations_management.iterate_car_reservations(self.id)
+        reservations = reservations_management.get_car_reservations(self.id)
 
         # case 1: car is not in a lane segment -> return problem
         if not (isinstance(reservations[0].segment, LaneSegment) and \
@@ -314,7 +314,7 @@ class Car:
             return Problem.NO_ADJACENT_LANE
 
         self.changing_lane = True
-        reservations_management.update_reserved_lane_change_segment(self.id, (self.time, adjacent_lane_seg))
+        reservations_management.set_reserved_lane_change_segment(self.id, (self.time, adjacent_lane_seg))
         return True
 
     def check_reservation(self, reservations_management: ReservationManagement) -> bool:
@@ -328,7 +328,7 @@ class Car:
             return False
         
         reserved_lane_change_segment = reservations_management.get_reserved_lane_change_segment(self.id)
-        reservations = reservations_management.iterate_car_reservations(self.id)
+        reservations = reservations_management.get_car_reservations(self.id)
 
         if reserved_lane_change_segment is not None and \
             self.time - reserved_lane_change_segment[0] == LANECHANGE_TIME_STEPS:
@@ -391,7 +391,7 @@ class Car:
 
         return self.pos.x, self.pos.y, self.w, self.h
 
-    def get_center(self, reservation_management: ReservationManagement) -> Point:
+    def get_center(self, reservation_management: ReservationManagement) -> List:
         """
         Get the center point of the car.
 
@@ -400,9 +400,9 @@ class Car:
         """
         reservation = reservation_management.get_car_reservation(self.id, 0)
         if horiz_direction[reservation.direction]:
-            return Point(self.pos.x + self.size // 2, self.pos.y + BLOCK_SIZE // 2)
+            return [self.pos.x + self.size // 2, self.pos.y + BLOCK_SIZE // 2]
         else:
-            return Point(self.pos.x + BLOCK_SIZE // 2, self.pos.y + self.size // 2)
+            return [self.pos.x + BLOCK_SIZE // 2, self.pos.y + self.size // 2]
 
     def get_braking_distance(self, speed: int = None) -> int:
         """
@@ -436,7 +436,7 @@ class Car:
         Returns:
             list[dict]: The list of segments occupied by the car.
         """
-        reservations = reservations_management.iterate_car_reservations(self.id)
+        reservations = reservations_management.get_car_reservations(self.id)
         segments: list[SegmentInfo] = []
         accumulated_size = 0
         i = 0
@@ -477,25 +477,25 @@ class Car:
                 case LaneSegment():
                     if goal_seg.lane.road.horizontal:
                         if current_seg.lane.road.horizontal:
-                            return dist(Point(current_seg.end, current_seg.lane.top),
-                                        Point(goal_seg.begin, goal_seg.lane.top))
+                            return math.dist([current_seg.end, current_seg.lane.top],
+                                        [goal_seg.begin, goal_seg.lane.top])
                         else:
-                            return dist(Point(current_seg.lane.top, current_seg.end),
-                                        Point(goal_seg.begin, goal_seg.lane.top))
+                            return math.dist([current_seg.lane.top, current_seg.end],
+                                        [goal_seg.begin, goal_seg.lane.top])
                     else:
                         if current_seg.lane.road.horizontal:
-                            return dist(Point(current_seg.end, current_seg.lane.top),
-                                        Point(goal_seg.lane.top, goal_seg.begin))
+                            return math.dist([current_seg.end, current_seg.lane.top],
+                                        [goal_seg.lane.top, goal_seg.begin])
                         else:
-                            return dist(Point(current_seg.lane.top, current_seg.end),
-                                        Point(goal_seg.lane.top, goal_seg.begin))
+                            return math.dist([current_seg.lane.top, current_seg.end],
+                                        [goal_seg.lane.top, goal_seg.begin])
                 case CrossingSegment():
                     if goal_seg.lane.road.horizontal:
-                        return dist(Point(current_seg.horiz_lane.top + MID_LANE, current_seg.vert_lane.top + MID_LANE),
-                                    Point(goal_seg.begin, goal_seg.lane.top))
+                        return math.dist([current_seg.horiz_lane.top + (BLOCK_SIZE // 2), current_seg.vert_lane.top + (BLOCK_SIZE // 2)],
+                                    [goal_seg.begin, goal_seg.lane.top])
                     else:
-                        return dist(Point(current_seg.horiz_lane.top + MID_LANE, current_seg.vert_lane.top + MID_LANE),
-                                    Point(goal_seg.lane.top, goal_seg.begin))
+                        return math.dist([current_seg.horiz_lane.top + (BLOCK_SIZE // 2), current_seg.vert_lane.top + (BLOCK_SIZE // 2)],
+                                    [goal_seg.lane.top, goal_seg.begin])
 
         def reconstruct_path(came_from_list: Dict[Segment, Segment], current: LaneSegment) -> List[Segment]:
             """

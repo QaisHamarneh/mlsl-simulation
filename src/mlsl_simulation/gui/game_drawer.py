@@ -1,7 +1,7 @@
 from pyglet import shapes
 from pyglet import text
 from typing import List, Tuple, Union
-from mlsl_simulation.game_model.road_network.road_network import Road, Point, Direction, LaneSegment, CrossingSegment
+from mlsl_simulation.game_model.road_network.road_network import Color, Road, Point, Direction, LaneSegment, CrossingSegment
 from mlsl_simulation.game_model.car import Car
 from mlsl_simulation.game_model.constants import *
 from mlsl_simulation.game_model.reservations.reservation_management import ReservationManagement
@@ -16,8 +16,7 @@ class GameDrawer():
                   cars: List[Car], 
                   flash_count: int, 
                   show_reservations: bool, 
-                  reservation_management: ReservationManagement, 
-                  debug: bool = False) -> List[shapes.Rectangle]:
+                  reservation_management: ReservationManagement) -> List[shapes.Rectangle]:
         
         car_shapes = []
 
@@ -64,7 +63,7 @@ class GameDrawer():
             car_shapes.append(car_rect)
 
             if show_reservations:
-                brake_box_points = GameDrawer.draw_brake_box(car, color, reservation_management, debug)
+                brake_box_points = GameDrawer.draw_brake_box(car, color, reservation_management)
                 car_shapes += brake_box_points
                 if car_res_box is not None:
                     car_shapes += car_res_box
@@ -118,22 +117,22 @@ class GameDrawer():
         for i, lane in enumerate(road.right_lanes + road.left_lanes):
             if road.horizontal:
                 if i == len(road.right_lanes) - 1 and len(road.left_lanes) > 0:
-                    lane_shapes.append(shapes.Line(0, lane.top + BLOCK_SIZE,
-                                                        WINDOW_WIDTH, lane.top + BLOCK_SIZE,
+                    lane_shapes.append(shapes.Line(0, lane.top + BLOCK_SIZE - LANE_DISPLACEMENT // 2,
+                                                        WINDOW_WIDTH, lane.top + BLOCK_SIZE - LANE_DISPLACEMENT // 2,
                                                         LANE_DISPLACEMENT, color=WHITE))
                 elif i < len(road.right_lanes + road.left_lanes) - 1:
                     dashed_lines = GameDrawer.draw_dash_line(Point(0, lane.top + BLOCK_SIZE),
                                                   Point(WINDOW_WIDTH, lane.top + BLOCK_SIZE))
                     for line in dashed_lines:
                         lane_shapes.append(line)
-                arrow = GameDrawer.draw_arrow(Point(1.5 * BLOCK_SIZE, lane.top + BLOCK_SIZE // 2),
+                arrow = GameDrawer.draw_arrow(Point(3 * BLOCK_SIZE // 2, lane.top + BLOCK_SIZE // 2),
                                    Point(3 * BLOCK_SIZE, lane.top + BLOCK_SIZE // 2), True, lane.direction)
                 for line in arrow:
                     lane_shapes.append(line)
             else:
                 if i == len(road.right_lanes) - 1 and len(road.left_lanes) > 0:
-                    lane_shapes.append(shapes.Line(lane.top + BLOCK_SIZE, 0,
-                                                        lane.top + BLOCK_SIZE, WINDOW_HEIGHT,
+                    lane_shapes.append(shapes.Line(lane.top + BLOCK_SIZE - LANE_DISPLACEMENT // 2, 0,
+                                                        lane.top + BLOCK_SIZE - LANE_DISPLACEMENT // 2, WINDOW_HEIGHT,
                                                         color=WHITE))
                 elif i < len(road.right_lanes + road.left_lanes) - 1:
                     dashed_lines = GameDrawer.draw_dash_line(Point(lane.top + BLOCK_SIZE, 0),
@@ -292,13 +291,12 @@ class GameDrawer():
         return lines
     
     @classmethod
-    def draw_brake_box(cls, car: Car, color: mlsl_simulation.gui.map_colors, reservation_management: ReservationManagement, debug: bool) -> List[Union[shapes.Line, shapes.Rectangle]]:
+    def draw_brake_box(cls, car: Car, color: Color, reservation_management: ReservationManagement) -> List[Union[shapes.Line, shapes.Rectangle]]:
         """
         Creates a brake box for a car. This is done collecting all points of the brake box on the left and right side separately.
 
         Args:
             car (Car): The car object.
-            debug (bool): Whether to include debug shapes.
 
         Returns:
             List[Union[shapes.Line, shapes.Rectangle]]: A list of pyglet shapes representing the brake box.
@@ -333,7 +331,7 @@ class GameDrawer():
         last_dir = car_reservation_direction
 
         # iterate over all segments of the car's path
-        car_reservations = reservation_management.iterate_car_reservations(car.id)
+        car_reservations = reservation_management.get_car_reservations(car.id)
         for i in range(0, len(car_reservations)):
             segment = car_reservations[i]
             seg = segment.segment
@@ -608,26 +606,8 @@ class GameDrawer():
         # create lines from points
         line = GameDrawer.draw_lines(*[p for point in points for p in point], color=color, width=2)
 
-        if debug:
-            return line + shapes_at_end
-        else:
-            return line
-        
-    @classmethod
-    def draw_test_results(cls, 
-                          roads: List[Road],
-                          test_params: None | Tuple[int, int, int, int] = None, 
-                          test_results: None | List[Tuple[bool, str]] = None) -> text.Label:
-        if test_params is None:
-            test_params = find_greatest_gap(roads)
+        return line
 
-        if test_results is not None:
-            return GameDrawer.draw_test_result_shape(test_results, *test_params)
-        else:
-            return text.Label("")
-
-    @classmethod
-    def draw_test_result_shape(cls, res, x, y, width, height) -> text.Label:
         """
         Creates a text result shape.
 

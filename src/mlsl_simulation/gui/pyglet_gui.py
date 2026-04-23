@@ -15,15 +15,13 @@ class GameWindow(pyglet.window.Window):
             cars: List[Car],
             roads: List[Road],
             reservation_management: ReservationManagement,
-            show_reservations: bool, 
-            debug: bool = False
+            show_reservations: bool
             ) -> None:
         """
         Initialize the CarsWindow.
 
         Args:
             game_model (TrafficEnv): The game environment.
-            debug (bool, optional): Flag for debug mode. Defaults to False.
         """
         super().__init__()
         scale = self.get_pixel_ratio()
@@ -49,7 +47,6 @@ class GameWindow(pyglet.window.Window):
 
         self.show_reservations: bool = show_reservations
 
-        self.debug: bool = debug
         self._test_results = None
 
         self.pause: bool = False
@@ -81,8 +78,7 @@ class GameWindow(pyglet.window.Window):
         game_shapes = []
         game_shapes += self.map_shapes
         game_shapes += GameDrawer.draw_goals(self.cars)
-        game_shapes += GameDrawer.draw_cars(self.cars, self.flash_count, self.show_reservations, self.reservation_management, self.debug)
-        game_shapes.append(GameDrawer.draw_test_results(self.roads, self.test_results))
+        game_shapes += GameDrawer.draw_cars(self.cars, self.flash_count, self.show_reservations, self.reservation_management)
         self.renderer.render(game_shapes)
 
     def on_key_press(self, symbol: int, modifiers: int) -> None:

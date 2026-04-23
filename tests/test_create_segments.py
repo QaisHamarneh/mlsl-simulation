@@ -4,7 +4,7 @@ import unittest
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
 
-from mlsl_simulation.game_model.road_network.create_segments import create_segments
+from mlsl_simulation.game_model.create_items.create_segments import create_segments
 from mlsl_simulation.game_model.road_network.road_network import (
     CrossingSegment, Direction, Intersection, LaneSegment, Road,
 )

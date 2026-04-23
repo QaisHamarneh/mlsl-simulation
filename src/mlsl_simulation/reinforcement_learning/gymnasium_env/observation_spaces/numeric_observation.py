@@ -91,14 +91,14 @@ class NumbericObservation(Observation):
             speed = np.array([[car.speed / car.max_speed] + [0] * (CAR_RES_INFO - 1)], dtype=np.float32)
 
             reservations = []
-            for seg_info in self.reservation_management.iterate_car_reservations(car.id):
+            for seg_info in self.reservation_management.get_car_reservations(car.id):
 
                 if isinstance(seg_info.segment, LaneSegment):
 
                     # todo: move doubled code from lanesegment and crossing segment
                     reservations.append([
                         seg_info.segment.lane.num / MAX_LANES,
-                        seg_info.direction.value / Direction.DIRECTIONS.value,
+                        seg_info.direction.value / len(Direction),
                         *self._get_lane_reservation(seg_info, seg_info.segment)
                     ])
 
@@ -107,7 +107,7 @@ class NumbericObservation(Observation):
 
                     reservations.append([
                         lane_num / MAX_LANES,
-                        seg_info.direction.value / Direction.DIRECTIONS.value,
+                        seg_info.direction.value / len(Direction),
                         *self._get_crossing_reservation(seg_info, seg_info.segment)
                     ])
 
@@ -140,7 +140,7 @@ class NumbericObservation(Observation):
                 [lane_num_normalized, direction_normalized, begin_x, begin_y, end_x, end_y]
                 where:
                 - lane_num_normalized: lane.num / MAX_LANES
-                - direction_normalized: lane.direction.value / Direction.DIRECTIONS.value
+                - direction_normalized: lane.direction.value / len(Direction)
                 - begin_x, begin_y: normalized starting coordinates
                 - end_x, end_y: normalized ending coordinates
                 Normalization is relative to WINDOW_WIDTH and WINDOW_HEIGHT.
@@ -148,7 +148,7 @@ class NumbericObservation(Observation):
         total_length = sum(seg.length for seg in lane.segments)
 
         normalized_lane_num = lane.num / MAX_LANES
-        normalized_lane_direction = lane.direction.value / Direction.DIRECTIONS.value
+        normalized_lane_direction = lane.direction.value / len(Direction)
 
         if lane.direction is Direction.RIGHT:
             return [normalized_lane_num, 

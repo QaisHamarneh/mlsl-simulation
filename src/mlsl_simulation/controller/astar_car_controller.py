@@ -10,7 +10,7 @@ from mlsl_simulation.game_model.reservations.reservation_management import Reser
 
 
 class AstarCarController:
-    def __init__(self, car: Car, goal: Goal, reservation_management: ReservationManagement) -> None:
+    def __init__(self, car: Car, reservation_management: ReservationManagement) -> None:
         """
         Initialize the AstarCarController.
 
@@ -19,7 +19,6 @@ class AstarCarController:
             player (int): The player index.
         """
         self.car = car
-        self.goal = goal
         self.first_go = True
         self.reservation_management: ReservationManagement = reservation_management
 
@@ -37,7 +36,7 @@ class AstarCarController:
             return 0, 0
         
         lane_change = NO_LANE_CHANGE
-        reservations = self.reservation_management.iterate_car_reservations(self.car.id)
+        reservations = self.reservation_management.get_car_reservations(self.car.id)
         # This should be changed to check res and parallel_res separately.
         max_possible_acc = self.get_accelerate(reservations, other_cars)
         # print("Car ", self.car.name, " Max acceleration = ", max_possible_acc)
@@ -54,7 +53,7 @@ class AstarCarController:
 
         elif max_possible_acc < MAX_ACC and len(reservations) == 1  \
                 and isinstance(reservations[0].segment, LaneSegment) \
-                and reservations[0].segment != self.goal.lane_segment:
+                and reservations[0].segment != self.car.goal.lane_segment:
             # lane_segments = self.car.get_adjacent_lane_segments(self.reservation_management)
             # accelerations = [self.get_accelerate([SegmentInfo(
             #                     lane_segment,
@@ -222,7 +221,7 @@ class AstarCarController:
                 if not collision:
                     if isinstance(added_segments[1].segment, CrossingSegment):
                         intersection: Intersection = added_segments[1].segment.intersection
-                        for other_car_id, time in intersection.intersection_state.iterate_priority_items():
+                        for other_car_id, time in intersection.intersection_state.get_priority_items():
                             if other_car_id != self.car.id and time < intersection.intersection_state.get_car_priority(self.car.id):
                                 collision = True
 
@@ -231,7 +230,7 @@ class AstarCarController:
                 last_seg = added_segments[-1]
                 for other_car_id in self.reservation_management.get_cars_on_segment(last_seg.segment):
                     if other_car_id != self.car.id:
-                        other_car_seg_info = next(seg_info for seg_info in self.reservation_management.iterate_car_reservations(other_car_id)
+                        other_car_seg_info = next(seg_info for seg_info in self.reservation_management.get_car_reservations(other_car_id)
                                                   if seg_info.segment == last_seg.segment)
                         begin = abs(last_seg.begin)
                         end = abs(last_seg.end)
@@ -254,7 +253,7 @@ class AstarCarController:
     def _check_collision(self, seg_info: SegmentInfo):
         for other_car_id in self.reservation_management.get_cars_on_segment(seg_info.segment):
             if other_car_id != self.car.id:
-                other_car_seg_info = next(o_seg_info for o_seg_info in self.reservation_management.iterate_car_reservations(other_car_id) if o_seg_info.segment == seg_info.segment)
+                other_car_seg_info = next(o_seg_info for o_seg_info in self.reservation_management.get_car_reservations(other_car_id) if o_seg_info.segment == seg_info.segment)
                 begin = abs(seg_info.begin)
                 end = abs(seg_info.end)
                 o_begin = abs(other_car_seg_info.begin)

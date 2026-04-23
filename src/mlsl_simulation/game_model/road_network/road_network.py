@@ -1,11 +1,11 @@
 from abc import ABC
 from dataclasses import dataclass
 from enum import Enum
-from typing import Optional, Dict, List
+from typing import Optional, Dict, List, Tuple
 
 from mlsl_simulation.game_model.constants import *
-from mlsl_simulation.game_model.road_network.intersection_state import IntersectionState
-from mlsl_simulation.game_model.road_network.crossing_segment_state import CrossingSegmentState
+from mlsl_simulation.game_model.reservations.intersection_state import IntersectionState
+from mlsl_simulation.game_model.reservations.crossing_segment_state import CrossingSegmentState
 
 
 @dataclass
@@ -19,8 +19,6 @@ class Direction(Enum):
     DOWN = 2
     LEFT = 3
     UP = 4
-    # Used for normalization in numeric_observation.py
-    DIRECTIONS = 4
 
 
 class Problem(Enum):
@@ -59,7 +57,7 @@ right_direction = {Direction.RIGHT: True,
 clock_wise = [Direction.RIGHT, Direction.DOWN, Direction.LEFT, Direction.UP]
 
 
-Color = (int, int, int)
+Color = Tuple[int, int, int]
 
 
 class Road:
@@ -77,22 +75,17 @@ class Road:
         self.name = name
         self.horizontal = horizontal
         self.top = top
-
+        
         self.right_lanes = [Lane(self, i, Direction.RIGHT if self.horizontal else Direction.DOWN,
-                                 self.top + i * BLOCK_SIZE + i * LANE_DISPLACEMENT)
+                                 self.top + i * BLOCK_SIZE)
                             for i in range(right)]
 
-        # Below the last left lane
-        self.half = self.top + right * BLOCK_SIZE + (right - 1) * LANE_DISPLACEMENT
-
         self.left_lanes = [Lane(self, i, Direction.LEFT if self.horizontal else Direction.UP,
-                                self.top + i * BLOCK_SIZE + i * LANE_DISPLACEMENT +
-                                right * BLOCK_SIZE + right * LANE_DISPLACEMENT)
+                                self.top + i * BLOCK_SIZE + i + right * BLOCK_SIZE)
                            for i in range(left)]
 
         # Below the last right lane
-        self.bottom = self.top + (right + left) * BLOCK_SIZE + (
-                right + left - 1) * LANE_DISPLACEMENT
+        self.bottom = self.top + (right + left) * BLOCK_SIZE
 
     def get_outer_lane_segment(self, segment: 'Segment', right_lanes: bool) -> Optional['LaneSegment']:
         """
@@ -114,7 +107,7 @@ class Intersection:
     def __init__(self, horizontal_road: Road, vertical_road: Road):
         self.horizontal_road: Road = horizontal_road
         self.vertical_road: Road = vertical_road
-        self.segments: list[CrossingSegment] = []
+        self.segments: List[CrossingSegment] = []
         self.intersection_state = IntersectionState()
     
     def __str__(self):
@@ -143,8 +136,8 @@ class Segment(ABC):
         """
         Initialize a Segment object.
         """
-        self.length: int = 0
-        self.max_speed: int = 0
+        self.length: int
+        self.max_speed: int
 
 
 class LaneSegment(Segment):
@@ -213,7 +206,7 @@ class CrossingSegment(Segment):
         Returns:
             Road: The road in the given direction.
         """
-        if horiz_direction[direction] and not opposite:
+        if (horiz_direction[direction] and not opposite) or (not horiz_direction[direction] and opposite):
             return self.horiz_lane.road
         else:
             return self.vert_lane.road
@@ -244,12 +237,15 @@ class Goal:
             lane_segment (LaneSegment): The lane segment the goal is on.
             color (Color): The color of the goal.are
         """
-        self.pos = None
-        self.lane_segment = lane_segment
+        self.pos = Point(0, 0)
         self.color = color
-        self.update_position()
+        self.update_lane_segment(lane_segment)
 
-    def update_position(self) -> None:
+    def update_lane_segment(self, lane_segment: LaneSegment) -> None:
+        self.lane_segment = lane_segment
+        self._update_position()
+
+    def _update_position(self) -> None:
         """
         Update the position of the goal.
         """

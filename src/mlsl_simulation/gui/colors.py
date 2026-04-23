@@ -554,6 +554,7 @@ YELLOW1 = (255, 255, 0)
 YELLOW2 = (238, 238, 0)
 YELLOW3 = (205, 205, 0)
 YELLOW4 = (139, 139, 0)
+
 #Add colors to colors dictionary
 colors['aliceblue'] = ALICEBLUE
 colors['antiquewhite'] = ANTIQUEWHITE

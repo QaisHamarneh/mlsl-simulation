@@ -1,13 +1,15 @@
+import math
 import random
 import logging
 
 from typing import Optional, Tuple, List
 from mlsl_simulation.controller.astar_car_controller import AstarCarController
+from mlsl_simulation.game_model.create_items.create_cars import create_goal, create_random_car
 from mlsl_simulation.game_model.car import Car
 from mlsl_simulation.game_model.car_types import CarType
-from mlsl_simulation.game_model.road_network.road_network import Direction, Goal, Road, LaneSegment, Problem, Point
-from mlsl_simulation.game_model.road_network.helper_functions import create_random_car, overlap, reached_goal, collision_check
-from mlsl_simulation.game_model.road_network.create_segments import create_segments
+from mlsl_simulation.game_model.event_checks import collision_check, reached_goal
+from mlsl_simulation.game_model.road_network.road_network import Direction, Goal, Road, LaneSegment, Problem
+from mlsl_simulation.game_model.create_items.create_segments import create_segments
 from mlsl_simulation.game_model.constants import *
 from mlsl_simulation.game_model.reservations.reservation_management import ReservationManagement
 from mlsl_simulation.game_model.game_history import GameHistory
@@ -87,58 +89,23 @@ class TrafficEnv:
         self.game_history.reset_history()
 
         if self.agent:
-            self.agent_car = create_random_car(self.segments, self.npc_cars, CarType.AGENT, self.reservation_management)
-            self._place_goals(self.agent_car)
+            self.agent_car = create_random_car(self.roads, self.npc_cars, CarType.AGENT, self.reservation_management)
             self.cars.append(self.agent_car)
 
         if self.npc_cars_init is None:
             for i in range(self.npcs):
-                car = create_random_car(self.segments, self.cars, CarType.NPC, self.reservation_management)
+                car = create_random_car(self.roads, self.cars, CarType.NPC, self.reservation_management)
                 self.cars.append(car)
                 self.npc_cars.append(car)
+                self.controllers.append(AstarCarController(car, self.reservation_management))
         else:
             self.npc_cars = self.npc_cars_init.copy()
-            
-        for car in self.npc_cars:
-            self._place_goals(car)
-            self.controllers.append(AstarCarController(car, car.goal, self.reservation_management))
 
         self.game_history.set_list_of_cars(self.cars)
         self.game_history.set_map(self.roads)
 
         self.total_crashes = 0
         self.crashes = {Direction.RIGHT: 0, Direction.UP: 0, Direction.LEFT: 0, Direction.DOWN: 0}
-
-    def _place_goals(self, car: Car) -> None:
-        """
-        Place a goal for the specified car.
-
-        Args:
-            car (Car): The car.
-        """
-
-        if car.goal is None and car.second_goal is None:
-            road = random.choice(self.roads)
-            lane = random.choice(road.right_lanes + road.left_lanes)
-            lane_segment = random.choice([seg for seg in lane.segments if isinstance(seg, LaneSegment)])
-            roads_copy = self.roads.copy()
-            roads_copy.remove(road)
-            road = random.choice(roads_copy)
-            lane = random.choice(road.right_lanes + road.left_lanes)
-            lane_segment_second = random.choice([seg for seg in lane.segments if isinstance(seg, LaneSegment)])
-            car.goal = Goal(lane_segment, car.color)
-            car.second_goal = Goal(lane_segment_second, car.color)
-        else:
-            roads_copy = self.roads.copy()
-            #remove the road used by the first goal
-            roads_copy.remove(car.goal.lane_segment.road)
-            road = random.choice(roads_copy)
-            lane = random.choice(road.right_lanes + road.left_lanes)
-            lane_segment = random.choice([seg for seg in lane.segments if isinstance(seg, LaneSegment)])
-            car.goal.lane_segment = car.second_goal.lane_segment
-            car.second_goal.lane_segment = lane_segment
-            car.goal.update_position()
-            car.second_goal.update_position()
 
     def play_step(self, action: None | Tuple[int, int] = None) -> None | str:
         """
@@ -164,14 +131,10 @@ class TrafficEnv:
             self.game_history.add_taken_action(car, npc_action)
 
         deadlock = [True if car.speed == 0 else False for car in self.cars]
-        if not all(game_over) and all(deadlock):
-            # log_msg = "Deadlock between all cars:\n"
-            # log_msg += f"Frame: {self.time // len(self.cars)}\n"
-            # logging.warning(log_msg)
-            return 'deadlock'
-        
         if all(game_over):
             return 'game_over'
+        if all(deadlock):
+            return 'deadlock'
         
         return None
     
@@ -201,24 +164,21 @@ class TrafficEnv:
                 if collision_check(car, other_car, self.reservation_management):
                     self.total_crashes += 1
                     self.crashes[car.direction] += 1
-                    # log_msg = (
-                    #     f"Frame = {self.time // len(self.cars)},  Crash: {self.total_crashes}\n"
-                    #     f"First car {car.type}:{car.name} Second car {other_car.type}:{other_car.name}\n"
-                    # )
-                    # logging.warning(log_msg)
                     car.handle_car_death(self.reservation_management)
                     other_car.handle_car_death(self.reservation_management)
+                    print(f"Collision Detected! {car.name} Car with {other_car.name} Car!")
                     return True
 
         # Place new goal if the goal is reached
-        if reached_goal(car, car.goal, self.reservation_management):
+        if reached_goal(car, self.reservation_management):
             car.score += 1
-            self._place_goals(car)
+            car.goal = car.second_goal
+            car.second_goal = create_goal(car.color, self.reservation_management.get_car_reservation(car.id, 0).segment, self.roads)
 
         # Player won!
         return car.score > WINNING_SCORE
 
-    def _move(self, car: Car, action: Tuple[int, int]) -> bool:
+    def _move(self, car: Car, action: Tuple[int, int]) -> bool | Problem:
         """
         Move the car based on the action.
 
@@ -240,27 +200,6 @@ class TrafficEnv:
 
         return action_worked
 
-
-    def is_collision(self, car: Car, pt: Optional[Point] = None) -> bool:
-        """
-        Check if the given car is in collision with other cars.
-
-        Args:
-            car (Car): The car which is being checked.
-            pt (Optional[Point]): The point to check for collision. If None, the car's current position is used.
-
-        Returns:
-            bool: True if there is a collision, False otherwise.
-        """
-        if pt is None:
-            pt = car.pos
-        if pt.x > WINDOW_WIDTH - 1 or pt.x < 0 or pt.y > WINDOW_HEIGHT - 1 or pt.y < 0:
-            return True
-        if any([overlap(pt, car.w, car.h, other_car.pos, other_car.w, other_car.h) for other_car in self.cars if
-                car != other_car]):
-            return True
-        return False
-    
     def current_state(self):
         print("---------------------")
         print("Game State:\n")

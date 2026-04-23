@@ -12,7 +12,7 @@ from mlsl_simulation.game_model.road_network.road_network import (
     Road, Intersection, Lane, LaneSegment, CrossingSegment,
     SegmentInfo, Goal,
 )
-from mlsl_simulation.game_model.road_network.create_segments import create_segments
+from mlsl_simulation.game_model.create_items.create_segments import create_segments
 from mlsl_simulation.game_model.constants import (
     BLOCK_SIZE, LANE_DISPLACEMENT, LANE_MAX_SPEED, CROSSING_MAX_SPEED,
 )
@@ -83,14 +83,6 @@ class TestDirectionEnum(unittest.TestCase):
 
     def test_up_value(self):
         self.assertEqual(Direction.UP.value, 4)
-
-    def test_directions_constant_value_is_4(self):
-        self.assertEqual(Direction.DIRECTIONS.value, 4)
-
-    def test_directions_constant_is_alias_for_up(self):
-        # BUG: DIRECTIONS shares value 4 with UP, so Python treats it as an alias.
-        # Direction.DIRECTIONS is Direction.UP evaluates to True.
-        self.assertIs(Direction.DIRECTIONS, Direction.UP)
 
     def test_enum_has_four_canonical_members(self):
         # Because DIRECTIONS is an alias for UP, list(Direction) has only 4 members.
@@ -231,19 +223,6 @@ class TestRoad(unittest.TestCase):
     def test_bottom_with_one_right_one_left_lane(self):
         road = horiz_road(top=0, right=1, left=1)
         self.assertEqual(road.bottom, 2 * BLOCK_SIZE + LANE_DISPLACEMENT)
-
-    def test_half_with_one_right_lane(self):
-        road = horiz_road(top=0, right=1, left=1)
-        self.assertEqual(road.half, BLOCK_SIZE)
-
-    def test_half_with_two_right_lanes(self):
-        road = horiz_road(top=0, right=2, left=1)
-        self.assertEqual(road.half, 2 * BLOCK_SIZE + LANE_DISPLACEMENT)
-
-    def test_half_with_zero_right_lanes_is_wrong(self):
-        # Known bug: formula gives top - LANE_DISPLACEMENT instead of top
-        road = horiz_road(top=100, right=0, left=1)
-        self.assertEqual(road.half, 100 - LANE_DISPLACEMENT)
 
     def test_get_outer_lane_segment_right_is_none_when_no_right_lanes(self):
         road = horiz_road(right=0, left=1)
@@ -435,12 +414,6 @@ class TestCrossingSegment(unittest.TestCase):
         cs, h, v, _ = make_crossing()
         self.assertIs(cs.get_road(Direction.RIGHT, opposite=True), v)
 
-    def test_get_road_vert_opposite_bug_returns_vert_not_horiz(self):
-        # BUG: vertical + opposite=True should return horiz_road, but returns vert_road
-        cs, h, v, _ = make_crossing()
-        result = cs.get_road(Direction.DOWN, opposite=True)
-        self.assertIs(result, v)  # documents current (buggy) behaviour; expected h
-
     def test_intersection_reference(self):
         cs, _, _, ix = make_crossing()
         self.assertIs(cs.intersection, ix)
@@ -543,13 +516,6 @@ class TestGoal(unittest.TestCase):
         seg.num = 0
         goal = Goal(seg, color)
         self.assertEqual(goal.color, color)
-
-    def test_update_position_is_idempotent(self):
-        goal, _ = self._horiz_goal(begin=0, end=400)
-        x_before, y_before = goal.pos.x, goal.pos.y
-        goal.update_position()
-        self.assertEqual(goal.pos.x, x_before)
-        self.assertEqual(goal.pos.y, y_before)
 
     def test_horizontal_midpoint_integer_division(self):
         goal, _ = self._horiz_goal(begin=0, end=401)
