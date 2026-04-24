@@ -11,7 +11,7 @@ if __name__ == '__main__':
         roads=scenario["roads"],
         players=scenario["players"],
         render_mode=RenderMode.GUI,
-        show_reservation=False,
+        show_reservation=True,
     )
     
     controller.run()

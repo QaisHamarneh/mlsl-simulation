@@ -1,12 +1,12 @@
 from pyglet import shapes
 from pyglet import text
 from typing import List, Tuple, Union
-from mlsl_simulation.game_model.road_network.road_network import Color, Road, Point, Direction, LaneSegment, CrossingSegment
+from mlsl_simulation.game_model.road_network.road_network import Color, Road, Point, Direction, LaneSegment, CrossingSegment, horiz_direction, true_direction
 from mlsl_simulation.game_model.car import Car
 from mlsl_simulation.game_model.constants import *
 from mlsl_simulation.game_model.reservations.reservation_management import ReservationManagement
 from mlsl_simulation.gui.map_colors import *
-from mlsl_simulation.gui.helpful_functions import get_xy_crossingseg, find_greatest_gap
+from mlsl_simulation.gui.helpful_functions import get_xy_crossingseg
 import mlsl_simulation.gui.map_colors
 
 class GameDrawer():
@@ -24,49 +24,49 @@ class GameDrawer():
             color = car.color if not car.get_death_status() or flash_count <= FLASH_CYCLE / 2 else DEAD_GREY
 
             car_rect = GameDrawer.draw_car_rect(car, color)
-
-            car_res_box = None
-            if reservation_management.get_car_reservation(car.id, 0).direction == Direction.RIGHT:
-
-                if car.changing_lane:
-                    x, y, w, h = car.update_position(reservation_management)
-                    car_res_box = GameDrawer.draw_lines(x, y, x + car.get_braking_distance(), y,
-                                            x + car.get_braking_distance(), y + h,
-                                            x, y + h, x, y,
-                                            color=color, width=2)
-
-            elif reservation_management.get_car_reservation(car.id, 0).direction == Direction.LEFT:
-
-                if car.changing_lane:
-                    x, y, w, h = car.update_position(reservation_management)
-                    car_res_box = GameDrawer.draw_lines(x + w, y, x + w - car.get_braking_distance(), y,
-                                            x + w - car.get_braking_distance(), y + h,
-                                            x + w, y + h, x + w, y,
-                                            color=color, width=2)
-
-            elif reservation_management.get_car_reservation(car.id, 0).direction == Direction.UP:
-                if car.changing_lane:
-                    x, y, w, h = car.update_position(reservation_management)
-                    car_res_box = GameDrawer.draw_lines(x, y, x, y + car.get_braking_distance(),
-                                            x + w, y + car.get_braking_distance(),
-                                            x + w, y, x, y,
-                                            color=color, width=2)
-
-            elif reservation_management.get_car_reservation(car.id, 0).direction == Direction.DOWN:
-                if car.changing_lane:
-                    x, y, w, h = car.update_position(reservation_management)
-                    car_res_box = GameDrawer.draw_lines(x, y + h, x, y - car.get_braking_distance() + h,
-                                            x + w, y - car.get_braking_distance() + h,
-                                            x + w, y + h, x, y + h,
-                                            color=color, width=2)
-
             car_shapes.append(car_rect)
 
+            # car_res_box = None
+            # if reservation_management.get_car_reservation(car.id, 0).direction == Direction.RIGHT:
+
+            #     if car.changing_lane:
+            #         x, y, w, h = car.get_position(reservation_management)
+            #         car_res_box = GameDrawer.draw_lines(x, y, x + car.get_braking_distance(), y,
+            #                                 x + car.get_braking_distance(), y + h,
+            #                                 x, y + h, x, y,
+            #                                 color=color, width=2)
+
+            # elif reservation_management.get_car_reservation(car.id, 0).direction == Direction.LEFT:
+
+            #     if car.changing_lane:
+            #         x, y, w, h = car.get_position(reservation_management)
+            #         car_res_box = GameDrawer.draw_lines(x + w, y, x + w - car.get_braking_distance(), y,
+            #                                 x + w - car.get_braking_distance(), y + h,
+            #                                 x + w, y + h, x + w, y,
+            #                                 color=color, width=2)
+
+            # elif reservation_management.get_car_reservation(car.id, 0).direction == Direction.UP:
+            #     if car.changing_lane:
+            #         x, y, w, h = car.get_position(reservation_management)
+            #         car_res_box = GameDrawer.draw_lines(x, y, x, y + car.get_braking_distance(),
+            #                                 x + w, y + car.get_braking_distance(),
+            #                                 x + w, y, x, y,
+            #                                 color=color, width=2)
+
+            # elif reservation_management.get_car_reservation(car.id, 0).direction == Direction.DOWN:
+            #     if car.changing_lane:
+            #         x, y, w, h = car.get_position(reservation_management)
+            #         car_res_box = GameDrawer.draw_lines(x, y + h, x, y - car.get_braking_distance() + h,
+            #                                 x + w, y - car.get_braking_distance() + h,
+            #                                 x + w, y + h, x, y + h,
+            #                                 color=color, width=2)
+
             if show_reservations:
-                brake_box_points = GameDrawer.draw_brake_box(car, color, reservation_management)
-                car_shapes += brake_box_points
-                if car_res_box is not None:
-                    car_shapes += car_res_box
+                car_shapes += GameDrawer.draw_brake_line(car, color, reservation_management)
+                # brake_box_points = GameDrawer.draw_brake_box(car, color, reservation_management)
+                # car_shapes += brake_box_points
+                # if car_res_box is not None:
+                #     car_shapes += car_res_box
 
         return car_shapes
     
@@ -254,7 +254,7 @@ class GameDrawer():
         return lines
     
     @classmethod
-    def draw_car_rect(cls, car: Car, color: mlsl_simulation.gui.map_colors) -> shapes.Rectangle:
+    def draw_car_rect(cls, car: Car, color: Color) -> shapes.Rectangle:
         """
         Creates a rectangle shape for a car.
 
@@ -291,356 +291,61 @@ class GameDrawer():
         return lines
     
     @classmethod
-    def draw_brake_box(cls, car: Car, color: Color, reservation_management: ReservationManagement) -> List[Union[shapes.Line, shapes.Rectangle]]:
+    def draw_brake_line(cls, car: Car, color: Color, reservation_management: ReservationManagement) -> List[shapes.Line]:
         """
-        Creates a brake box for a car. This is done collecting all points of the brake box on the left and right side separately.
+        Creates a brake line for a car..
 
         Args:
             car (Car): The car object.
 
         Returns:
-            List[Union[shapes.Line, shapes.Rectangle]]: A list of pyglet shapes representing the brake box.
+            List[shapes.Line]: A list of pyglet shapes representing the brake line.
         """
-        left_points = []
-        right_points = []
-        interesting_points = []
-        (car_x, car_y) = car.pos.x, car.pos.y
-
-        car_reservation_direction = reservation_management.get_car_reservation(car.id, 0).direction
-
-        w = car.w if car_reservation_direction == Direction.UP or car_reservation_direction == Direction.DOWN else car.h
-
-        # left back corner of car based on direction, append points as starting points for the brake box
-        if car_reservation_direction == Direction.RIGHT:
-            car_y = car_y + car.h
-            car_x2, car_y2 = (car_x, car_y - car.h)
-        if car_reservation_direction == Direction.DOWN:
-            car_x = car_x + car.w
-            car_y = car_y + car.h
-            car_x2, car_y2 = (car_x - car.w, car_y)
-        if car_reservation_direction == Direction.LEFT:
-            car_x = car_x + car.w
-            car_x2, car_y2 = (car_x, car_y + car.h)
-        if car_reservation_direction == Direction.UP:
-            car_x2, car_y2 = (car_x + car.w, car_y)
-
-        left_points.append((car_x, car_y))
-        right_points.append((car_x2, car_y2))
-
-        remaining_distance = car.get_braking_distance()
-        last_dir = car_reservation_direction
-
-        # iterate over all segments of the car's path
-        car_reservations = reservation_management.get_car_reservations(car.id)
-        for i in range(0, len(car_reservations)):
-            segment = car_reservations[i]
-            seg = segment.segment
-
-            # case 1: LaneSegment
-            if isinstance(seg, LaneSegment):
-
-                if seg.lane.road.horizontal:
-
-                    dis = abs(seg.end - car_x)
-                    if dis > remaining_distance:
-                        if remaining_distance < car.size:
-                            remaining_distance = car.size
-                        if last_dir == Direction.RIGHT:
-                            car_x += remaining_distance
-                            car_x2 += remaining_distance
-                        elif last_dir == Direction.LEFT:
-                            car_x -= remaining_distance
-                            car_x2 -= remaining_distance
-                    else:
-                        car_x = seg.end
-                        car_x2 = seg.end
-                        remaining_distance -= dis
-                    left_points.append((car_x, car_y))
-                    right_points.append((car_x2, car_y2))
-
+        lines:List[shapes.Line] = []
+        reservations = reservation_management.get_car_reservations(car.id)
+        for i, seg_info in enumerate(reservations):
+            segment = seg_info.segment
+            if not seg_info.turn:
+                if true_direction[seg_info.direction] or isinstance(segment, LaneSegment):
+                    x_begin = segment.h_begin + seg_info.begin if horiz_direction[seg_info.direction] else segment.h_begin + BLOCK_SIZE // 2
+                    y_begin = segment.v_begin + BLOCK_SIZE // 2 if horiz_direction[seg_info.direction] else segment.v_begin + seg_info.begin
+                    x_end = segment.h_begin + seg_info.end if horiz_direction[seg_info.direction] else segment.h_begin + BLOCK_SIZE // 2
+                    y_end = segment.v_begin + BLOCK_SIZE // 2  if horiz_direction[seg_info.direction] else segment.v_begin + seg_info.end
                 else:
-                    dis = abs(seg.end - car_y)
-                    if dis > remaining_distance:
-                        if remaining_distance < car.size:
-                            remaining_distance = car.size
-                        if last_dir == Direction.DOWN:
-                            car_y -= remaining_distance
-                            car_y2 -= remaining_distance
-                        elif last_dir == Direction.UP:
-                            car_y += remaining_distance
-                            car_y2 += remaining_distance
-                    else:
-                        car_y = seg.end
-                        car_y2 = seg.end
-                        remaining_distance -= dis
-                    left_points.append((car_x, car_y))
-                    right_points.append((car_x2, car_y2))
-                last_dir = segment.direction
+                    x_begin = segment.h_begin + segment.length + seg_info.begin if horiz_direction[seg_info.direction] else segment.h_begin + BLOCK_SIZE // 2
+                    y_begin = segment.v_begin + BLOCK_SIZE // 2 if horiz_direction[seg_info.direction] else segment.v_begin + segment.length + seg_info.begin
+                    x_end = segment.h_begin + segment.length + seg_info.end if horiz_direction[seg_info.direction] else segment.h_begin + BLOCK_SIZE // 2
+                    y_end = segment.v_begin + BLOCK_SIZE // 2  if horiz_direction[seg_info.direction] else segment.v_begin + segment.length + seg_info.end
 
-
-
-            # case 2: CrossingSegment
-            elif isinstance(seg, CrossingSegment):
-                # first segment is a crossing segment
-                if i == 0:
-                    x_anchor, y_anchor = get_xy_crossingseg(seg)
-                    interesting_points.append((x_anchor, y_anchor))
-
-                    if segment.direction == Direction.RIGHT:
-                        dist = abs(car_x - (x_anchor + BLOCK_SIZE))
-                        if dist > remaining_distance:
-                            car_x = car_x + remaining_distance
-                            car_x2 = car_x2 + remaining_distance
-                        else:
-                            car_x = x_anchor + BLOCK_SIZE
-                            car_x2 = x_anchor + BLOCK_SIZE
-                            remaining_distance -= dist
-
-                    elif segment.direction == Direction.LEFT:
-                        dist = abs(car_x - (x_anchor - BLOCK_SIZE))
-                        if dist > remaining_distance:
-                            car_x = car_x - remaining_distance
-                            car_x2 = car_x2 - remaining_distance
-                        else:
-                            car_x = x_anchor - BLOCK_SIZE
-                            car_x2 = x_anchor - BLOCK_SIZE
-                            remaining_distance -= dist
-
-                    elif segment.direction == Direction.UP:
-                        dist = abs(car_y - (y_anchor + BLOCK_SIZE))
-                        if dist > remaining_distance:
-                            car_y = car_y + remaining_distance
-                            car_y2 = car_y2 + remaining_distance
-                        else:
-                            car_y = y_anchor + BLOCK_SIZE
-                            car_y2 = y_anchor + BLOCK_SIZE
-                            remaining_distance -= dist
-
-                    elif segment.direction == Direction.DOWN:
-                        dist = abs(car_y - (y_anchor - BLOCK_SIZE))
-                        if dist > remaining_distance:
-                            car_y = car_y - remaining_distance
-                            car_y2 = car_y2 - remaining_distance
-                        else:
-                            car_y = y_anchor - BLOCK_SIZE
-                            car_y2 = y_anchor - BLOCK_SIZE
-                            remaining_distance -= dist
-
-                    left_points.append((car_x, car_y))
-                    right_points.append((car_x2, car_y2))
-                    last_dir = segment.direction
-
+                lines.append(shapes.Line(x= x_begin,\
+                                        y= y_begin, \
+                                        x2= x_end, \
+                                        y2= y_end, \
+                                        color=color,
+                                        thickness=5))
+            else:
+                if horiz_direction[reservations[i - 1].direction]:
+                    x_begin = segment.h_begin if true_direction[reservations[i - 1].direction] else segment.h_begin + segment.length
+                    y_begin = segment.v_begin + segment.length // 2 
+                    x_end = segment.h_begin + segment.length // 2 
+                    y_end = segment.v_begin + segment.length if true_direction[seg_info.direction] else segment.v_begin
                 else:
+                    x_begin = segment.h_begin + segment.length // 2
+                    y_begin = segment.v_begin if true_direction[reservations[i - 1].direction] else segment.v_begin + segment.length
+                    x_end = segment.h_begin + segment.length if true_direction[seg_info.direction] else segment.h_begin
+                    y_end = segment.v_begin + segment.length // 2
 
-                    # going straight through a crossing segment
-                    if last_dir.value == segment.direction.value:
+                lines.append(shapes.Line(x= x_begin,\
+                                         y= y_begin, \
+                                         x2= segment.h_begin + segment.length // 2, \
+                                         y2= segment.v_begin + segment.length // 2, \
+                                         color=color,
+                                         thickness=5))
+                lines.append(shapes.Line(x= segment.h_begin + segment.length // 2,\
+                                         y= segment.v_begin + segment.length // 2, \
+                                         x2= x_end, \
+                                         y2= y_end, \
+                                         color=color,
+                                         thickness=5))
 
-                        if remaining_distance > BLOCK_SIZE:
-                            if segment.direction == Direction.RIGHT:
-                                car_x += BLOCK_SIZE + LANE_DISPLACEMENT
-                                car_x2 += BLOCK_SIZE + LANE_DISPLACEMENT
-                            elif segment.direction == Direction.LEFT:
-                                car_x -= BLOCK_SIZE + LANE_DISPLACEMENT
-                                car_x2 -= BLOCK_SIZE + LANE_DISPLACEMENT
-                            elif segment.direction == Direction.UP:
-                                car_y += BLOCK_SIZE + LANE_DISPLACEMENT
-                                car_y2 += BLOCK_SIZE + LANE_DISPLACEMENT
-                            elif segment.direction == Direction.DOWN:
-                                car_y -= BLOCK_SIZE + LANE_DISPLACEMENT
-                                car_y2 -= BLOCK_SIZE + LANE_DISPLACEMENT
-
-                            remaining_distance -= BLOCK_SIZE
-                            remaining_distance -= LANE_DISPLACEMENT
-                            left_points.append((car_x, car_y))
-                            right_points.append((car_x2, car_y2))
-                            last_dir = segment.direction
-
-                        else:
-
-                            if car_reservations[i - 1].direction == Direction.RIGHT:
-                                car_x += BLOCK_SIZE
-                                car_x2 += BLOCK_SIZE
-
-                            elif car_reservations[i - 1].direction == Direction.LEFT:
-                                car_x -= BLOCK_SIZE
-                                car_x2 -= BLOCK_SIZE
-
-                            elif car_reservations[i - 1].direction == Direction.UP:
-                                car_y += BLOCK_SIZE
-                                car_y2 += BLOCK_SIZE
-
-                            elif car_reservations[i - 1].direction == Direction.DOWN:
-                                car_y -= BLOCK_SIZE
-                                car_y2 -= BLOCK_SIZE
-
-                            remaining_distance = car.size
-                            left_points.append((car_x, car_y))
-                            right_points.append((car_x2, car_y2))
-                            last_dir = segment.direction
-
-                    elif car_reservations[i - 1].direction.value - segment.direction.value == 1 or car_reservations[i - 1].direction.value - \
-                            segment.direction.value == -3:  # left turn
-
-                        if car_reservations[i - 1].direction == Direction.RIGHT:
-                            car_x2 = car_x2 + BLOCK_SIZE + LANE_DISPLACEMENT
-                            right_points.append((car_x2, car_y2))
-                            car_y2 = car_y2 + BLOCK_SIZE + LANE_DISPLACEMENT
-                            right_points.append((car_x2, car_y2))
-                            #adjust left side with LANE_DISPLACEMENT
-                            car_x = car_x + LANE_DISPLACEMENT
-                            left_points.append((car_x, car_y))
-                            car_y = car_y + LANE_DISPLACEMENT
-                            left_points.append((car_x, car_y))
-
-
-                        if car_reservations[i - 1].direction == Direction.DOWN:
-                            car_y2 = car_y2 - BLOCK_SIZE - LANE_DISPLACEMENT
-                            right_points.append((car_x2, car_y2))
-                            car_x2 = car_x2 + BLOCK_SIZE + LANE_DISPLACEMENT
-                            right_points.append((car_x2, car_y2))
-                            #adjust left side with LANE_DISPLACEMENT
-                            car_y = car_y - LANE_DISPLACEMENT
-                            left_points.append((car_x, car_y))
-                            car_x = car_x + LANE_DISPLACEMENT
-                            left_points.append((car_x, car_y))
-
-
-                        if car_reservations[i - 1].direction == Direction.LEFT:
-                            car_x2 = car_x2 - BLOCK_SIZE - LANE_DISPLACEMENT
-                            right_points.append((car_x2, car_y2))
-                            car_y2 = car_y2 - BLOCK_SIZE - LANE_DISPLACEMENT
-                            right_points.append((car_x2, car_y2))
-
-                            #adjust left side with LANE_DISPLACEMENT
-                            car_x = car_x - LANE_DISPLACEMENT
-                            left_points.append((car_x, car_y))
-                            car_y = car_y - LANE_DISPLACEMENT
-                            left_points.append((car_x, car_y))
-
-
-                        if car_reservations[i - 1].direction == Direction.UP:
-                            car_y2 = car_y2 + BLOCK_SIZE + LANE_DISPLACEMENT
-                            right_points.append((car_x2, car_y2))
-                            car_x2 = car_x2 - BLOCK_SIZE - LANE_DISPLACEMENT
-                            right_points.append((car_x2, car_y2))
-
-                            #adjust left side with LANE_DISPLACEMENT
-                            car_y = car_y + LANE_DISPLACEMENT
-                            left_points.append((car_x, car_y))
-                            car_x = car_x - LANE_DISPLACEMENT
-                            left_points.append((car_x, car_y))
-
-
-                        remaining_distance -= BLOCK_SIZE
-                        remaining_distance -= LANE_DISPLACEMENT
-                        last_dir = segment.direction
-
-                    elif car_reservations[i - 1].direction.value - segment.direction.value == -1 or car_reservations[i - 1].direction.value - \
-                            segment.direction.value == +3:  # right turn
-                        if car_reservations[i - 1].direction == Direction.RIGHT:
-                            car_x = car_x + BLOCK_SIZE + LANE_DISPLACEMENT
-                            left_points.append((car_x, car_y))
-                            car_y = car_y - BLOCK_SIZE - LANE_DISPLACEMENT
-                            left_points.append((car_x, car_y))
-                            #adjust right side with LANE_DISPLACEMENT
-                            car_x2 = car_x2 - LANE_DISPLACEMENT
-                            right_points.append((car_x2, car_y2))
-                            car_y2 = car_y2 - LANE_DISPLACEMENT
-                            right_points.append((car_x2, car_y2))
-
-                        if car_reservations[i - 1].direction == Direction.DOWN:
-                            car_y = car_y - BLOCK_SIZE - LANE_DISPLACEMENT
-                            left_points.append((car_x, car_y))
-                            car_x = car_x - BLOCK_SIZE - LANE_DISPLACEMENT
-                            left_points.append((car_x, car_y))
-                            #adjust right side with LANE_DISPLACEMENT
-                            car_y2 = car_y2 + LANE_DISPLACEMENT
-                            right_points.append((car_x2, car_y2))
-                            car_x2 = car_x2 - LANE_DISPLACEMENT
-                            right_points.append((car_x2, car_y2))
-
-
-                        if car_reservations[i - 1].direction == Direction.LEFT:
-                            car_x = car_x - BLOCK_SIZE - LANE_DISPLACEMENT
-                            left_points.append((car_x, car_y))
-                            car_y = car_y + BLOCK_SIZE + LANE_DISPLACEMENT
-                            left_points.append((car_x, car_y))
-                            #adjust right side with LANE_DISPLACEMENT
-                            car_x2 = car_x2 + LANE_DISPLACEMENT
-                            right_points.append((car_x2, car_y2))
-                            car_y2 = car_y2 + LANE_DISPLACEMENT
-                            right_points.append((car_x2, car_y2))
-
-                        if car_reservations[i - 1].direction == Direction.UP:
-                            car_y = car_y + BLOCK_SIZE + LANE_DISPLACEMENT
-                            left_points.append((car_x, car_y))
-                            car_x = car_x + BLOCK_SIZE + LANE_DISPLACEMENT
-                            left_points.append((car_x, car_y))
-                            #adjust right side with LANE_DISPLACEMENT
-                            car_y2 = car_y2 - LANE_DISPLACEMENT
-                            right_points.append((car_x2, car_y2))
-                            car_x2 = car_x2 + LANE_DISPLACEMENT
-                            right_points.append((car_x2, car_y2))
-
-                        remaining_distance -= BLOCK_SIZE
-                        remaining_distance -= LANE_DISPLACEMENT
-                        last_dir = segment.direction
-
-                    else:
-                        print("error, not a valid turn", car_reservations[i - 1].direction, segment.direction)
-
-        left_points.append((car_x, car_y))
-
-        shapes_at_end = []
-        # dots for the brake box
-        shapes_at_end += [shapes.Rectangle(p[0], p[1], 6, 6, color=RED) for p in left_points]
-        shapes_at_end += [shapes.Rectangle(p[0], p[1], 6, 6, color=BLACK) for p in right_points]
-
-        # anchor point for crossing segments
-        shapes_at_end += [shapes.Rectangle(p[0], p[1], 10, 10, color=RED) for p in interesting_points]
-
-        # reserse right points
-        right_points.reverse()
-        # combine left and right points
-        points = left_points + right_points
-        # create lines from points
-        line = GameDrawer.draw_lines(*[p for point in points for p in point], color=color, width=2)
-
-        return line
-
-        """
-        Creates a text result shape.
-
-        Args:
-            res (List[Tuple[bool, str]]): The test result.
-            x (int): The x coordinate of the shape.
-            y (int): The y coordinate of the shape.
-            width (int): The width of the shape.
-            height (int): The height of the shape.
-
-        Returns:
-            pyglet.text.Label: A pyglet text label representing the test result.
-        """
-        lines = [res[1] for res in res]
-
-        font_size = 12
-
-        while True:
-            layout = text.Label(
-                text='\n'.join(lines),
-                font_name='Arial',
-                font_size=font_size,
-                x=x,
-                y=y + height,
-                width=width,
-                height=height,
-                multiline=True,
-                anchor_x='left',
-                anchor_y='top',
-                color = BLACK_RGBA
-            )
-            if layout.content_height < height:
-                break
-            font_size -= 1
-
-        return layout
+        return lines

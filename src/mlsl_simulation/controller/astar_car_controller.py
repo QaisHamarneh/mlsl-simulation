@@ -173,63 +173,81 @@ class AstarCarController:
             for i, seg_info in enumerate(segments):
                 seg: Segment = seg_info.segment
                 if isinstance(seg, CrossingSegment):
-                    if len(self.reservation_management.get_cars_on_segment(seg)) > 1:
-                        # collision = True
-                        # break
-                        time_to_enter = \
-                            math.ceil((sum([abs(seg_info.end - seg_info.begin) 
-                                            for seg_info in segments[0:i]]) / max(new_speed, CROSSING_MAX_SPEED)))
-                        for other_car_id in self.reservation_management.get_cars_on_segment(seg)[0:self.reservation_management.get_cars_on_segment(seg).index(self.car.id)]: 
-                            other_car = [car for car in self.cars if car.id == other_car_id][0]
-                            if new_speed > other_car.speed:
-                                collision = True
-                                break
-                            if time_to_enter <= seg.crossing_segment_state.get_time_to_leave(other_car_id):
-                                collision = True
-                                break
+                    cars_on_crossing_segment = self.reservation_management.get_cars_on_segment(seg)[0:self.reservation_management.get_cars_on_segment(seg).index(self.car.id)]
+                    if len(cars_on_crossing_segment) > 0:
+                        time_to_enter = math.ceil((sum([abs(proir_seg.end - proir_seg.begin) 
+                                            for proir_seg in segments[0:i]]) / max(new_speed, CROSSING_MAX_SPEED)))
+                        earlist_car = min(seg.crossing_segment_state.get_time_to_leave(other_car_id) for other_car_id in cars_on_crossing_segment[0:self.reservation_management.get_cars_on_segment(seg).index(self.car.id)])
+                        if time_to_enter <= earlist_car:
+                            collision = True
+                            break
+                        # for other_car_id in cars_on_crossing_segment[0:self.reservation_management.get_cars_on_segment(seg).index(self.car.id)]: 
+                        #     other_car = [car for car in self.cars if car.id == other_car_id][0]
+                        #     # if new_speed > other_car.speed:
+                        #     #     collision = True
+                        #     #     break
+                        #     if time_to_enter <= seg.crossing_segment_state.get_time_to_leave(other_car_id):
+                        #         collision = True
+                        #         break
+                if collision:
+                    break
+            if collision:
+                break
 
             # Case 1: Enter a crossing
             if len(added_segments) > 1:
                 for i, added_seg in enumerate(added_segments):
                     seg = added_seg.segment
                     if isinstance(seg, CrossingSegment):
-                        if len(self.reservation_management.get_cars_on_segment(seg)) > 0:
+                        cars_on_crossing_segment = self.reservation_management.get_cars_on_segment(seg)
+                        if len(cars_on_crossing_segment) > 0:
+                            # collision = True
+                            # break
                             time_to_enter = \
-                                math.ceil((sum([abs(added_seg.end - added_seg.begin) 
-                                                for seg_info in added_segments[0:i]]) / max(new_speed, CROSSING_MAX_SPEED)))
-                            for other_car_id in self.reservation_management.get_cars_on_segment(seg):
-                                other_car = [car for car in self.cars if car.id == other_car_id][0]
-                                if new_speed > other_car.speed:
-                                    collision = True
-                                    break
-                                if  time_to_enter <= seg.crossing_segment_state.get_time_to_leave(other_car_id):
-                                    collision = True
-                                    break
-                if not collision:
-                    if isinstance(added_segments[1].segment, CrossingSegment):
-                        intersection: Intersection = added_segments[1].segment.intersection
-                        for other_car_id, time in intersection.intersection_state.get_priority_items():
-                            if other_car_id != self.car.id and time < intersection.intersection_state.get_car_priority(self.car.id):
+                                math.ceil((sum([abs(proir_seg.end - proir_seg.begin) 
+                                                for proir_seg in added_segments[0:i]]) / max(new_speed, CROSSING_MAX_SPEED)))
+                            
+                            earlist_car = min(seg.crossing_segment_state.get_time_to_leave(other_car_id) for other_car_id in cars_on_crossing_segment)
+                            if time_to_enter <= earlist_car:
                                 collision = True
-
-            # Case 2: Extension within a lane segment
-            if not collision:
-                last_seg = added_segments[-1]
-                for other_car_id in self.reservation_management.get_cars_on_segment(last_seg.segment):
-                    if other_car_id != self.car.id:
-                        other_car_seg_info = next(seg_info for seg_info in self.reservation_management.get_car_reservations(other_car_id)
-                                                  if seg_info.segment == last_seg.segment)
-                        begin = abs(last_seg.begin)
-                        end = abs(last_seg.end)
-                        other_car = [car for car in self.cars if car.id == other_car_id][0]
-                        o_max_dec = - min(MAX_DEC, other_car.speed)
-                        o_begin = abs(other_car_seg_info.begin) + other_car.speed - o_max_dec
-                        o_end = abs(other_car_seg_info.end) + other_car.speed - o_max_dec
-                        if o_begin <= begin <= o_end or o_end <= begin <= o_begin:
-                            continue
-                        if o_begin <= end <= o_end or o_end <= end <= o_begin:
+                                break
+                            # for other_car_id in cars_on_crossing_segment:
+                            #     other_car = [car for car in self.cars if car.id == other_car_id][0]
+                            #     # if new_speed > other_car.speed:
+                            #     #     collision = True
+                            #     #     break
+                            #     if time_to_enter <= seg.crossing_segment_state.get_time_to_leave(other_car_id):
+                            #         collision = True
+                            #         break
+                if collision:
+                    break
+                elif isinstance(added_segments[1].segment, CrossingSegment):
+                    intersection: Intersection = added_segments[1].segment.intersection
+                    for other_car_id, other_car_time in intersection.intersection_state.get_priority_items():
+                        car_priority = intersection.intersection_state.get_car_priority(self.car.id)
+                        if other_car_id != self.car.id and car_priority is not None and other_car_time < car_priority:
                             collision = True
                             break
+
+            if collision:
+                break
+            # Case 2: Extension within a lane segment
+            last_seg = added_segments[-1]
+            for other_car_id in self.reservation_management.get_cars_on_segment(last_seg.segment):
+                if other_car_id != self.car.id:
+                    other_car_seg_info = next(seg_info for seg_info in self.reservation_management.get_car_reservations(other_car_id)
+                                                if seg_info.segment == last_seg.segment)
+                    begin = abs(last_seg.begin)
+                    end = abs(last_seg.end)
+                    other_car = [car for car in self.cars if car.id == other_car_id][0]
+                    o_max_dec = - min(MAX_DEC, other_car.speed)
+                    o_begin = abs(other_car_seg_info.begin) + other_car.speed - o_max_dec
+                    o_end = abs(other_car_seg_info.end) + other_car.speed - o_max_dec
+                    if o_begin <= begin <= o_end or o_end <= begin <= o_begin:
+                        continue
+                    if o_begin <= end <= o_end or o_end <= end <= o_begin:
+                        collision = True
+                        break
 
             # if no collision is detected return the acceleration
             if not collision:

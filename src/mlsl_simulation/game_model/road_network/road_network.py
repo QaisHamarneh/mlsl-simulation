@@ -138,6 +138,9 @@ class Segment(ABC):
         """
         self.length: int
         self.max_speed: int
+        self.h_begin: int
+        self.v_begin: int
+
 
 
 class LaneSegment(Segment):
@@ -160,6 +163,8 @@ class LaneSegment(Segment):
         self.begin_crossing: Optional[CrossingSegment] = None
         self.length: int = abs(self.end - self.begin)
         self.max_speed: int = LANE_MAX_SPEED
+        self.h_begin = self.begin if horiz_direction[self.lane.direction] else self.lane.top
+        self.v_begin = self.lane.top if horiz_direction[self.lane.direction] else self.begin
 
     def __str__(self) -> str:
         """
@@ -195,6 +200,8 @@ class CrossingSegment(Segment):
         self.vert_num: Optional[int] = None
         self.max_speed: int = CROSSING_MAX_SPEED
         self.crossing_segment_state: CrossingSegmentState = CrossingSegmentState()
+        self.h_begin = self.vert_lane.top
+        self.v_begin = self.horiz_lane.top
 
     def get_road(self, direction: Direction, opposite: bool = False) -> Road:
         """
