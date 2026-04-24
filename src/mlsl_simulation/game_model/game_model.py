@@ -134,8 +134,10 @@ class TrafficEnv:
 
         deadlock = [True if car.speed == 0 else False for car in self.cars]
         if all(game_over):
+            print("Game Over!")
             return 'game_over'
         if all(deadlock):
+            print("Deadlock!")
             return 'deadlock'
         
         for controller in self.controllers:

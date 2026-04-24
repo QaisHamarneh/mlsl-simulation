@@ -4,7 +4,7 @@ from typing import Tuple
 from mlsl_simulation.game_model.car import Car 
 from mlsl_simulation.game_model.road_network.road_network import Intersection, Segment, LaneSegment, CrossingSegment, SegmentInfo, Goal, \
     true_direction
-from mlsl_simulation.game_model.constants import MAX_ACC, MAX_DEC, LANE_MAX_SPEED, CROSSING_MAX_SPEED, LEFT_LANE_CHANGE, \
+from mlsl_simulation.game_model.constants import BUFFER, MAX_ACC, MAX_DEC, LANE_MAX_SPEED, CROSSING_MAX_SPEED, LEFT_LANE_CHANGE, \
       RIGHT_LANE_CHANGE, NO_LANE_CHANGE, JUMP_TIME_STEPS, LANECHANGE_TIME_STEPS
 from mlsl_simulation.game_model.reservations.reservation_management import ReservationManagement
 
@@ -59,6 +59,7 @@ class AstarCarController:
                 and isinstance(reservations[0].segment, LaneSegment) \
                 and reservations[0].segment != self.car.goal.lane_segment:
             # try right lane
+            right_lane_acceleration = MAX_DEC
             right_lane = self.car.get_adjacent_lane_segment(self.reservation_management, RIGHT_LANE_CHANGE)
             if right_lane is not None:
                 right_segment = SegmentInfo(
@@ -71,9 +72,8 @@ class AstarCarController:
                     right_lane_acceleration = self.get_accelerate([right_segment])
                     if right_lane_acceleration >= max_possible_acc:
                         lane_change = RIGHT_LANE_CHANGE
-                        max_possible_acc = right_lane_acceleration
                 
-            if max_possible_acc < MAX_ACC:
+            if right_lane_acceleration < MAX_ACC:
                 # try left lane
                 left_lane = self.car.get_adjacent_lane_segment(self.reservation_management, LEFT_LANE_CHANGE)
                 if left_lane is not None:
@@ -87,7 +87,6 @@ class AstarCarController:
                         left_lane_acceleration = self.get_accelerate([left_segment])
                         if left_lane_acceleration > max_possible_acc:
                             lane_change = LEFT_LANE_CHANGE
-                            max_possible_acc = left_lane_acceleration
                         
         return max_possible_acc, lane_change
 
@@ -130,7 +129,6 @@ class AstarCarController:
             if new_brk_dist > reserved_length:
                 potential_jump = new_brk_dist - reserved_length
                 if potential_jump + abs(segments[-1].end) >= segments[-1].segment.length:
-                # potential_jump -= extended_segments[-1].segment.length
                     next_segments = self.car.get_next_segment(self.reservation_management, segments[-1].segment)
                     if not next_segments:
                         print("NO next segments in get_accelerate - Bug?")
@@ -139,33 +137,32 @@ class AstarCarController:
                         return max_dec
                     
                     
-                    for next_seg in next_segments[:-1]:
-                        potential_jump -= next_seg.length
+                    for next_segment in next_segments[:-1]:
+                        potential_jump -= next_segment.length
+                        if isinstance(next_segment, CrossingSegment):
+                            added_segments.append(
+                                SegmentInfo(
+                                    next_segment,
+                                    0,
+                                    next_segment.length,
+                                    self.car.direction
+                                ))
+                    if isinstance(next_segments[-1], LaneSegment):
                         added_segments.append(
                             SegmentInfo(
-                                next_seg,
+                                next_segments[-1],
                                 0,
-                                next_seg.length,
-                                self.car.direction
+                                (1 if true_direction[next_segments[-1].lane.direction] else -1) * 
+                                    max(self.car.size + BUFFER, potential_jump),
+                                    # max(self.car.size, potential_jump + self.car.size),
+                                next_segments[-1].lane.direction
                             ))
-                        # reserved_length += next_seg.length
-                    added_segments.append(
-                        SegmentInfo(
-                            next_segments[-1],
-                            0,
-                            (1 if true_direction[next_segments[-1].lane.direction] else -1) * 
-                                max(self.car.size, potential_jump),
-                                # max(self.car.size, potential_jump + self.car.size),
-                            next_segments[-1].lane.direction
-                        ))
-                    # reserved_length += max(self.car.size, potential_jump)
             else:
                 added_segments = [SegmentInfo(
                     segments[-1].segment,
                     segments[-1].begin,
-                    # (1 if true_direction[segments[-1].direction] else -1) * new_brk_dist,
                     (1 if true_direction[segments[-1].direction] else -1) * \
-                        max(self.car.size, (new_brk_dist - upto_last_seg_reserved_length + abs(segments[-1].begin))),
+                        max(self.car.size + BUFFER, (new_brk_dist - upto_last_seg_reserved_length) + abs(segments[-1].begin)),
                     segments[-1].direction,
                     )]
 
@@ -196,8 +193,6 @@ class AstarCarController:
                 for i, added_seg in enumerate(added_segments):
                     seg = added_seg.segment
                     if isinstance(seg, CrossingSegment):
-                        # if self.car not in intersection.priority:
-                        #     intersection.priority[self.car] = self.car.time
                         if len(self.reservation_management.get_cars_on_segment(seg)) > 0:
                             time_to_enter = \
                                 math.ceil((sum([abs(added_seg.end - added_seg.begin) 

@@ -68,19 +68,6 @@ class Car:
 
         self.update_position(reservation_management)
 
-
-    def handle_car_death(self, reservation_management: ReservationManagement) -> None:
-        index = len(self.get_size_segments(reservation_management))
-        while index < len(reservation_management.get_car_reservations(self.id)):
-            reservation_management.pop_car_reservation(self.id, index)
-        self.speed = 0
-        self.__dead = True
-
-
-    def get_death_status(self) -> bool:
-        return self.__dead
-
-
     def move(self, reservation_management: ReservationManagement) -> bool:
         """
         Move the car within its lane and handle lane changes and reservations.
@@ -98,8 +85,9 @@ class Car:
         self.time += 1
 
         self.extend_res(reservation_management)
+
         last_seg_info = reservation_management.get_car_reservation(self.id, -1)
-        if last_seg_info.segment.length - abs(reservation_management.get_car_reservation(self.id, -1).end) <= last_seg_info.segment.length // 10:
+        if last_seg_info.segment.length - abs(last_seg_info.end) <= last_seg_info.segment.length // 5:
             intersection: Intersection = last_seg_info.segment.end_crossing.intersection
             if not intersection.intersection_state.get_car_priority(self.id):
                 intersection.intersection_state.add_car_priority(self.id, self.time)
@@ -109,6 +97,7 @@ class Car:
             self.loc = (1 if true_direction[reservation_management.get_car_reservation(self.id, 0).direction] else -1) * (abs(self.loc) - seg_info.segment.length)
 
         reservation_management.update_car_reservation_begin(car_id=self.id, index=0, begin=self.loc)
+        self.direction = reservation_management.get_car_reservation(car_id=self.id, index=0).direction
 
         reservations = reservation_management.get_car_reservations(self.id)
 
@@ -129,7 +118,7 @@ class Car:
                                                                   end=(1 if true_direction[seg_info.direction] else -1) * seg_info.segment.length)
 
         # Update the "end" of the last reserved segment (last reserved segment is always a lane segment)
-        end = max (self.size, 
+        end = max (self.size + BUFFER, 
                    self.get_braking_distance() - sum([abs(reservations[i].end - reservations[i].begin) for i in range(len(reservations) - 1)]))
         
         reservation_management.update_car_reservation_end(car_id=self.id,
@@ -137,94 +126,91 @@ class Car:
                                                           end=(1 if true_direction[reservations[-1].direction] else -1) * (end + abs(reservations[-1].begin)))
 
         self.update_position(reservation_management)
+
+        reservations = reservation_management.get_car_reservations(self.id)
+        if len(reservations) == 1 and abs(reservations[0].end - reservations[0].begin) != self.get_braking_distance():
+            print(f"Issue 5 {self.name} - {abs(reservations[0].end - reservations[0].begin)} - {self.get_braking_distance()}")
+        elif len(reservations) > 1:
+            res_len = sum([abs(res_seg.end - res_seg.begin) for res_seg in reservations])
+            if res_len != self.get_braking_distance() and \
+                abs(reservations[-1].end - reservations[-1].begin) != self.size + BUFFER:
+                num_lane_seg = len([seg for seg in reservations if isinstance(seg.segment, LaneSegment)])
+                print(f"Issue 6 {self.name} - "\
+                      f"last segment={abs(reservations[-1].end - reservations[-1].begin)} - "\
+                      f"size={self.size + BUFFER} - "\
+                        f"braking dist={self.get_braking_distance()} - "\
+                            f"res length={res_len} - "\
+                                 f"num seg={len(reservations)} - num lane seg={num_lane_seg}")
+
+
         return True
 
-    def get_next_segment(self, reservation_management: ReservationManagement, last_seg: Segment) -> List[Segment]:
-        """
-        Get the next segment for the car to move to.
-
-        Args:
-            last_seg (Segment): The last segment the car was on.
-        Returns:
-             List[Segment]: The next segments for the car to move to, up to the next Lanesegment
-        """
-        reservations = reservation_management.get_car_reservations(self.id)
-
-        if reservations[0].segment == self.goal.lane_segment:
-            #case 1: cur seg == goal seg -> preplan path to second goal
-            # segs = self.astar()
-            segs = self.astar(reservations_management=reservation_management, goal=self.second_goal)
-
-        else:
-            #case 2: cur seg != goal seg -> plan path to first goal(e.g. for alternative lanes (right, left)
-            segs = self.astar(reservations_management=reservation_management, start_seg=last_seg)
-        
-
-
-        if len(segs) == 0:
-            print("Astar Error: No segments found by the astar function.")
-
-        if len(segs) == 1:
-            return segs
-
-        i = 1
-
-        for i in range(1, len(segs)):
-            if isinstance(segs[i], LaneSegment):
-                return segs[0:i + 1]
-
-        return []
-
-    def extend_res(self, reservations_management: ReservationManagement) -> bool:
+    def extend_res(self, reservations_management: ReservationManagement) -> None:
         """
         Extend the reservation of the car to the next segments.
         """
         breaking_distance = self.get_braking_distance()
         reservations = reservations_management.get_car_reservations(self.id)
         reserved_length = sum([abs(seg_info.end - seg_info.begin) for seg_info in reservations])
-        if abs(self.loc) + breaking_distance >= sum([seg_info.segment.length for seg_info in reservations]):
-            breaking_distance -= reserved_length 
-            next_segs = self.astar(reservations_management=reservations_management)
-            if len(next_segs) < 2:
-                next_segs = self.astar(reservations_management=reservations_management, goal=self.second_goal)
-            if len(next_segs) < 2:
-                logging.warning(Problem.NO_NEXT_SEGMENT)
-                print(f"Problem car {self.name} loc {self.loc} speed {self.speed}")
-                for seg in reservations:
-                    print(seg)
-                return False
+        if abs(self.loc) + breaking_distance < sum([seg_info.segment.length for seg_info in reservations]):
+            return 
+        
+        next_segments = self.get_next_segment(reservation_management=reservations_management, last_seg=reservations[-1].segment)
+        if next_segments is None:
+            print("Astar Issue - next_segs is None!!!!")
+            return
+        
+        if len(next_segments) < 2:
+            print(f"Astar Issue - len(next_segs) = {len(next_segs)}!!!!")
+            return
+            
+        if isinstance(next_segments[1], LaneSegment):
+            print("Astar Issue - isinstance(next_segs[0], LaneSegment)!!!!")
+            return
+            
+        if isinstance(next_segments[-1], CrossingSegment):
+            print("Astar Issue - isinstance(next_segs[-1], CrossingSegment)!!!!")
+            return
+        
+        next_segments = next_segments[1:]
+        next_segments[0].intersection.intersection_state.pop_car_priority(self.id)
 
-            for i in range(1, len(next_segs)):
-                if isinstance(next_segs[i], LaneSegment):
-                    next_segs = next_segs[1:i + 1]
-                    break 
+        jump = abs(self.loc) + breaking_distance - sum([seg_info.segment.length for seg_info in reservations])
+        for i, segment in enumerate(next_segments):
+            jump = abs(self.loc) + breaking_distance - sum([seg_info.segment.length for seg_info in reservations])
+            next_dir = None
+            if isinstance(segment, LaneSegment):
+                next_dir = segment.lane.direction
+            elif isinstance(segment, CrossingSegment):
+                next_dir = next(dir for dir, seg in segment.connected_segments.items() if seg == next_segments[i + 1])
 
-            next_segs[0].intersection.intersection_state.pop_car_priority(self.id)
-            for i, next_seg in enumerate(next_segs):
-                extra = abs(self.loc) + self.get_braking_distance() - sum([seg_info.segment.length for seg_info in reservations])
-                next_dir = None
-                if isinstance(next_seg, LaneSegment):
-                    next_dir = next_seg.lane.direction
-                elif isinstance(next_seg, CrossingSegment):
-                    next_next_seg = next_segs[i + 1] if len(next_segs) > i + 1 else None
-                    if next_next_seg is None:
-                        print(Problem.NO_NEXT_SEGMENT)
-                    for dir, seg in next_seg.connected_segments.items():
-                        if seg == next_next_seg:
-                            next_dir = dir
-                            break
-                next_seg_info = SegmentInfo(next_seg, 
-                                            0,
-                                            min((1 if true_direction[next_dir] else -1) * extra, next_seg.length) if 
-                                            isinstance(next_seg, LaneSegment) else BLOCK_SIZE,
-                                            next_dir,
-                                            next_dir != reservations[-1].direction)
-                
-                reservations_management.add_car_reservation(self.id, next_seg_info)
-                if isinstance(next_seg, CrossingSegment):
-                    next_seg.crossing_segment_state.add_time_to_leave(self.id,
-                                                                                    math.ceil(sum([abs(seg_info.end - seg_info.begin) for seg_info in reservations]) / 
-                                                                                    max(1, min(self.speed, CROSSING_MAX_SPEED))))
+            segment_info = SegmentInfo(segment, 
+                                       0,
+                                       (1 if true_direction[next_dir] else -1) * segment.length if isinstance(segment, CrossingSegment) else\
+                                       (1 if true_direction[next_dir] else -1) * max(jump, self.size + BUFFER),
+                                       # min((1 if true_direction[next_dir] else -1) * extra, next_seg.length) if 
+                                       # isinstance(next_seg, LaneSegment) else BLOCK_SIZE,
+                                       next_dir,
+                                       next_dir != reservations[-1].direction)
+            
+            reservations_management.add_car_reservation(self.id, segment_info)
+            if isinstance(segment, CrossingSegment):
+                segment.crossing_segment_state.add_time_to_leave(self.id,
+                                                                 math.ceil(sum([abs(seg_info.end - seg_info.begin) for seg_info in reservations]) / 
+                                                                           max(1, min(self.speed, CROSSING_MAX_SPEED))))
+            reservations = reservations_management.get_car_reservations(self.id)
+        
+        if len(reservations) > 1:
+            res_len = sum([abs(res_seg.end - res_seg.begin) for res_seg in reservations])
+            if res_len != self.get_braking_distance() and \
+                abs(reservations[-1].end - reservations[-1].begin) != self.size + BUFFER:
+                num_lane_seg = len([seg for seg in reservations if isinstance(seg.segment, LaneSegment)])
+                print(f"Issue 7 {self.name} - "\
+                      f"last segment={abs(reservations[-1].end - reservations[-1].begin)} - "\
+                      f"size={self.size + BUFFER} - "\
+                        f"braking dist={self.get_braking_distance()} - "\
+                            f"res length={res_len} - "\
+                                 f"num seg={len(reservations)} - num lane seg={num_lane_seg}")
 
     def change_speed(self, speed_diff: int) -> None:
         """
@@ -257,7 +243,7 @@ class Car:
                 return None
 
         lene_num = lane_segment.lane.num
-        lanes = lane_segment.lane.road.right_lanes if right_direction[self.direction] \
+        lanes = lane_segment.lane.road.right_lanes if right_direction[lane_segment.lane.direction] \
             else lane_segment.lane.road.left_lanes
         current_seg_num = lane_segment.num
         return [lane.segments[current_seg_num] for lane in lanes]
@@ -283,7 +269,7 @@ class Car:
         lanes = lane_segment.lane.road.right_lanes if right_direction[lane_segment.lane.direction] \
             else lane_segment.lane.road.left_lanes
         
-        actual_lane_diff = (1 if right_direction[self.direction] else -1) * lane_diff
+        actual_lane_diff = (1 if right_direction[lane_segment.lane.direction] else -1) * lane_diff
         lane_num = lane_segment.lane.num + actual_lane_diff
         current_seg_num = lane_segment.num
 
@@ -366,35 +352,26 @@ class Car:
         """ Returns the bottom left corner of the car """
         segment_info = reservation_management.get_car_reservation(self.id, 0)
         segment = segment_info.segment
-        lane_seg = isinstance(segment, LaneSegment)
-        if lane_seg:
-            road = segment.lane.road
-        else:
-            if horiz_direction[segment_info.direction]:
-                road = segment.horiz_lane.road 
-            else:
-                road = segment.vert_lane.road
+        is_lane_seg = isinstance(segment, LaneSegment)
 
-        if lane_seg:
+        if is_lane_seg:
             seg_begin = segment.begin
-        if road.horizontal:
-            if not lane_seg:
+        if horiz_direction[self.direction]:
+            if not is_lane_seg:
                 seg_begin = segment.vert_lane.top if true_direction[segment_info.direction] else segment.vert_lane.top + BLOCK_SIZE
             self.pos.y = segment.lane.top \
-                if lane_seg else segment.horiz_lane.top
+                if is_lane_seg else segment.horiz_lane.top
             self.pos.x = seg_begin + self.loc - (0 if true_direction[segment_info.direction] else self.size)
-            # BLOCK_SIZE // 6 for the triangle
-            self.w = self.size - BLOCK_SIZE // 6
+            self.w = self.size
             self.h = BLOCK_SIZE
         else:
-            if not lane_seg:
+            if not is_lane_seg:
                 seg_begin = segment.horiz_lane.top if true_direction[segment_info.direction] else segment.horiz_lane.top + BLOCK_SIZE
             self.pos.x = segment.lane.top \
-                if lane_seg else segment.vert_lane.top
+                if is_lane_seg else segment.vert_lane.top
             self.pos.y = seg_begin + self.loc - (0 if true_direction[segment_info.direction] else self.size)
-            # BLOCK_SIZE // 6 for the triangle
             self.w = BLOCK_SIZE
-            self.h = self.size - BLOCK_SIZE // 6
+            self.h = self.size
 
         return self.pos.x, self.pos.y, self.w, self.h
 
@@ -460,6 +437,54 @@ class Car:
             accumulated_size += diff
             i += 1
         return segments
+
+
+    def handle_car_death(self, reservation_management: ReservationManagement) -> None:
+        index = len(self.get_size_segments(reservation_management))
+        while index < len(reservation_management.get_car_reservations(self.id)):
+            reservation_management.pop_car_reservation(self.id, index)
+        self.speed = 0
+        self.__dead = True
+
+
+    def get_death_status(self) -> bool:
+        return self.__dead
+    
+    def get_next_segment(self, reservation_management: ReservationManagement, last_seg: Segment) -> List[Segment]:
+        """
+        Get the next segment for the car to move to.
+
+        Args:
+            last_seg (Segment): The last segment the car was on.
+        Returns:
+             List[Segment]: The next segments for the car to move to, up to the next Lanesegment
+        """
+        reservations = reservation_management.get_car_reservations(self.id)
+
+        if reservations[0].segment == self.goal.lane_segment:
+            #case 1: cur seg == goal seg -> preplan path to second goal
+            # segs = self.astar()
+            segs = self.astar(reservations_management=reservation_management, goal=self.second_goal)
+
+        else:
+            #case 2: cur seg != goal seg -> plan path to first goal(e.g. for alternative lanes (right, left)
+            segs = self.astar(reservations_management=reservation_management, start_seg=last_seg)
+        
+
+
+        if len(segs) == 0:
+            print("Astar Error: No segments found by the astar function!")
+            return None
+
+        if len(segs) == 1:
+            print("Astar Error: One segment found by the astar function!")
+            return None
+
+        for i in range(1, len(segs)):
+            if isinstance(segs[i], LaneSegment):
+                return segs[0:i + 1]
+
+        return []
 
     def astar(self, reservations_management: ReservationManagement, start_seg: Segment = None, goal: Goal = None) -> Optional[List[Segment]]:
         """
