@@ -28,7 +28,6 @@ class ReservationManagement:
             segment_info.segment.crossing_segment_state.pop_time_to_leave(car_id)
 
         return segment_info
-
     
     def get_cars_on_segment(self, segment: Segment) -> List[str]:
         return list(self.__segment_occupancy_tracker.get_cars_on_segment(segment))

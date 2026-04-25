@@ -16,9 +16,9 @@ except ImportError:
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s | %(levelname)s | %(filename)s:%(lineno)s | %(message)s')
 
 def main(
+        scenario_name,
+        roads,  
         players, 
-        roads, 
-        scenario_name, 
         render_mode: RenderMode,
         show_reservation: bool, 
         rl_mode: None | RLMode = None, 
@@ -56,15 +56,28 @@ def main(
     controller.run()
 
 if __name__ == '__main__':
+    # main(
+    #     **SCENARIOS["CIRCUIT"], 
+    #     render_mode=RenderMode.GUI,
+    #     show_reservation=True, 
+    #     rl_mode=None, 
+    #     rl_algorithm_type=RLAlgorithmType.PPO,
+    #     observation_model_type=ObservationModelType.NUMERIC_OBSERVATION,
+    #     reward_type=RewardType.INITIAL_REWARD,
+    #     id_model="2026-02-05 20:02:23",
+    #     id_history="19:47:27_1345.pkl",
+    #     id_hyperparams=None,
+    #     )
+    
+    scenario = SCENARIOS["TWO_CROSSINGS"]
     main(
-        **SCENARIOS["CIRCUIT"], 
-        render_mode=RenderMode.GUI,
-        show_reservation=True, 
-        rl_mode=None, 
+        scenario_name=scenario["scenario_name"],
+        roads=scenario["roads"],
+        players=scenario["players"],
+        render_mode=RenderMode.NO_GUI,
+        show_reservation=False,
+        rl_mode=RLMode.OPTIMIZE_AND_TRAIN,
         rl_algorithm_type=RLAlgorithmType.PPO,
         observation_model_type=ObservationModelType.NUMERIC_OBSERVATION,
-        reward_type=RewardType.INITIAL_REWARD,
-        id_model="2026-02-05 20:02:23",
-        id_history="19:47:27_1345.pkl",
-        id_hyperparams=None,
-        )
+        reward_type=RewardType.INITIAL_REWARD
+    )

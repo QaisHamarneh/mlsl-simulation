@@ -452,12 +452,6 @@ class Car:
             i += 1
         return segments
 
-    def handle_car_death(self, reservation_management: ReservationManagement) -> None:
-        index = len(self.get_size_segments(reservation_management))
-        while index < len(reservation_management.get_car_reservations(self.id)):
-            reservation_management.pop_car_reservation(self.id, index)
-        self.speed = 0
-        self.__dead = True
 
     def get_death_status(self) -> bool:
         return self.__dead
@@ -719,3 +713,14 @@ class Car:
                     heapq.heappush(open_heap, (tg + heuristic(nb), next(tiebreak), nb))
 
         return []   # no path found — caller must handle empty list
+
+    def handle_car_death(self, reservation_management: ReservationManagement) -> None:
+        index = len(self.get_size_segments(reservation_management))
+        reservations = reservation_management.get_car_reservations(self.id)
+        for seg_info in reservations:
+            if isinstance(seg_info.segment, CrossingSegment):
+                seg_info.segment.intersection.intersection_state.pop_car_priority(self.id)
+        while index < len(reservations):
+            reservation_management.pop_car_reservation(self.id, index)
+        self.speed = 0
+        self.__dead = True

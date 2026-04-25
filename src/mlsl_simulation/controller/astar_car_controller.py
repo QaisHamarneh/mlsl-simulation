@@ -283,21 +283,29 @@ class AstarCarController:
         # for "must enter strictly after others leave".
         approach_speed = max(new_speed, CROSSING_MAX_SPEED)
         cumulative = 0
-        for seg_info in projected:
+        for i, seg_info in enumerate(projected):
             seg = seg_info.segment
+            cars_on_seg = self.reservation_management.get_cars_on_segment(seg)
+            if self.car.id in cars_on_seg:
+                prior = cars_on_seg[:cars_on_seg.index(self.car.id)]
+            else:
+                prior = list(cars_on_seg)
             if isinstance(seg, CrossingSegment):
                 time_to_enter_abs = self.car.time + math.ceil(cumulative / approach_speed)
-                cars_on_seg = self.reservation_management.get_cars_on_segment(seg)
-                if self.car.id in cars_on_seg:
-                    prior = cars_on_seg[:cars_on_seg.index(self.car.id)]
-                else:
-                    prior = list(cars_on_seg)
                 if prior:
                     leave_times = [seg.crossing_segment_state.get_time_to_leave(other)
                                    for other in prior]
                     leave_times = [t for t in leave_times if t is not None]
                     if leave_times and time_to_enter_abs <= max(leave_times):
                         return True, False
+            else:
+                if len(projected) > 1:
+                    for o_car_id in prior :
+                        o_seg_info = self.reservation_management.get_car_reservation(o_car_id, 0)
+                        if o_seg_info.segment == seg:
+                            if abs(projected[-1].end) > abs(o_seg_info.end):
+                                return True, False
+
             cumulative += abs(seg_info.end - seg_info.begin)
 
         current_segment_ids = {id(s.segment) for s in current_segments}
