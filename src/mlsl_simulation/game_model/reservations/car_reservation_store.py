@@ -28,6 +28,10 @@ class CarReservationStore:
 
     def get_reserved_segments(self, car_id: str) -> List[SegmentInfo]:
         return list(self.__reservation_dict[car_id])
+
+    def get_reserved_segments_view(self, car_id: str) -> List[SegmentInfo]:
+        """Live list — caller must not append/pop, but may mutate SegmentInfo fields."""
+        return self.__reservation_dict[car_id]
     
     def reset(self) -> None:
         self.__reservation_dict.clear()

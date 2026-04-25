@@ -78,31 +78,25 @@ def create_segments(roads: List[Road]) -> Tuple[List[Segment], List[Intersection
                 for i in range(len(lane.segments)):
                     match lane.segments[i]:
                         case LaneSegment():
-                            lane.segments[i].end_crossing = lane.segments[(i + 1) % len(lane.segments)]
-                            lane.segments[i].begin_crossing = lane.segments[(i - 1) % len(lane.segments)]
+                            # lane.segments[i].end_crossing = lane.segments[(i + 1) % len(lane.segments)]
+                            # lane.segments[i].begin_crossing = lane.segments[(i - 1) % len(lane.segments)]
+                            lane.segments[i].end_crossing = lane.segments[(i + 1)]
+                            lane.segments[i].begin_crossing = lane.segments[(i - 1)]
                         case CrossingSegment():
-                            if lane.direction == Direction.RIGHT:
-                                lane.segments[i].connected_segments[Direction.RIGHT] = lane.segments[(i + 1) % len(lane.segments)]
-                                # if isinstance(lane.segments[i + 1], CrossingSegment):
-                                #     lane.segments[i + 1].left = lane.segments[i]
-                            elif lane.direction == Direction.UP:
-                                lane.segments[i].connected_segments[Direction.UP] = lane.segments[(i + 1) % len(lane.segments)]
-                                # if isinstance(lane.segments[i + 1], CrossingSegment):
-                                #     lane.segments[i + 1].down = lane.segments[i]
+                            # lane.segments[i].connected_segments[lane.direction] = lane.segments[(i + 1) % len(lane.segments)]
+                            if len (lane.segments) > i + 1:
+                                lane.segments[i].connected_segments[lane.direction] = lane.segments[(i + 1)]
             else:
                 for j in range(len(lane.segments)):
                     match lane.segments[j]:
                         case LaneSegment():
-                            lane.segments[j].end_crossing = lane.segments[(j - 1) % len(lane.segments)]
-                            lane.segments[j].begin_crossing = lane.segments[(j + 1) % len(lane.segments)]
+                            # lane.segments[j].end_crossing = lane.segments[(j - 1) % len(lane.segments)]
+                            # lane.segments[j].begin_crossing = lane.segments[(j + 1) % len(lane.segments)]
+                            lane.segments[j].end_crossing = lane.segments[(j - 1)]
+                            lane.segments[j].begin_crossing = lane.segments[(j + 1)]
                         case CrossingSegment():
-                            if lane.direction == Direction.LEFT:
-                                lane.segments[j].connected_segments[Direction.LEFT] = lane.segments[(j - 1) % len(lane.segments)]
-                                # if isinstance(lane.segments[j - 1], CrossingSegment):
-                                #     lane.segments[j - 1].right = lane.segments[j]
-                            elif lane.direction == Direction.DOWN:
-                                lane.segments[j].connected_segments[Direction.DOWN] = lane.segments[(j - 1) % len(lane.segments)]
-                                # if isinstance(lane.segments[j - 1], CrossingSegment):
-                                #     lane.segments[j - 1].up = lane.segments[j]
+                            # lane.segments[i].connected_segments[lane.direction] = lane.segments[(j - 1) % len(lane.segments)]
+                            if j > 0:
+                                lane.segments[j].connected_segments[lane.direction] = lane.segments[(j - 1)]
     return segments, intersections
 

@@ -52,8 +52,11 @@ class ReservationManagement:
         self.__car_reservation_store.update_turn(car_id, index, turn)
 
     def get_car_reservations(self, car_id: str) -> List[SegmentInfo]:
-        return list(self.__car_reservation_store.get_reserved_segments(car_id))
+        return self.__car_reservation_store.get_reserved_segments(car_id)
     
+    def get_car_reservations_view(self, car_id: str) -> List[SegmentInfo]:
+        """Live list — caller must not append/pop, but may mutate SegmentInfo fields."""
+        return self.__car_reservation_store.get_reserved_segments_view(car_id)
 
     def reset(self) -> None:
         self.__car_reservation_store.reset()

@@ -54,6 +54,9 @@ right_direction = {Direction.RIGHT: True,
                    Direction.DOWN: True
                    }
 
+direction_sign = {Direction.RIGHT: 1, Direction.LEFT: -1,
+                  Direction.UP: 1, Direction.DOWN: -1}
+
 clock_wise = [Direction.RIGHT, Direction.DOWN, Direction.LEFT, Direction.UP]
 
 

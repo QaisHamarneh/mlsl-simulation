@@ -26,47 +26,9 @@ class GameDrawer():
             car_rect = GameDrawer.draw_car_rect(car, color)
             car_shapes.append(car_rect)
 
-            # car_res_box = None
-            # if reservation_management.get_car_reservation(car.id, 0).direction == Direction.RIGHT:
-
-            #     if car.changing_lane:
-            #         x, y, w, h = car.get_position(reservation_management)
-            #         car_res_box = GameDrawer.draw_lines(x, y, x + car.get_braking_distance(), y,
-            #                                 x + car.get_braking_distance(), y + h,
-            #                                 x, y + h, x, y,
-            #                                 color=color, width=2)
-
-            # elif reservation_management.get_car_reservation(car.id, 0).direction == Direction.LEFT:
-
-            #     if car.changing_lane:
-            #         x, y, w, h = car.get_position(reservation_management)
-            #         car_res_box = GameDrawer.draw_lines(x + w, y, x + w - car.get_braking_distance(), y,
-            #                                 x + w - car.get_braking_distance(), y + h,
-            #                                 x + w, y + h, x + w, y,
-            #                                 color=color, width=2)
-
-            # elif reservation_management.get_car_reservation(car.id, 0).direction == Direction.UP:
-            #     if car.changing_lane:
-            #         x, y, w, h = car.get_position(reservation_management)
-            #         car_res_box = GameDrawer.draw_lines(x, y, x, y + car.get_braking_distance(),
-            #                                 x + w, y + car.get_braking_distance(),
-            #                                 x + w, y, x, y,
-            #                                 color=color, width=2)
-
-            # elif reservation_management.get_car_reservation(car.id, 0).direction == Direction.DOWN:
-            #     if car.changing_lane:
-            #         x, y, w, h = car.get_position(reservation_management)
-            #         car_res_box = GameDrawer.draw_lines(x, y + h, x, y - car.get_braking_distance() + h,
-            #                                 x + w, y - car.get_braking_distance() + h,
-            #                                 x + w, y + h, x, y + h,
-            #                                 color=color, width=2)
 
             if show_reservations:
                 car_shapes += GameDrawer.draw_brake_line(car, color, reservation_management)
-                # brake_box_points = GameDrawer.draw_brake_box(car, color, reservation_management)
-                # car_shapes += brake_box_points
-                # if car_res_box is not None:
-                #     car_shapes += car_res_box
 
         return car_shapes
     
