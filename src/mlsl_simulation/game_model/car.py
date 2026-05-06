@@ -716,11 +716,16 @@ class Car:
 
     def handle_car_death(self, reservation_management: ReservationManagement) -> None:
         index = len(self.get_size_segments(reservation_management))
-        reservations = reservation_management.get_car_reservations(self.id)
-        for seg_info in reservations:
+        for seg_info in reservation_management.get_car_reservations(self.id):
             if isinstance(seg_info.segment, CrossingSegment):
                 seg_info.segment.intersection.intersection_state.pop_car_priority(self.id)
-        while index < len(reservations):
+
+        while index < len(reservation_management.get_car_reservations(self.id)):
             reservation_management.pop_car_reservation(self.id, index)
+
+        for seg_info in reservation_management.get_car_reservations(self.id):
+            if isinstance(seg_info.segment, CrossingSegment):
+                seg_info.segment.crossing_segment_state.add_time_to_leave(self.id, float('inf'))
+
         self.speed = 0
         self.__dead = True

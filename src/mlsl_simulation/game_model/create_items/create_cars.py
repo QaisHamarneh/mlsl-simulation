@@ -79,15 +79,12 @@ def create_goal(color: Color, car_segment:LaneSegment, roads: List[Road], first_
     """
 
     if first_goal is None:
-        road = random.choice(roads)
+        road = random.choice([r for r in roads if r != car_segment.lane.road])
         lane = random.choice(road.right_lanes + road.left_lanes)
-        segment = random.choice([ls for ls in lane.segments if isinstance(ls, LaneSegment) and \
-                                 (ls.num != car_segment.num or road != car_segment.lane.road)])
+        segment = random.choice([ls for ls in lane.segments if isinstance(ls, LaneSegment)])
         return Goal(segment, color)
     else:
-        road = random.choice([r for r in roads if r != first_goal.lane_segment.lane.road])
+        road = random.choice([r for r in roads if r != first_goal.lane_segment.lane.road and r != car_segment.lane.road])
         lane = random.choice(road.right_lanes + road.left_lanes)
-        segment = random.choice([ls for ls in lane.segments if isinstance(ls, LaneSegment) and \
-                                 (ls.num != car_segment.num or road != car_segment.lane.road) and \
-                                 (ls.num != first_goal.lane_segment.num)])
+        segment = random.choice([ls for ls in lane.segments if isinstance(ls, LaneSegment)])
         return Goal(segment, color)
