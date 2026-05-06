@@ -5,7 +5,7 @@ from mlsl_simulation.reinforcement_learning.gymnasium_env.observation_spaces.abs
 from mlsl_simulation.reinforcement_learning.gymnasium_env.observation_spaces.observation_model_types import ObservationModelType
 from mlsl_simulation.reinforcement_learning.gymnasium_env.observation_spaces.observation_registry import register_observation_model
 from gymnasium import spaces
-from mlsl_simulation.game_model.constants import BLOCK_SIZE, WINDOW_WIDTH, WINDOW_HEIGHT
+from mlsl_simulation.constants import BLOCK_SIZE, WINDOW_WIDTH, WINDOW_HEIGHT
 from mlsl_simulation.game_model.road_network.road_network import Direction, LaneSegment, CrossingSegment, Lane, SegmentInfo
 from mlsl_simulation.scenarios.scenarios import SCENARIOS
 

@@ -8,7 +8,7 @@ from mlsl_simulation.game_model.create_items.create_segments import create_segme
 from mlsl_simulation.game_model.road_network.road_network import (
     CrossingSegment, Direction, Intersection, LaneSegment, Road,
 )
-from mlsl_simulation.game_model.constants import BLOCK_SIZE, WINDOW_WIDTH, WINDOW_HEIGHT
+from mlsl_simulation.constants import BLOCK_SIZE, WINDOW_WIDTH, WINDOW_HEIGHT
 
 
 # ── helpers ──────────────────────────────────────────────────────────────────

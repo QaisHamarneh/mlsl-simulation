@@ -13,7 +13,7 @@ from mlsl_simulation.game_model.road_network.road_network import (
 from mlsl_simulation.game_model.event_checks import (
     reached_goal, collision_check
 )
-from mlsl_simulation.game_model.constants import BLOCK_SIZE
+from mlsl_simulation.constants import BLOCK_SIZE
 
 
 # ── helpers ───────────────────────────────────────────────────────────────────

@@ -1,4 +1,4 @@
-from mlsl_simulation.game_model.constants import *
+from mlsl_simulation.constants import *
 from mlsl_simulation.game_model.road_network.road_network import Direction, Road, LaneSegment, CrossingSegment, true_direction
 from typing import List, Tuple
 

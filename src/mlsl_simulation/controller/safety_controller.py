@@ -4,7 +4,7 @@ from typing import Tuple
 from mlsl_simulation.game_model.car import Car 
 from mlsl_simulation.game_model.road_network.road_network import Intersection, Segment, LaneSegment, CrossingSegment, SegmentInfo, Goal, \
     true_direction
-from mlsl_simulation.game_model.constants import BUFFER, MAX_ACC, MAX_DEC, LANE_MAX_SPEED, CROSSING_MAX_SPEED, LEFT_LANE_CHANGE, \
+from mlsl_simulation.constants import BUFFER, MAX_ACC, MAX_DEC, LANE_MAX_SPEED, CROSSING_MAX_SPEED, LEFT_LANE_CHANGE, \
       RIGHT_LANE_CHANGE, NO_LANE_CHANGE, JUMP_TIME_STEPS, LANECHANGE_TIME_STEPS
 from mlsl_simulation.game_model.reservations.reservation_management import ReservationManagement
 

@@ -1,7 +1,7 @@
 import pyglet
 from pyglet import shapes
 
-from mlsl_simulation.game_model.constants import *
+from mlsl_simulation.constants import *
 from mlsl_simulation.game_model.create_items.create_segments import create_segments
 from mlsl_simulation.game_model.road_network.road_network import Direction, Point, LaneSegment, CrossingSegment, true_direction, horiz_direction, right_direction
 from mlsl_simulation.gui.colors import colors

@@ -5,7 +5,7 @@ from typing import List
 
 from mlsl_simulation.game_model.car import Car
 from mlsl_simulation.game_model.car_types import CarType
-from mlsl_simulation.game_model.constants import BLOCK_SIZE
+from mlsl_simulation.constants import BLOCK_SIZE
 from mlsl_simulation.game_model.reservations.reservation_management import ReservationManagement
 from mlsl_simulation.game_model.road_network.road_network import Color, Goal, LaneSegment, Road, Segment
 from mlsl_simulation.gui.colors import colors

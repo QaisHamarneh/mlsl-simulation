@@ -12,7 +12,7 @@ from mlsl_simulation.game_model.create_items.create_cars import create_random_ca
 from mlsl_simulation.game_model.road_network.road_network import (
     Road, LaneSegment, CrossingSegment, Intersection,
 )
-from mlsl_simulation.game_model.constants import BLOCK_SIZE
+from mlsl_simulation.constants import BLOCK_SIZE
 
 # ── create_random_car ─────────────────────────────────────────────────────────
 

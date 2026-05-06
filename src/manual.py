@@ -1,4 +1,4 @@
-from mlsl_simulation.game_model.constants import *
+from mlsl_simulation.constants import *
 from mlsl_simulation.game_model.road_network.road_network import  Road
 from mlsl_simulation.gui.manual_gui import CarsWindowManual
 

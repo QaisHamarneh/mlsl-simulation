@@ -10,7 +10,7 @@ from mlsl_simulation.game_model.car_types import CarType
 from mlsl_simulation.game_model.event_checks import collision_check, reached_goal
 from mlsl_simulation.game_model.road_network.road_network import Direction, Goal, Road, LaneSegment, Problem
 from mlsl_simulation.game_model.create_items.create_segments import create_segments
-from mlsl_simulation.game_model.constants import *
+from mlsl_simulation.constants import *
 from mlsl_simulation.game_model.reservations.reservation_management import ReservationManagement
 from mlsl_simulation.game_model.game_history import GameHistory
 from mlsl_simulation.reinforcement_learning.rl_modes import RLMode
@@ -192,10 +192,7 @@ class TrafficEnv:
             car.score += 1
             car.goal = car.second_goal
             car_segment = self.reservation_management.get_car_reservation(car.id, 0).segment
-            if isinstance(car_segment, LaneSegment):
-                car.second_goal = create_goal(car.color, car_segment, self.roads)
-            else:
-                print(f"Issue 3: {car.name} - {car_segment}")
+            car.second_goal = create_goal(car.color, car_segment, self.roads, car.goal)
 
         # Player won!
         return car.score > WINNING_SCORE

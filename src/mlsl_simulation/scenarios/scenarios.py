@@ -1,4 +1,4 @@
-from mlsl_simulation.game_model.constants import WINDOW_WIDTH, BLOCK_SIZE, WINDOW_HEIGHT
+from mlsl_simulation.constants import WINDOW_WIDTH, BLOCK_SIZE, WINDOW_HEIGHT
 from mlsl_simulation.game_model.road_network.road_network import Road
 
 SCENARIOS = {

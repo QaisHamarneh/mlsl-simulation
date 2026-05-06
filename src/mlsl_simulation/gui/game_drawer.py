@@ -3,7 +3,7 @@ from pyglet import text
 from typing import List, Tuple, Union
 from mlsl_simulation.game_model.road_network.road_network import Color, Road, Point, Direction, LaneSegment, CrossingSegment, horiz_direction, true_direction
 from mlsl_simulation.game_model.car import Car
-from mlsl_simulation.game_model.constants import *
+from mlsl_simulation.constants import *
 from mlsl_simulation.game_model.reservations.reservation_management import ReservationManagement
 from mlsl_simulation.gui.map_colors import *
 from mlsl_simulation.gui.helpful_functions import get_xy_crossingseg

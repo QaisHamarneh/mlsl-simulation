@@ -6,7 +6,7 @@ from gymnasium import Env
 from gymnasium import spaces
 from typing import Tuple, Dict
 from mlsl_simulation.game_model.game_model import TrafficEnv
-from mlsl_simulation.game_model.constants import MAX_ACC, MAX_DEC, TIME_PER_FRAME
+from mlsl_simulation.constants import MAX_ACC, MAX_DEC, TIME_PER_FRAME
 from mlsl_simulation.gui.pyglet_gui import GameWindow
 from mlsl_simulation.gui.render_mode import RenderMode
 from mlsl_simulation.reinforcement_learning.gymnasium_env.observation_spaces.abstract_observation import Observation

@@ -4,7 +4,7 @@ import heapq
 from itertools import count
 
 from mlsl_simulation.game_model.car_types import CarType
-from mlsl_simulation.game_model.constants import *
+from mlsl_simulation.constants import *
 from mlsl_simulation.game_model.road_network.road_network import Goal, Intersection, Segment, LaneSegment, CrossingSegment, SegmentInfo, Point, Problem, direction_sign, true_direction, right_direction, horiz_direction, Color
 from mlsl_simulation.game_model.reservations.reservation_management import ReservationManagement
 from typing import Optional, List, Dict

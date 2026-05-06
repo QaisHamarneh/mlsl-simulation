@@ -3,7 +3,7 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import Optional, Dict, List, Tuple
 
-from mlsl_simulation.game_model.constants import *
+from mlsl_simulation.constants import *
 from mlsl_simulation.game_model.reservations.intersection_state import IntersectionState
 from mlsl_simulation.game_model.reservations.crossing_segment_state import CrossingSegmentState
 

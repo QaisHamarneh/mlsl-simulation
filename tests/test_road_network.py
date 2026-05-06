@@ -13,7 +13,7 @@ from mlsl_simulation.game_model.road_network.road_network import (
     SegmentInfo, Goal,
 )
 from mlsl_simulation.game_model.create_items.create_segments import create_segments
-from mlsl_simulation.game_model.constants import (
+from mlsl_simulation.constants import (
     BLOCK_SIZE, LANE_DISPLACEMENT, LANE_MAX_SPEED, CROSSING_MAX_SPEED,
 )
 

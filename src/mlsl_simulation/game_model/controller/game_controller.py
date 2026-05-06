@@ -3,7 +3,7 @@ import pyglet
 from typing import List
 from mlsl_simulation.game_model.car import Car
 from mlsl_simulation.game_model.controller.abstract_game_controller import AbstractGameController
-from mlsl_simulation.game_model.constants import TIME_PER_FRAME
+from mlsl_simulation.constants import TIME_PER_FRAME
 from mlsl_simulation.game_model.game_model import TrafficEnv
 from mlsl_simulation.game_model.road_network.road_network import Road
 from mlsl_simulation.gui.pyglet_gui import GameWindow
