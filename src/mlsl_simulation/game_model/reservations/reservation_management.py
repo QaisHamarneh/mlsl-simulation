@@ -33,7 +33,11 @@ class ReservationManagement:
         return self.__segment_occupancy_tracker.get_cars_on_segment(segment)
 
     def get_reserved_lane_change_segment(self, car_id: str) -> Tuple[int, LaneSegment] | None:
-        return self.__reserved_lane_change_segments[car_id] 
+        return self.__reserved_lane_change_segments[car_id]
+
+    def get_cars_changing_into_segment(self, segment: Segment) -> List[str]:
+        return [car_id for car_id, info in self.__reserved_lane_change_segments.items()
+                if info is not None and info[1] is segment]
 
     def set_reserved_lane_change_segment(self, car_id: str, segment: Tuple[int, LaneSegment]) -> None:
         self.__reserved_lane_change_segments[car_id] = segment

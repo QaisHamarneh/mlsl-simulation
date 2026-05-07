@@ -5,7 +5,7 @@ from typing import List
 
 from mlsl_simulation.game_model.car import Car
 from mlsl_simulation.game_model.car_types import CarType
-from mlsl_simulation.constants import BLOCK_SIZE
+from mlsl_simulation.constants import BLOCK_SIZE, CROSSING_MAX_SPEED, LANE_MAX_SPEED, MINIMAL_SPEED
 from mlsl_simulation.game_model.reservations.reservation_management import ReservationManagement
 from mlsl_simulation.game_model.road_network.road_network import Color, Goal, LaneSegment, Road, Segment
 from mlsl_simulation.gui.colors import colors
@@ -51,8 +51,11 @@ def create_random_car(roads: List[Road], cars: List['Car'], car_type: CarType, r
     first_goal = create_goal(color, lane_segment, roads)
     second_goal = create_goal(color, lane_segment, roads, first_goal)
 
-    max_speed = random.randint(BLOCK_SIZE // 4, BLOCK_SIZE // 3)
-    speed = random.randint(BLOCK_SIZE // 10, max_speed)
+    if len(cars) % 2 == 0:
+        max_speed = random.randint(CROSSING_MAX_SPEED, LANE_MAX_SPEED)
+    else:
+        max_speed = random.randint(MINIMAL_SPEED, CROSSING_MAX_SPEED)
+    speed = random.randint(1, max_speed)
 
     size = random.randint(BLOCK_SIZE // 2, 3 * BLOCK_SIZE // 2)
     loc = 0

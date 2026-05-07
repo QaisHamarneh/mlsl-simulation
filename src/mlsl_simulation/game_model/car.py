@@ -127,7 +127,7 @@ class Car:
         if abs(self.loc) + braking < total_seg_length:
             return
 
-        next_segs = self.get_next_segment(rm)            # FIX: was missing
+        next_segs = self.get_next_segment(rm)  # FIX: was missing
         if not next_segs or len(next_segs) < 2:
             return
         next_segs = next_segs[1:]                        # drop current tail
@@ -160,119 +160,6 @@ class Car:
                     self.id, self.time + math.ceil(cumulative / crossing_speed))
 
             last_dir = seg_dir
-
-
-    def old_move(self, reservation_management: ReservationManagement) -> bool:
-        """
-        Move the car within its lane and handle lane changes and reservations.
-
-        Returns:
-            bool: True if the car moved successfully, False otherwise.
-        """
-        if self.get_death_status():
-            return False
-
-        # Within the lane
-        self.loc += (1 if true_direction[reservation_management.get_car_reservation(self.id, 0).direction] else -1) * self.speed
-        self.check_reservation(reservation_management)
-
-        self.time += 1
-
-        braking_distance = self.get_braking_distance()
-        self.old_extend_res(reservation_management, braking_distance)
-
-        last_seg_info = reservation_management.get_car_reservation(self.id, -1)
-        if last_seg_info.segment.length - abs(last_seg_info.end) <= BLOCK_SIZE:
-            intersection: Intersection = last_seg_info.segment.end_crossing.intersection
-            if not intersection.intersection_state.get_car_priority(self.id):
-                intersection.intersection_state.add_car_priority(self.id, self.time)
-
-        while abs(self.loc) > reservation_management.get_car_reservation(self.id, 0).segment.length:
-            seg_info = reservation_management.pop_car_reservation(self.id, 0)
-            self.loc = (1 if true_direction[reservation_management.get_car_reservation(self.id, 0).direction] else -1) * (abs(self.loc) - seg_info.segment.length)
-
-        reservation_management.update_car_reservation_begin(car_id=self.id, index=0, begin=self.loc)
-        self.direction = reservation_management.get_car_reservation(car_id=self.id, index=0).direction
-
-        reservations = reservation_management.get_car_reservations(self.id)
-
-        for i, seg_info in enumerate(reservations):
-            if isinstance(seg_info.segment, CrossingSegment):
-                seg_info.segment.crossing_segment_state.add_time_to_leave(
-                    self.id,
-                    math.ceil(sum([abs(seg.end - seg.begin) for seg in reservations[0:i+1]]) /
-                                      max(1, min(self.speed, CROSSING_MAX_SPEED))) 
-                )
-        
-        reservation_management.update_car_reservation_turn(car_id=self.id, index=0, turn=False)
-
-        for i, seg_info in enumerate(reservations):
-            if i < len(reservations) - 1:
-                reservation_management.update_car_reservation_end(car_id=self.id, 
-                                                                  index=i, 
-                                                                  end=(1 if true_direction[seg_info.direction] else -1) * seg_info.segment.length)
-
-        # Update the "end" of the last reserved segment (last reserved segment is always a lane segment)
-        end = max (self.size + BUFFER, 
-                   braking_distance - sum([abs(reservations[i].end - reservations[i].begin) for i in range(len(reservations) - 1)]))
-        
-        reservation_management.update_car_reservation_end(car_id=self.id,
-                                                          index=-1,
-                                                          end=(1 if true_direction[reservations[-1].direction] else -1) * (end + abs(reservations[-1].begin)))
-
-        self.update_position(reservation_management)
-
-        return True
-
-    def old_extend_res(self, reservations_management: ReservationManagement, breaking_distance:int) -> None:
-        """
-        Extend the reservation of the car to the next segments.
-        """
-        reservations = reservations_management.get_car_reservations(self.id)
-        reserved_length = sum([abs(seg_info.end - seg_info.begin) for seg_info in reservations])
-        if abs(self.loc) + breaking_distance < sum([seg_info.segment.length for seg_info in reservations]):
-            return 
-        
-        next_segments = self.get_next_segment(reservation_management=reservations_management)
-        next_segments = next_segments[1:]
-        next_segments[0].intersection.intersection_state.pop_car_priority(self.id)
-
-        jump = abs(self.loc) + breaking_distance - sum([seg_info.segment.length for seg_info in reservations])
-        for i, segment in enumerate(next_segments):
-            jump = abs(self.loc) + breaking_distance - sum([seg_info.segment.length for seg_info in reservations])
-            next_dir = None
-            if isinstance(segment, LaneSegment):
-                next_dir = segment.lane.direction
-            elif isinstance(segment, CrossingSegment):
-                next_dir = next(dir for dir, seg in segment.connected_segments.items() if seg == next_segments[i + 1])
-
-            segment_info = SegmentInfo(segment, 
-                                       0,
-                                       (1 if true_direction[next_dir] else -1) * segment.length if isinstance(segment, CrossingSegment) else\
-                                       (1 if true_direction[next_dir] else -1) * max(jump, self.size + BUFFER),
-                                       # min((1 if true_direction[next_dir] else -1) * extra, next_seg.length) if 
-                                       # isinstance(next_seg, LaneSegment) else BLOCK_SIZE,
-                                       next_dir,
-                                       next_dir != reservations[-1].direction)
-            
-            reservations_management.add_car_reservation(self.id, segment_info)
-            if isinstance(segment, CrossingSegment):
-                segment.crossing_segment_state.add_time_to_leave(self.id,
-                                                                 math.ceil(sum([abs(seg_info.end - seg_info.begin) for seg_info in reservations]) / 
-                                                                           max(1, min(self.speed, CROSSING_MAX_SPEED))))
-            reservations = reservations_management.get_car_reservations(self.id)
-        
-        if len(reservations) > 1:
-            res_len = sum([abs(res_seg.end - res_seg.begin) for res_seg in reservations])
-            if res_len != breaking_distance and \
-                abs(reservations[-1].end - reservations[-1].begin) != self.size + BUFFER:
-                num_lane_seg = len([seg for seg in reservations if isinstance(seg.segment, LaneSegment)])
-                print(f"Issue 7 {self.name} - "\
-                      f"last segment={abs(reservations[-1].end - reservations[-1].begin)} - "\
-                      f"size={self.size + BUFFER} - "\
-                        f"braking dist={breaking_distance} - "\
-                            f"res length={res_len} - "\
-                                 f"num seg={len(reservations)} - num lane seg={num_lane_seg}")
 
     def change_speed(self, speed_diff: int) -> None:
         """
@@ -456,12 +343,16 @@ class Car:
     def get_death_status(self) -> bool:
         return self.__dead
     
-    def get_next_segment(self, reservation_management: ReservationManagement, last_seg: Segment | None = None) -> List[Segment]:
+    def get_next_segment(self, reservation_management: ReservationManagement,
+                         last_seg: Segment | None = None) -> List[Segment]:
         """
         Get the next segment for the car to move to.
 
         Args:
             last_seg (Segment): The last segment the car was on.
+            cars (List[Car], optional): Other cars in the simulation; used by
+                astar's congestion-aware cost. If omitted, astar falls back to
+                a length-only plan (no live-traffic info).
         Returns:
              List[Segment]: The next segments for the car to move to, up to the next Lanesegment
         """
@@ -472,11 +363,13 @@ class Car:
 
         if reservations[0].segment == self.goal.lane_segment:
             #case 1: cur seg == goal seg -> preplan path to second goal
-            segs = self.astar_new(reservations_management=reservation_management, start_seg=last_seg, goal=self.second_goal)
+            segs = self.astar(reservations_management=reservation_management,
+                              start_seg=last_seg, goal=self.second_goal)
 
         else:
             #case 2: cur seg != goal seg -> plan path to first goal(e.g. for alternative lanes (right, left)
-            segs = self.astar_new(reservations_management=reservation_management, start_seg=last_seg)
+            segs = self.astar(reservations_management=reservation_management,
+                              start_seg=last_seg)
         
 
 
@@ -493,105 +386,6 @@ class Car:
                 return segs[0:i + 1]
 
         return []
-
-    def astar(self, reservations_management: ReservationManagement, start_seg: Segment = None, goal: Goal = None) -> Optional[List[Segment]]:
-        """
-        Perform the A* search algorithm to find the shortest path from the car's current segment to the goal segment.
-
-        Returns:
-            Optional[List[Segment]]: The list of segments representing the shortest path from the current segment to the goal segment, or None if no path is found.
-        """
-
-        def astar_heuristic(current_seg: Segment, goal_seg: LaneSegment) -> float:
-            """
-            Calculate the heuristic distance between the current segment and the goal segment for the A* algorithm.
-
-            Args:
-                current_seg (Segment): The current segment the car is on.
-                goal_seg (LaneSegment): The goal segment the car is trying to reach.
-
-            Returns:
-                float: The heuristic distance between the current segment and the goal segment.
-            """
-            match current_seg:
-                case LaneSegment():
-                    if goal_seg.lane.road.horizontal:
-                        if current_seg.lane.road.horizontal:
-                            return math.dist([current_seg.end, current_seg.lane.top],
-                                        [goal_seg.begin, goal_seg.lane.top])
-                        else:
-                            return math.dist([current_seg.lane.top, current_seg.end],
-                                        [goal_seg.begin, goal_seg.lane.top])
-                    else:
-                        if current_seg.lane.road.horizontal:
-                            return math.dist([current_seg.end, current_seg.lane.top],
-                                        [goal_seg.lane.top, goal_seg.begin])
-                        else:
-                            return math.dist([current_seg.lane.top, current_seg.end],
-                                        [goal_seg.lane.top, goal_seg.begin])
-                case CrossingSegment():
-                    if goal_seg.lane.road.horizontal:
-                        return math.dist([current_seg.horiz_lane.top + (BLOCK_SIZE // 2), current_seg.vert_lane.top + (BLOCK_SIZE // 2)],
-                                    [goal_seg.begin, goal_seg.lane.top])
-                    else:
-                        return math.dist([current_seg.horiz_lane.top + (BLOCK_SIZE // 2), current_seg.vert_lane.top + (BLOCK_SIZE // 2)],
-                                    [goal_seg.lane.top, goal_seg.begin])
-
-        def reconstruct_path(came_from_list: Dict[Segment, Segment], current: LaneSegment) -> List[Segment]:
-            """
-            Reconstruct the path from the start segment to the goal segment using the came_from map.
-
-            Args:
-                came_from_list (Dict[Segment, Segment]): A dictionary mapping each segment to the segment it came from.
-                current (LaneSegment): The current segment (goal segment).
-
-            Returns:
-                List[Segment]: The reconstructed path from the start segment to the goal segment.
-            """
-            path: list[Segment] = [current]
-            while current in came_from_list:
-                current = came_from_list[current]
-                path.insert(0, current)
-            return path
-
-        start_seg = reservations_management.get_car_reservation(self.id, -1).segment if start_seg is None else start_seg
-        goal_seg = self.goal.lane_segment if goal is None else goal.lane_segment
-        # Initialize the open list with the start node and a cost of 0
-        open_list = [(0, start_seg)]
-        # Initialize the came_from dictionary to track the path
-        came_from: dict[Segment, Segment] = {}
-        # Initialize the g_score dictionary to store the cost from start to each node
-        g_score = {start_seg: 0}
-        # Initialize the f_score dictionary to store the total estimated cost from start to goal
-        f_score = {start_seg: astar_heuristic(start_seg, goal_seg)}  # Replace with your heuristic function
-        while open_list:
-            _, current_seg = open_list.pop(0)
-
-            if current_seg == goal_seg:
-                return reconstruct_path(came_from, current_seg)
-
-            neighbors = []
-            match current_seg:
-                case LaneSegment():
-                    neighbors = [current_seg.end_crossing] if current_seg.end_crossing is not None else []
-                case CrossingSegment():
-                    neighbors = [seg for seg in
-                                 current_seg.connected_segments.values()
-                                 if seg is not None]
-
-            for neighbor in neighbors:
-                if neighbor not in g_score:
-                    g_score[neighbor] = float('inf')
-                    f_score[neighbor] = float('inf')
-                tentative_g_score = g_score[current_seg] + current_seg.length
-
-                if tentative_g_score < g_score[neighbor]:
-                    came_from[neighbor] = current_seg
-                    g_score[neighbor] = tentative_g_score
-                    f_score[neighbor] = g_score[neighbor] + astar_heuristic(neighbor, goal_seg)
-                    open_list.append((f_score[neighbor], neighbor))
-
-        return None  # No path found
 
     def update_position(self, reservation_management: ReservationManagement) -> None:
         """
@@ -647,8 +441,7 @@ class Car:
         else:
             return [self.pos.x + BLOCK_SIZE // 2, self.pos.y + self.size // 2]
 
-
-    def astar_new(self, reservations_management: ReservationManagement,
+    def astar(self, reservations_management: ReservationManagement,
             start_seg: Segment = None, goal: Goal = None) -> List[Segment]:
 
         start_seg = (reservations_management.get_car_reservation(self.id, -1).segment
@@ -712,6 +505,132 @@ class Car:
                     g_score[nb]   = tg
                     heapq.heappush(open_heap, (tg + heuristic(nb), next(tiebreak), nb))
 
+        return []   # no path found — caller must handle empty list
+
+    def astar_speed(self, reservations_management: ReservationManagement,
+            cars: Optional[List["Car"]] = None,
+            start_seg: Segment = None, goal: Goal = None,
+            ignore_blocked: bool = False) -> List[Segment]:
+        """Time-weighted A* with intersection-congestion penalty.
+
+        Edge cost into a neighbor segment: ``segment.length / effective_speed``,
+        where ``effective_speed`` is the min speed of other cars on that segment
+        (falling back to ``segment.max_speed`` when empty). Crossing segments
+        get an additional soft penalty proportional to the number of cars on
+        the four crossing cells of their intersection plus the cars queued on
+        the four approach lane segments.
+
+        A neighbor is treated as impassable when any other car on it has speed
+        0. If no path is found under that rule we retry with
+        ``ignore_blocked=True`` so the caller never gets stuck without a plan.
+        """
+
+        start_seg = (reservations_management.get_car_reservation(self.id, -1).segment
+                    if start_seg is None else start_seg)
+        goal_seg  = self.goal.lane_segment if goal is None else goal.lane_segment
+
+        if start_seg is goal_seg:
+            return [start_seg]
+
+        car_by_id = {c.id: c for c in cars} if cars else {}
+
+        def seg_min_other_speed(seg: Segment) -> Optional[int]:
+            """Min speed of OTHER cars on `seg`. None if empty / unknown."""
+            speeds: list[int] = []
+            for cid in reservations_management.get_cars_on_segment(seg):
+                if cid == self.id:
+                    continue
+                other = car_by_id.get(cid)
+                if other is not None:
+                    speeds.append(other.speed)
+            return min(speeds) if speeds else None
+
+        def is_blocked(seg: Segment) -> bool:
+            spd = seg_min_other_speed(seg)
+            return spd is not None and spd == 0
+
+        def edge_cost(seg: Segment) -> float:
+            spd = seg_min_other_speed(seg)
+            effective = seg.max_speed if spd is None else max(spd, 1)
+            cost = seg.length / effective
+            if isinstance(seg, CrossingSegment):
+                intersection: Intersection = seg.intersection
+                congestion = 0
+                for cseg in intersection.segments:
+                    congestion += sum(
+                        1 for cid in reservations_management.get_cars_on_segment(cseg)
+                        if cid != self.id
+                    )
+                    for conn in cseg.connected_segments.values():
+                        if isinstance(conn, LaneSegment) and conn.end_crossing is cseg:
+                            congestion += sum(
+                                1 for cid in reservations_management.get_cars_on_segment(conn)
+                                if cid != self.id
+                            )
+                cost *= 1.0 + ASTAR_CONGESTION_ALPHA * congestion
+            return cost
+
+        def heuristic(seg: Segment) -> float:
+            # Lower-bound time-to-goal: straight-line distance / best lane speed.
+            match seg:
+                case LaneSegment():
+                    cx = seg.end if seg.lane.road.horizontal else seg.lane.top
+                    cy = seg.lane.top if seg.lane.road.horizontal else seg.end
+                case CrossingSegment():
+                    cx = seg.vert_lane.top  + BLOCK_SIZE // 2   # x
+                    cy = seg.horiz_lane.top + BLOCK_SIZE // 2   # y
+                case _:
+                    return 0.0
+            gx = goal_seg.begin if goal_seg.lane.road.horizontal else goal_seg.lane.top
+            gy = goal_seg.lane.top if goal_seg.lane.road.horizontal else goal_seg.begin
+            return math.dist((cx, cy), (gx, gy)) / LANE_MAX_SPEED
+
+        tiebreak   = count()
+        open_heap  = [(heuristic(start_seg), next(tiebreak), start_seg)]
+        came_from: dict[Segment, Segment] = {}
+        g_score: dict[Segment, float] = {start_seg: 0.0}
+        closed: set[Segment] = set()
+
+        while open_heap:
+            _, _, current = heapq.heappop(open_heap)
+
+            if current in closed:
+                continue
+            closed.add(current)
+
+            if current is goal_seg:
+                path: list[Segment] = []
+                while current in came_from:
+                    path.append(current)
+                    current = came_from[current]
+                path.append(start_seg)
+                path.reverse()
+                return path
+
+            match current:
+                case LaneSegment():
+                    neighbors = [current.end_crossing] if current.end_crossing else []
+                case CrossingSegment():
+                    neighbors = [s for s in current.connected_segments.values() if s is not None]
+                case _:
+                    neighbors = []
+
+            for nb in neighbors:
+                if nb in closed:
+                    continue
+                if not ignore_blocked and nb is not goal_seg and is_blocked(nb):
+                    continue
+                tg = g_score[current] + edge_cost(nb)
+                if tg < g_score.get(nb, float('inf')):
+                    came_from[nb] = current
+                    g_score[nb]   = tg
+                    heapq.heappush(open_heap, (tg + heuristic(nb), next(tiebreak), nb))
+
+        if not ignore_blocked:
+            # Fallback: a stopped car blocks every viable route. Replan ignoring
+            # the impassable filter so the caller still has a plan to follow.
+            return self.astar_speed(reservations_management, cars, start_seg, goal,
+                              ignore_blocked=True)
         return []   # no path found — caller must handle empty list
 
     def handle_car_death(self, reservation_management: ReservationManagement) -> None:

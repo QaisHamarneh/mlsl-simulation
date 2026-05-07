@@ -43,22 +43,20 @@ class AstarCarController:
         lane_change = NO_LANE_CHANGE
         reservations = self.reservation_management.get_car_reservations(self.car.id)
 
-        max_possible_acc = self.get_accelerate(reservations)
+        max_possible_acc = self.get_accelerate(reservations, True)
         priority_blocked = self._last_call_priority_blocked
 
         if self.car.changing_lane:
             lane_change_segment = self.reservation_management.get_reserved_lane_change_segment(self.car.id)
-            if lane_change_segment is None:
-                print(f"Issue 4: {self.car.name}")
-            else:
-                lane_change_segment_info = SegmentInfo(
-                        lane_change_segment[1],
-                        reservations[0].begin,
-                        reservations[0].end,
-                        self.car.direction
-                    )
-                max_possible_acc = min(max_possible_acc,
-                                       self.get_accelerate([lane_change_segment_info]))
+            assert lane_change_segment is not None, "lane_change_segment is none while lane changing"
+            lane_change_segment_info = SegmentInfo(
+                    lane_change_segment[1],
+                    reservations[0].begin,
+                    reservations[0].end,
+                    self.car.direction
+                )
+            max_possible_acc = min(max_possible_acc,
+                                    self.get_accelerate([lane_change_segment_info], False))
 
         elif len(reservations) == 1  \
                 and isinstance(reservations[0].segment, LaneSegment) \
@@ -82,13 +80,16 @@ class AstarCarController:
         """
         current_seg_info = reservations[0]
         current_lane_seg = current_seg_info.segment
-        assert isinstance(current_lane_seg, LaneSegment)
+
+        assert len(reservations) == 1, "Lane changing on multiple segments"
+        assert isinstance(current_lane_seg, LaneSegment), "Lane changing on intersection"
+
         current_lane_num = current_lane_seg.lane.num
         is_right_dir = right_direction[current_lane_seg.lane.direction]
 
         # Reject if the lane change cannot complete before the segment ends.
         remaining_space = current_lane_seg.length - abs(current_seg_info.end)
-        if remaining_space < self.car.speed * LANECHANGE_TIME_STEPS:
+        if remaining_space < (self.car.speed + current_acc) * LANECHANGE_TIME_STEPS:
             return NO_LANE_CHANGE
 
         adjacent_segments = self.car.get_adjacent_lane_segments(self.reservation_management) or []
@@ -109,7 +110,7 @@ class AstarCarController:
             )
             if self._check_collision(target_seg_info):
                 continue
-            lane_options[lane_diff] = self.get_accelerate([target_seg_info])
+            lane_options[lane_diff] = self.get_accelerate([target_seg_info], False)
 
         # Best reachable acceleration on each side (only counts if the immediate
         # adjacent lane in that direction is collision-free, since we can only step one).
@@ -119,31 +120,15 @@ class AstarCarController:
             if right_reachable else MAX_DEC
         best_left_acc = max((acc for diff, acc in lane_options.items() if diff > 0), default=MAX_DEC) \
             if left_reachable else MAX_DEC
-
+        
         if right_reachable and best_right_acc >= current_acc and best_right_acc >= best_left_acc:
-            right_seg = self.car.get_adjacent_lane_segment(self.reservation_management, RIGHT_LANE_CHANGE)
-            right_seg_info = SegmentInfo(
-                right_seg,
-                current_seg_info.begin,
-                current_seg_info.end,
-                self.car.direction,
-            )
-            if self._check_collision(right_seg_info):
-                return RIGHT_LANE_CHANGE
-        if left_reachable and best_left_acc > current_acc:
-            left_seg = self.car.get_adjacent_lane_segment(self.reservation_management, LEFT_LANE_CHANGE)
-            left_seg_info = SegmentInfo(
-                left_seg,
-                current_seg_info.begin,
-                current_seg_info.end,
-                self.car.direction,
-            )
-            if self._check_collision(left_seg_info):
-                return LEFT_LANE_CHANGE
+            return RIGHT_LANE_CHANGE
+        elif left_reachable and best_left_acc > current_acc:
             return LEFT_LANE_CHANGE
+        
         return NO_LANE_CHANGE
 
-    def get_accelerate(self, segments: list[SegmentInfo]) -> int:
+    def get_accelerate(self, segments: list[SegmentInfo], for_current_lane:bool) -> int:
         """
         Return the largest legal-and-safe acceleration in [-MAX_DEC, MAX_ACC]
         for the supplied reservation list.
@@ -175,7 +160,7 @@ class AstarCarController:
         for acceleration in range(legal_max, max_dec - 1, -1):
             new_speed = self.car.speed + acceleration
 
-            if self.car.changing_lane and not self._lane_change_will_complete(segments, new_speed):
+            if for_current_lane and self.car.changing_lane and not self._lane_change_will_complete(segments, new_speed):
                 continue
 
             projected = self._project_reservation(segments, new_speed)
@@ -267,9 +252,8 @@ class AstarCarController:
         """Return (unsafe, blocked_by_priority).
 
         Order of checks:
-          1. Time-of-arrival vs every earlier-reserved car at every crossing in
-             the projection. The car must enter strictly after each earlier car
-             has finished traversing.
+           1. Time-of-arrival vs Time-to-leave of every earlier-reserved car at every crossing in the projection. 
+             The car may only enter strictly after each earlier car has left the crossing segment.
           2. Intersection priority for crossings that are NEW in the projection
              (not already in the car's current reservation). The car may only
              enter when no other contender at the same intersection holds an
@@ -281,7 +265,7 @@ class AstarCarController:
         # CROSSING_MAX_SPEED) as the upper bound on approach speed -- this gives
         # the smallest plausible time-to-enter, which is the conservative side
         # for "must enter strictly after others leave".
-        approach_speed = max(new_speed, CROSSING_MAX_SPEED)
+        approach_speed = max(new_speed, min(self.car.max_speed, CROSSING_MAX_SPEED))
         cumulative = 0
         for i, seg_info in enumerate(projected):
             seg = seg_info.segment
@@ -291,7 +275,7 @@ class AstarCarController:
             else:
                 prior = list(cars_on_seg)
             if isinstance(seg, CrossingSegment):
-                time_to_enter_abs = self.car.time + math.ceil(cumulative / approach_speed)
+                time_to_enter_abs = self.car.time + math.ceil((cumulative - self.car.size - BUFFER) / approach_speed)
                 if prior:
                     leave_times = [seg.crossing_segment_state.get_time_to_leave(other)
                                    for other in prior]
@@ -300,7 +284,7 @@ class AstarCarController:
                         return True, False
             else:
                 if len(projected) > 1:
-                    for o_car_id in prior :
+                    for o_car_id in prior:
                         o_seg_info = self.reservation_management.get_car_reservation(o_car_id, 0)
                         if o_seg_info.segment == seg:
                             if abs(projected[-1].end) > abs(o_seg_info.end):
@@ -329,17 +313,28 @@ class AstarCarController:
         """True if the projection's tail in this lane segment would overlap a
         leading car's worst-case forward-projected reservation in the same
         segment. The leading car's worst case shifts its reservation forward by
-        speed + min(MAX_DEC, speed) -- the most it could move next tick."""
+        speed + min(MAX_DEC, speed) -- the most it could move next tick.
+
+        Also considers cars currently mid-lane-change into this segment: their
+        reservations still point to the parallel source lane, so they are absent
+        from get_cars_on_segment, but loc maps 1:1 between adjacent same-direction
+        lanes so the source reservation's begin/end are usable as-is here."""
         my_end = abs(seg_info.end)
-        for other_id in self.reservation_management.get_cars_on_segment(seg_info.segment):
+        on_segment = self.reservation_management.get_cars_on_segment(seg_info.segment)
+        changing_in = self.reservation_management.get_cars_changing_into_segment(seg_info.segment)
+        for other_id in on_segment + changing_in:
             if other_id == self.car.id:
                 continue
             other_segs = self.reservation_management.get_car_reservations(other_id)
-            if [segment_info.segment for segment_info in other_segs].index(seg_info.segment) > 0:
-                continue
-            other_seg_info = next((s for s in other_segs if s.segment == seg_info.segment), None)
-            if other_seg_info is None:
-                continue
+            if other_id in changing_in:
+                # Mid-lane-change: use the (single) source-lane reservation.
+                other_seg_info = other_segs[0]
+            else:
+                if [segment_info.segment for segment_info in other_segs].index(seg_info.segment) > 0:
+                    continue
+                other_seg_info = next((s for s in other_segs if s.segment == seg_info.segment), None)
+                if other_seg_info is None:
+                    continue
             other_car = next((c for c in self.cars if c.id == other_id), None)
             if other_car is None:
                 continue
