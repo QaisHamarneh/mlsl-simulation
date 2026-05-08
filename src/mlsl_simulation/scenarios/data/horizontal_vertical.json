@@ -1,0 +1,10 @@
+{
+  "name": "HORIZONTAL_VERTICAL",
+  "scenario_name": "horizontal_vertical",
+  "players": 25,
+  "roads": [
+    {"name": "h1", "horizontal": true,  "top": 180, "right": 3, "left": 3},
+    {"name": "v1", "horizontal": false, "top": 190, "right": 2, "left": 2},
+    {"name": "v2", "horizontal": false, "top": 540, "right": 2, "left": 2}
+  ]
+}

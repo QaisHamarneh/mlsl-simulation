@@ -1,0 +1,12 @@
+{
+  "name": "LEFT_RIGHT_OVERTAKE",
+  "scenario_name": "left_right_overtake",
+  "players": 2,
+  "roads": [
+    {"name": "bottom", "horizontal": true, "top": 0, "right": 1, "left": 0},
+    {"name": "right",  "horizontal": false, "top": 1560, "right": 0, "left": 1},
+    {"name": "top",    "horizontal": true, "top": 920, "right": 0, "left": 1},
+    {"name": "left",   "horizontal": false, "top": 0, "right": 1, "left": 0},
+    {"name": "h1",     "horizontal": true, "top": 330, "right": 3, "left": 3}
+  ]
+}

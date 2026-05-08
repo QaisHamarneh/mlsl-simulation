@@ -124,6 +124,7 @@ class TrafficEnv:
                 )
                 self.game_history.add_taken_action(self.agent_car, action)
 
+        random.shuffle(self.controllers)
         for controller in self.controllers:
             car = controller.car
             npc_action = controller.get_action()

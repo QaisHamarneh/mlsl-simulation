@@ -1,138 +1,18 @@
-from mlsl_simulation.constants import WINDOW_WIDTH, BLOCK_SIZE, WINDOW_HEIGHT
+import json
+from pathlib import Path
+
 from mlsl_simulation.game_model.road_network.road_network import Road
 
-SCENARIOS = {
-    "LEFT_RIGHT_OVERTAKE": {
-        "roads": [
-            Road("bottom", True, 0, 1, 0),
-            Road("right", False, WINDOW_WIDTH - BLOCK_SIZE, 0, 1),
-            Road("top", True, WINDOW_HEIGHT - BLOCK_SIZE, 0, 1),
-            Road("left", False, 0, 1, 0),
-            Road("h1", True, 330, 3, 3),
-        ],
-        "players": 2,
-        "scenario_name": "left_right_overtake"
-    },
+_DATA_DIR = Path(__file__).parent / "data"
 
-    "LEFT_RIGHT_OVERTAKE_2": {
-        "roads": [
-            Road("bottom", True, 0, 1, 0),
-            Road("right", False, WINDOW_WIDTH - BLOCK_SIZE, 0, 1),
-            Road("top", True, WINDOW_HEIGHT - BLOCK_SIZE, 0, 1),
-            Road("left", False, 0, 1, 0),
-            Road("v1", False, 330, 1, 1),
-            Road("h1", True, 330, 3, 3),
-        ],
-        "players": 6,
-        "scenario_name": "left_right_overtake_2"
-    },
 
-    "UP_DOWN_OVERTAKE": {
-        "roads": [
-            Road("bottom", True, 0, 1, 0),
-            Road("right", False, WINDOW_WIDTH - BLOCK_SIZE, 0, 1),
-            Road("top", True, WINDOW_HEIGHT - BLOCK_SIZE, 0, 1),
-            Road("left", False, 0, 1, 0),
-            Road("v1", False, 680, 3, 3),
-        ],
-        "players": 2,
-        "scenario_name": "up_down_overtake"
-    },
-
-    "BIG_SCENARIO": {
-        "roads": [
-            Road("bottom", True, 0, 1, 0),
-            Road("right", False, WINDOW_WIDTH - 1 * BLOCK_SIZE, 0, 1),
-            Road("top", True, WINDOW_HEIGHT - 1 * BLOCK_SIZE, 0, 1),
-            Road("left", False, 0, 1, 0),
-            # Road("h1", True, WINDOW_HEIGHT // 2 - 2 * BLOCK_SIZE, 2, 2),
-            # Road("v1", False, WINDOW_WIDTH // 2 - 2 * BLOCK_SIZE, 2, 2)
-            Road("h1", True, WINDOW_HEIGHT // 4 - 1 * BLOCK_SIZE, 0, 2),
-            Road("h2", True, WINDOW_HEIGHT // 2 - 2 * BLOCK_SIZE, 2, 2),
-            Road("h3", True, 3 * WINDOW_HEIGHT // 4 - 1 * BLOCK_SIZE, 2, 0),
-            Road("v1", False, WINDOW_WIDTH // 4 - 1 * BLOCK_SIZE, 0, 2),
-            Road("v2", False, WINDOW_WIDTH // 2 - 2 * BLOCK_SIZE, 2, 2),
-            Road("v3", False, 3 * WINDOW_WIDTH // 4 - 1 * BLOCK_SIZE, 2, 0)
-        ],
-        "players": 80,
-        "scenario_name": "big_scenario"
-    },
-
-    "STARTING_SCENARIO": {
-        "roads": [
-            Road("bottom", True, 0, 1, 0),
-            Road("right", False, WINDOW_WIDTH - BLOCK_SIZE, 0, 1),
-            Road("top", True, WINDOW_HEIGHT - BLOCK_SIZE, 0, 1),
-            Road("left", False, 0, 1, 0),
-            Road("h1", True, WINDOW_HEIGHT // 4 - 1 * BLOCK_SIZE, 0, 2),
-            Road("h2", True, WINDOW_HEIGHT // 2 - 3 * BLOCK_SIZE, 3, 3),
-            Road("h3", True, 3 * WINDOW_HEIGHT // 4 - 1 * BLOCK_SIZE, 2, 0),
-            Road("v1", False, WINDOW_WIDTH // 4 - 1 * BLOCK_SIZE, 0, 2),
-            Road("v2", False, WINDOW_WIDTH // 2 - 3 * BLOCK_SIZE, 3, 3),
-            Road("v3", False, 3 * WINDOW_WIDTH // 4 - 1 * BLOCK_SIZE, 2, 0)
-        ],
-        "players": 21,
-        "scenario_name": "starting_scenario"
-    },
-
-    "TWO_CROSSINGS": {
-        "roads": [
-            Road("bottom", True, 0, 1, 0),
-            Road("right", False, WINDOW_WIDTH - BLOCK_SIZE, 0, 1),
-            Road("top", True, WINDOW_HEIGHT - BLOCK_SIZE, 0, 1),
-            Road("left", False, 0, 1, 0),
-            Road("h1", True, 5 * BLOCK_SIZE, 2, 2),
-            Road("h2", True, 14 * BLOCK_SIZE, 2, 2),
-            Road("v1", False, 9 * BLOCK_SIZE, 3, 3),
-            Road("v2", False, 23 * BLOCK_SIZE, 3, 4)
-        ],
-        "players": 21,
-        "scenario_name": "two_crossings"
-    },
-
-    "ONE_CROSSING": {
-        "roads": [
-            Road("bottom", True, 0, 1, 0),
-            Road("right", False, WINDOW_WIDTH - BLOCK_SIZE, 0, 1),
-            Road("top", True, WINDOW_HEIGHT - BLOCK_SIZE, 0, 1),
-            Road("left", False, 0, 1, 0),
-            Road("v1", False, WINDOW_WIDTH // 2 - 3 * BLOCK_SIZE, 1, 1),
-            Road("h1", True, WINDOW_HEIGHT // 2 - 3 * BLOCK_SIZE, 1, 1),
-        ],
-        "players": 16,
-        "scenario_name": "one_crossing"
-    },
-
-    "ONE_ROAD": {
-        "roads": [
-            Road("bottom", True, 0, 1, 0),
-            Road("right", False, WINDOW_WIDTH - BLOCK_SIZE, 0, 1),
-            Road("top", True, WINDOW_HEIGHT - BLOCK_SIZE, 0, 1),
-            Road("left", False, 0, 1, 0),
-            Road("r1", True, 400, 6, 0)
-        ],
-        "players": 5,
-        "scenario_name": "one_road"
-    },
-
-    "HORIZONTAL_VERTICAL": {
-        "roads": [
-            Road("h1", True, 180, 3, 3),
-            Road("v1", False, 190, 2, 2),
-            Road("v2", False, 540, 2, 2)
-        ],
-        "players": 25,
-        "scenario_name": "horizontal_vertical"
-    },
-
-    "CIRCUIT": {
-        "roads": [
-            Road("bottom", True, 0, 1, 0),
-            Road("right", False, WINDOW_WIDTH - BLOCK_SIZE, 0, 1),
-            Road("top", True, WINDOW_HEIGHT - BLOCK_SIZE, 0, 1),
-            Road("left", False, 0, 1, 0),
-        ],
-        "players": 3,
-        "scenario_name": "circuit"
-    },
-}
+def load_scenario(scenario_key: str) -> dict:
+    filepath = _DATA_DIR / f"{scenario_key.lower()}.json"
+    with open(filepath) as f:
+        data = json.load(f)
+    roads = [Road(r["name"], r["horizontal"], r["top"], r["right"], r["left"]) for r in data["roads"]]
+    return {
+        "roads": roads,
+        "players": data["players"],
+        "scenario_name": data["scenario_name"],
+    }

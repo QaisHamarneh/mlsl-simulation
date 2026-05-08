@@ -1,0 +1,15 @@
+{
+  "name": "TWO_CROSSINGS",
+  "scenario_name": "two_crossings",
+  "players": 21,
+  "roads": [
+    {"name": "bottom", "horizontal": true,  "top": 0,    "right": 1, "left": 0},
+    {"name": "right",  "horizontal": false, "top": 1560, "right": 0, "left": 1},
+    {"name": "top",    "horizontal": true,  "top": 920,  "right": 0, "left": 1},
+    {"name": "left",   "horizontal": false, "top": 0,    "right": 1, "left": 0},
+    {"name": "h1",     "horizontal": true,  "top": 200,  "right": 2, "left": 2},
+    {"name": "h2",     "horizontal": true,  "top": 560,  "right": 2, "left": 2},
+    {"name": "v1",     "horizontal": false, "top": 360,  "right": 3, "left": 3},
+    {"name": "v2",     "horizontal": false, "top": 920,  "right": 3, "left": 4}
+  ]
+}

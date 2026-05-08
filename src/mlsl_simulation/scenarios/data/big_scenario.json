@@ -1,0 +1,17 @@
+{
+  "name": "BIG_SCENARIO",
+  "scenario_name": "big_scenario",
+  "players": 80,
+  "roads": [
+    {"name": "bottom", "horizontal": true,  "top": 0,    "right": 1, "left": 0},
+    {"name": "right",  "horizontal": false, "top": 1560, "right": 0, "left": 1},
+    {"name": "top",    "horizontal": true,  "top": 920,  "right": 0, "left": 1},
+    {"name": "left",   "horizontal": false, "top": 0,    "right": 1, "left": 0},
+    {"name": "h1",     "horizontal": true,  "top": 200,  "right": 0, "left": 2},
+    {"name": "h2",     "horizontal": true,  "top": 400,  "right": 2, "left": 2},
+    {"name": "h3",     "horizontal": true,  "top": 680,  "right": 2, "left": 0},
+    {"name": "v1",     "horizontal": false, "top": 360,  "right": 0, "left": 2},
+    {"name": "v2",     "horizontal": false, "top": 720,  "right": 2, "left": 2},
+    {"name": "v3",     "horizontal": false, "top": 1160, "right": 2, "left": 0}
+  ]
+}

@@ -1,0 +1,12 @@
+{
+  "name": "ONE_ROAD",
+  "scenario_name": "one_road",
+  "players": 5,
+  "roads": [
+    {"name": "bottom", "horizontal": true,  "top": 0,    "right": 1, "left": 0},
+    {"name": "right",  "horizontal": false, "top": 1560, "right": 0, "left": 1},
+    {"name": "top",    "horizontal": true,  "top": 920,  "right": 0, "left": 1},
+    {"name": "left",   "horizontal": false, "top": 0,    "right": 1, "left": 0},
+    {"name": "r1",     "horizontal": true,  "top": 400,  "right": 6, "left": 0}
+  ]
+}

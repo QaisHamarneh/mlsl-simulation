@@ -1,6 +1,6 @@
 import logging
 
-from mlsl_simulation.scenarios.scenarios import SCENARIOS
+from mlsl_simulation.scenarios.scenarios import load_scenario
 from mlsl_simulation.game_model.controller.abstract_game_controller import AbstractGameController
 from mlsl_simulation.game_model.controller.game_controller import GameController
 from mlsl_simulation.gui.render_mode import RenderMode
@@ -57,7 +57,7 @@ def main(
 
 if __name__ == '__main__':
     # main(
-    #     **SCENARIOS["CIRCUIT"], 
+    #     **load_scenario("CIRCUIT"),
     #     render_mode=RenderMode.GUI,
     #     show_reservation=True, 
     #     rl_mode=None, 
@@ -69,7 +69,7 @@ if __name__ == '__main__':
     #     id_hyperparams=None,
     #     )
     
-    scenario = SCENARIOS["TWO_CROSSINGS"]
+    scenario = load_scenario("TWO_CROSSINGS")
     main(
         scenario_name=scenario["scenario_name"],
         roads=scenario["roads"],
