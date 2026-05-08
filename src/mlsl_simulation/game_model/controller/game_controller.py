@@ -1,27 +1,31 @@
 import pyglet
 
 from typing import List
-from mlsl_simulation.game_model.car import Car
 from mlsl_simulation.game_model.controller.abstract_game_controller import AbstractGameController
 from mlsl_simulation.constants import TIME_PER_FRAME
 from mlsl_simulation.game_model.game_model import TrafficEnv
 from mlsl_simulation.game_model.road_network.road_network import Road
 from mlsl_simulation.gui.pyglet_gui import GameWindow
 from mlsl_simulation.gui.render_mode import RenderMode
+from mlsl_simulation.scenarios.predefined_cars import CarSpec
 
 class GameController(AbstractGameController):
     def __init__(
-            self, 
-            roads: List[Road], 
+            self,
+            roads: List[Road],
             players: int,
             render_mode: RenderMode,
-            show_reservation: bool = True, 
-            npc_cars: None | List[Car] = None, 
+            show_reservation: bool = True,
+            predefined_cars: None | List[CarSpec] = None,
             ):
-        
-        super().__init__(roads, players, render_mode, show_reservation) 
 
-        self.game_model: TrafficEnv = TrafficEnv(roads=self.roads, players=self.players, npc_cars=npc_cars)
+        super().__init__(roads, players, render_mode, show_reservation)
+
+        self.game_model: TrafficEnv = TrafficEnv(
+            roads=self.roads,
+            players=self.players,
+            predefined_cars=predefined_cars,
+        )
         self.done = None
 
 

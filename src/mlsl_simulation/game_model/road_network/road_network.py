@@ -240,16 +240,20 @@ class SegmentInfo:
 
 
 class Goal:
-    def __init__(self, lane_segment: LaneSegment, color: Color) -> None:
+    def __init__(self, lane_segment: LaneSegment, color: Color, loc: Optional[int] = None) -> None:
         """
         Initialize a Goal object.
 
         Args:
             lane_segment (LaneSegment): The lane segment the goal is on.
-            color (Color): The color of the goal.are
+            color (Color): The color of the goal.
+            loc (Optional[int]): Offset along the segment, measured from the
+                segment start in the lane's direction of travel. Defaults to
+                None, which places the goal at the segment midpoint.
         """
         self.pos = Point(0, 0)
         self.color = color
+        self.loc = loc
         self.update_lane_segment(lane_segment)
 
     def update_lane_segment(self, lane_segment: LaneSegment) -> None:
@@ -260,7 +264,12 @@ class Goal:
         """
         Update the position of the goal.
         """
-        mid_seg = (self.lane_segment.begin + self.lane_segment.end) // 2
-        self.pos = Point(mid_seg, self.lane_segment.lane.top + BLOCK_SIZE // 2) \
-            if self.lane_segment.lane.road.horizontal \
-            else Point(self.lane_segment.lane.top + BLOCK_SIZE // 2, mid_seg)
+        seg = self.lane_segment
+        if self.loc is None:
+            along = (seg.begin + seg.end) // 2
+        else:
+            sign = 1 if true_direction[seg.lane.direction] else -1
+            along = seg.begin + sign * self.loc
+        self.pos = Point(along, seg.lane.top + BLOCK_SIZE // 2) \
+            if seg.lane.road.horizontal \
+            else Point(seg.lane.top + BLOCK_SIZE // 2, along)

@@ -22,6 +22,7 @@ from mlsl_simulation.reinforcement_learning.rl_constants import TRAINING_TIMESTE
 from mlsl_simulation.reinforcement_learning.rl_modes import RLMode
 from mlsl_simulation.reinforcement_learning.rl_io import get_path_center, get_complete_path, load_best_params, load_best_model, save_best_params, save_study_materials, load_game_history
 from mlsl_simulation.reinforcement_learning.hyperparameters.optuna_serach import OptunaSearch
+from mlsl_simulation.scenarios.predefined_cars import CarSpec
 from stable_baselines3.common.monitor import Monitor
 from stable_baselines3.common.evaluation import evaluate_policy
 from stable_baselines3.common.callbacks import EvalCallback, CallbackList
@@ -43,6 +44,7 @@ class RLGameController(AbstractGameController):
             id_model: None | str = None,
             id_history: None | str = None,
             id_hyperparams: None | str = None,
+            predefined_cars: None | List[CarSpec] = None,
             ):
 
             super().__init__(roads, players, render_mode, show_reservation)
@@ -57,7 +59,12 @@ class RLGameController(AbstractGameController):
             self.id_model = id_model
             self.id_hyperparams = id_hyperparams
 
-            self.game_model: TrafficEnv = TrafficEnv(roads=self.roads, players=self.players, rl_mode=self.rl_mode)
+            self.game_model: TrafficEnv = TrafficEnv(
+                roads=self.roads,
+                players=self.players,
+                predefined_cars=predefined_cars,
+                rl_mode=self.rl_mode,
+            )
 
             self.path_center = get_path_center(
                 scenario=self.scenario_name,

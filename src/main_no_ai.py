@@ -5,13 +5,14 @@ from mlsl_simulation.gui.render_mode import RenderMode
 
 if __name__ == '__main__':
     
-    scenario = load_scenario("TWO_CROSSINGS")
+    scenario = load_scenario("TWO_CROSSINGS_PREDEFINED")
 
     controller: AbstractGameController = GameController(
         roads=scenario["roads"],
         players=scenario["players"],
         render_mode=RenderMode.GUI,
         show_reservation=True,
+        predefined_cars=scenario["predefined_cars"],
     )
     
     controller.run()

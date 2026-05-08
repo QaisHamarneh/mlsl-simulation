@@ -63,7 +63,7 @@ class Car:
 
         initial_segment_info = SegmentInfo(segment=segment,
                                            begin=self.loc,
-                                           end=(1 if true_direction[self.direction] else -1) * self.get_braking_distance(),
+                                           end=direction_sign[self.direction] * (abs(self.loc) + self.get_braking_distance()),
                                            direction=self.direction)
         reservation_management.add_car_reservation(car_id=self.id, segment_info=initial_segment_info)
 

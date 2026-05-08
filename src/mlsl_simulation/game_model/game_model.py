@@ -4,7 +4,7 @@ import logging
 
 from typing import Optional, Tuple, List
 from mlsl_simulation.controller.astar_car_controller import AstarCarController
-from mlsl_simulation.game_model.create_items.create_cars import create_goal, create_random_car
+from mlsl_simulation.game_model.create_items.create_cars import create_goal, create_predefined_car, create_random_car
 from mlsl_simulation.game_model.car import Car
 from mlsl_simulation.game_model.car_types import CarType
 from mlsl_simulation.game_model.event_checks import collision_check, reached_goal
@@ -14,6 +14,7 @@ from mlsl_simulation.constants import *
 from mlsl_simulation.game_model.reservations.reservation_management import ReservationManagement
 from mlsl_simulation.game_model.game_history import GameHistory
 from mlsl_simulation.reinforcement_learning.rl_modes import RLMode
+from mlsl_simulation.scenarios.predefined_cars import CarSpec
 
 class TrafficEnv:
     """
@@ -29,19 +30,23 @@ class TrafficEnv:
         time (int): Current time in the environment.
     """
 
-    def __init__(self, 
-                 roads: List[Road], 
+    def __init__(self,
+                 roads: List[Road],
                  players: int,
-                 npc_cars: None | List[Car] = None, 
+                 predefined_cars: None | List[CarSpec] = None,
                  rl_mode: None | RLMode = None):
         """
         Initialize the TrafficEnv.
 
         Args:
             roads (List[Road]): List of roads in the environment.
-            npcs (int): Number of npcs in the environment.
-            cars (Optional[List[Car]]): List of cars in the environment.
-            controllers (Optional[List[AstarCarController]]): List of car controllers.
+            players (int): Total number of NPC cars in the environment. Any
+                predefined NPC cars count toward this total — random NPCs are
+                spawned to top up to `players`.
+            predefined_cars (Optional[List[CarSpec]]): Optional scenario-supplied
+                car specs. May include at most one car of type AGENT, which
+                replaces the random agent car when `rl_mode` is set.
+            rl_mode (Optional[RLMode]): If set, the env spawns an agent car.
         """
         super().__init__()
         self.roads = roads
@@ -49,12 +54,30 @@ class TrafficEnv:
         self.npcs: int = players
         self.agent: bool = False if rl_mode is None else True
 
+        self.predefined_cars: List[CarSpec] = list(predefined_cars) if predefined_cars else []
+        agent_specs = [s for s in self.predefined_cars if s.type == CarType.AGENT]
+        if len(agent_specs) > 1:
+            raise ValueError(
+                f"At most one predefined car of type AGENT is allowed; got {len(agent_specs)}"
+            )
+        self._predefined_agent: None | CarSpec = agent_specs[0] if agent_specs else None
+        if self._predefined_agent is not None and rl_mode is None:
+            raise ValueError(
+                "Scenario defines a predefined AGENT car but `rl_mode` is None; "
+                "set an rl_mode or change the car type to NPC."
+            )
+        self._predefined_npcs: List[CarSpec] = [s for s in self.predefined_cars if s.type == CarType.NPC]
+        if len(self._predefined_npcs) > self.npcs:
+            raise ValueError(
+                f"Scenario defines {len(self._predefined_npcs)} predefined NPCs "
+                f"but `players` is {self.npcs}; reduce predefined NPCs or raise players."
+            )
+
         # self.scores = None
         self.moved: bool = True
         self.time: int = 0
 
         self.cars: List[Car] = []
-        self.npc_cars_init = npc_cars
         self.npc_cars: List[Car] = []
         self.agent_car: None | Car = None
         self.controllers: List[AstarCarController] = []
@@ -89,16 +112,27 @@ class TrafficEnv:
         self.game_history.reset_history()
 
         if self.agent:
-            self.agent_car = create_random_car(self.roads, self.npc_cars, CarType.AGENT, self.reservation_management)
+            if self._predefined_agent is not None:
+                self.agent_car = create_predefined_car(
+                    self._predefined_agent, self.roads, self.cars, self.reservation_management
+                )
+            else:
+                self.agent_car = create_random_car(
+                    self.roads, self.cars, CarType.AGENT, self.reservation_management
+                )
             self.cars.append(self.agent_car)
 
-        if self.npc_cars_init is None:
-            for i in range(self.npcs):
-                car = create_random_car(self.roads, self.cars, CarType.NPC, self.reservation_management)
-                self.cars.append(car)
-                self.npc_cars.append(car)
-        else:
-            self.npc_cars = self.npc_cars_init.copy()
+        for spec in self._predefined_npcs:
+            car = create_predefined_car(spec, self.roads, self.cars, self.reservation_management)
+            self.cars.append(car)
+            self.npc_cars.append(car)
+
+        random_npcs_to_spawn = self.npcs - len(self._predefined_npcs)
+        for _ in range(random_npcs_to_spawn):
+            car = create_random_car(self.roads, self.cars, CarType.NPC, self.reservation_management)
+            self.cars.append(car)
+            self.npc_cars.append(car)
+
         for car in self.npc_cars:
             self.controllers.append(AstarCarController(car, self.cars, self.reservation_management))
 
