@@ -14,7 +14,7 @@ from mlsl_simulation.constants import *
 from mlsl_simulation.game_model.reservations.reservation_management import ReservationManagement
 from mlsl_simulation.game_model.game_history import GameHistory
 from mlsl_simulation.reinforcement_learning.rl_modes import RLMode
-from mlsl_simulation.scenarios.predefined_cars import CarSpec
+from mlsl_simulation.scenario_parser.predefined_cars import CarSpec
 
 class TrafficEnv:
     """
@@ -159,13 +159,17 @@ class TrafficEnv:
                 self.game_history.add_taken_action(self.agent_car, action)
 
         random.shuffle(self.controllers)
+        actions: dict[Car, Tuple[int, int]] = dict()
         for controller in self.controllers:
             car = controller.car
             npc_action = controller.get_action()
-            game_over.append(
-                self._execute_action(car=car, action=npc_action) if not car.get_death_status() else True
-            )
-            self.game_history.add_taken_action(car, npc_action)
+            if not car.get_death_status():
+                actions[car] = npc_action
+            else:
+                game_over.append(True)
+        for car, action in actions.items():
+            game_over.append(self._execute_action(car, action))
+            self.game_history.add_taken_action(car, action)
 
         deadlock = [True if car.speed == 0 else False for car in self.cars]
         if all(game_over):
@@ -177,17 +181,6 @@ class TrafficEnv:
         
         for controller in self.controllers:
             car = controller.car
-            reservations = self.reservation_management.get_car_reservations(car.id)
-            for i, res_seg in enumerate(reservations):
-                issues = False
-                if i == 0 and abs(res_seg.end) < res_seg.segment.length and len(reservations) > 1:
-                    print(f"Issue 1: {car.name} - {res_seg.end} {res_seg.segment.length} - {len(reservations)}")
-                    issues = True
-                elif i > 0 and abs(res_seg.begin) > 0:
-                    print(f"Issue 2: {car.name} - {i} - {res_seg.begin}")
-                    issues = True
-                if issues:
-                    print("------------------")
 
         return None
     
@@ -263,7 +256,6 @@ class TrafficEnv:
             print(f"{car.type}: {car.name} | Score: {car.score} | Dead: {car.get_death_status()}")
             game_over = car.get_death_status() and game_over
 
-        print(f"\nWinning Score -> {WINNING_SCORE}")
         print(f"Game Over -> {game_over}")
         print("---------------------\n")
 

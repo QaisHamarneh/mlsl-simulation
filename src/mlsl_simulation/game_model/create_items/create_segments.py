@@ -1,7 +1,11 @@
-import sys
 from typing import List, Tuple
 
 from mlsl_simulation.game_model.road_network.road_network import CrossingSegment, Direction, Intersection, LaneSegment, Road, Segment, true_direction
+
+
+class OverlappingRoadsError(ValueError):
+    """Raised when two roads of the same orientation overlap in the road network."""
+
 
 def create_segments(roads: List[Road]) -> Tuple[List[Segment], List[Intersection]]:
     """
@@ -11,7 +15,11 @@ def create_segments(roads: List[Road]) -> Tuple[List[Segment], List[Intersection
         roads (List[Road]): The list of roads to create segments for.
 
     Returns:
-        Optional[List[Segment]]: The list of created segments, or None if there was an overlap.
+        Tuple[List[Segment], List[Intersection]]: The list of created segments
+            and intersections.
+
+    Raises:
+        OverlappingRoadsError: If two roads of the same orientation overlap.
     """
     roads.sort(key=lambda r: r.top)
     segments:list[Segment] = []
@@ -20,14 +28,18 @@ def create_segments(roads: List[Road]) -> Tuple[List[Segment], List[Intersection
     horiz_roads = (road for road in roads if road.horizontal)
     for horiz_road in horiz_roads:
         if last_horiz > horiz_road.top:
-            print(f"\nRoad {horiz_road.name} overlaps with the previous road")
-            sys.exit(1)
+            raise OverlappingRoadsError(
+                f"Road {horiz_road.name!r} (top={horiz_road.top}) overlaps with the previous "
+                f"horizontal road (bottom={last_horiz})"
+            )
         last_vert = 0
         vert_roads = (road for road in roads if not road.horizontal)
         for vert_road in vert_roads:
             if last_vert > vert_road.top:
-                print(f"\nRoad {vert_road.name} {vert_road.top} overlaps with previous road {last_vert}")
-                sys.exit(1)
+                raise OverlappingRoadsError(
+                    f"Road {vert_road.name!r} (top={vert_road.top}) overlaps with the previous "
+                    f"vertical road (bottom={last_vert})"
+                )
             
             intersection:Intersection = Intersection(horiz_road, vert_road)
             intersections.append(intersection)

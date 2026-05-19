@@ -1,6 +1,7 @@
 import math
 
 import heapq
+import itertools
 from itertools import count
 
 from mlsl_simulation.game_model.car_types import CarType
@@ -11,6 +12,16 @@ from typing import Optional, List, Dict
 
 
 class Car:
+    # Monotonic counter used to build deterministic, process-stable car IDs.
+    # Tests that rely on exact ID values should call `Car.reset_id_counter()`
+    # in setup to make ID assignment reproducible across runs.
+    _id_counter: "itertools.count[int]" = itertools.count(1)
+
+    @classmethod
+    def reset_id_counter(cls) -> None:
+        """Reset the global car-ID counter so subsequent IDs start from 1."""
+        cls._id_counter = itertools.count(1)
+
     def __init__(self,
                  name: str,
                  type: CarType,
@@ -36,7 +47,9 @@ class Car:
             max_speed (int): The maximum speed of the car.
         """
         # fixed variables
-        self.id = name + "_" + str(id(self))
+        # Use a deterministic counter so IDs are stable across runs given a
+        # fixed creation order (which is itself controlled by random.seed).
+        self.id = f"{name}_{next(Car._id_counter)}"
         self.name = name
         self.type = type
         self.size = size
@@ -304,7 +317,11 @@ class Car:
 
         if speed is None:
             speed = self.speed
-        assert speed >= 0, f"Speed must be positive {self.type} - {speed}"
+        if speed < 0:
+            raise ValueError(
+                f"get_braking_distance requires non-negative speed; got {speed} "
+                f"for car {self.id!r} (type={self.type})."
+            )
         # braking = math.ceil(speed**2  // (2 * MAX_DEC))
 
         braking = 0
@@ -374,11 +391,11 @@ class Car:
 
 
         if len(segs) == 0:
-            print("Astar Error: No segments found by the astar function!")
+            # print("Astar Error: No segments found by the astar function!")
             return None
 
         if len(segs) == 1:
-            print("Astar Error: One segment found by the astar function!")
+            # print("Astar Error: One segment found by the astar function!")
             return None
 
         for i in range(1, len(segs)):

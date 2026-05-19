@@ -1,9 +1,13 @@
-import optuna
-
-from typing import Dict, Any
+from typing import TYPE_CHECKING, Dict, Any
 from abc import ABC, abstractmethod
 from mlsl_simulation.reinforcement_learning.gymnasium_env.mlsl_env import MlslEnv
-from stable_baselines3.common.base_class import BaseAlgorithm
+
+# optuna and stable_baselines3 are only referenced in type annotations here;
+# keep them under TYPE_CHECKING so importing this abstract base class doesn't
+# force the heavy ML stack to be available.
+if TYPE_CHECKING:
+    import optuna
+    from stable_baselines3.common.base_class import BaseAlgorithm
 
 class RLAlgorithm(ABC):
     """Abstract base class for reinforcement learning algorithms.
@@ -57,7 +61,7 @@ class RLAlgorithm(ABC):
         self.algorithm = self.create_algorithm(params)
 
     @abstractmethod
-    def create_algorithm(self, params: None | Dict[str, Any] = None) -> BaseAlgorithm:
+    def create_algorithm(self, params: None | Dict[str, Any] = None) -> "BaseAlgorithm":
         """Create and return a learning algorithm instance.
         
         Implemented by subclasses to instantiate the specific algorithm (PPO, DQN, etc.)
@@ -84,7 +88,7 @@ class RLAlgorithm(ABC):
         self.algorithm = self.create_algorithm(params)
 
     @abstractmethod
-    def get_sample_params(self, trial: optuna.Trial) -> Dict[str, Any]:
+    def get_sample_params(self, trial: "optuna.Trial") -> Dict[str, Any]:
         """Sample hyperparameters using an Optuna trial.
         
         Called by Optuna's objective function to generate hyperparameters to test.

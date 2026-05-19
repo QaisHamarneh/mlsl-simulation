@@ -2,9 +2,9 @@ import json
 from pathlib import Path
 
 from mlsl_simulation.game_model.road_network.road_network import Road
-from mlsl_simulation.scenarios.predefined_cars import CarSpec
+from mlsl_simulation.scenario_parser.predefined_cars import CarSpec
 
-_DATA_DIR = Path(__file__).parent / "data"
+_DATA_DIR = Path(__file__).resolve().parent.parent.parent / "scenarios"
 
 
 def load_scenario(scenario_key: str) -> dict:

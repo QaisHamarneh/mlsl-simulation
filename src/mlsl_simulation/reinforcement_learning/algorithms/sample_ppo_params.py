@@ -1,7 +1,10 @@
-from typing import Dict, Any, Union, Callable
+from typing import TYPE_CHECKING, Dict, Any, Union, Callable
 
-import optuna
-from torch import nn
+# optuna is imported lazily inside `sample_ppo_params` -- module-level imports
+# would force every caller (including unit tests on `constrain_ppo_params` or
+# `linear_schedule`) to install optuna.
+if TYPE_CHECKING:
+    import optuna
 
 """
 Taken from https://github.com/CppMaster/SC2-AI/blob/master/optuna_utils/sample_params/ppo.py.
@@ -48,7 +51,18 @@ def linear_schedule(initial_value: Union[float, str]) -> Callable[[float], float
     return func
 
 
-def sample_ppo_params(trial: optuna.Trial) -> Dict[str, Any]:
+def constrain_ppo_params(params: Dict[str, Any]) -> Dict[str, Any]:
+    # PPO/SB3 emits a "truncated mini-batch" warning unless batch_size divides
+    # n_steps * n_envs. Optuna stores raw suggested values in study.best_params,
+    # so this must also be applied when reading best_params back, not only at
+    # sampling time. Since both batch_size and n_steps are drawn from powers of
+    # two, clamping batch_size <= n_steps guarantees clean division for n_envs=1.
+    if "batch_size" in params and "n_steps" in params and params["batch_size"] > params["n_steps"]:
+        params = {**params, "batch_size": params["n_steps"]}
+    return params
+
+
+def sample_ppo_params(trial: "optuna.Trial") -> Dict[str, Any]:
     """
     Sample PPO hyperparameters using Optuna trial.
     
@@ -88,10 +102,6 @@ def sample_ppo_params(trial: optuna.Trial) -> Dict[str, Any]:
     # ortho_init = trial.suggest_categorical('ortho_init', [False, True])
     # activation_fn = trial.suggest_categorical('activation_fn', ['tanh', 'relu', 'elu', 'leaky_relu'])
 
-    # Ensure batch_size doesn't exceed n_steps
-    if batch_size > n_steps:
-        batch_size = n_steps
-
     # Apply learning rate schedule if linear
     if lr_schedule == "linear":
         learning_rate = linear_schedule(learning_rate)
@@ -104,7 +114,7 @@ def sample_ppo_params(trial: optuna.Trial) -> Dict[str, Any]:
     # # Convert activation function string to PyTorch module
     # activation_fn = {"tanh": nn.Tanh, "relu": nn.ReLU, "elu": nn.ELU, "leaky_relu": nn.LeakyReLU}[activation_fn]
 
-    return {
+    return constrain_ppo_params({
         "n_steps": n_steps,
         "batch_size": batch_size,
         "gamma": gamma,
@@ -122,4 +132,4 @@ def sample_ppo_params(trial: optuna.Trial) -> Dict[str, Any]:
         #     activation_fn=activation_fn,
         #     ortho_init=ortho_init,
         # ),
-    }
+    })

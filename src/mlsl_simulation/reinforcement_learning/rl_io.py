@@ -3,13 +3,17 @@ import datetime
 import pandas as pd
 import pickle
 
-from typing import Dict, Any, Tuple, List
+from typing import TYPE_CHECKING, Dict, Any, Tuple, List
 from mlsl_simulation.game_model.game_history import GameHistory
 from mlsl_simulation.reinforcement_learning.algorithms.rl_algorithm import RLAlgorithm
 from mlsl_simulation.reinforcement_learning.gymnasium_env.mlsl_env import MlslEnv
-from stable_baselines3.common.base_class import BaseAlgorithm
-from optuna.visualization import plot_param_importances
-from optuna.study import Study
+
+# stable_baselines3 and optuna are imported lazily inside the functions that
+# need them (loading models, plotting study results); the path helpers below
+# stay usable without those deps installed.
+if TYPE_CHECKING:
+    from stable_baselines3.common.base_class import BaseAlgorithm
+    from optuna.study import Study
 
 RESULT_MODEL_PATH = os.path.join('rl_results', 'models')
 RESULT_PARAM_PATH = os.path.join('rl_results', 'hyperparameters')
@@ -55,7 +59,7 @@ def get_complete_path(path_center: str, id: str, model: bool) -> str:
     return path
 
 
-def load_best_model(path_center: str, id: str, rl_algorithm: RLAlgorithm, env: MlslEnv) -> BaseAlgorithm:
+def load_best_model(path_center: str, id: str, rl_algorithm: RLAlgorithm, env: MlslEnv) -> "BaseAlgorithm":
     """Load a previously trained model from disk.
     
     Args:
@@ -85,7 +89,7 @@ def save_best_params(best_params_df: pd.DataFrame, path: str) -> None:
     best_params_df.to_parquet(best_params_path)
 
 
-def save_study_materials(study: Study, path: str) -> None:
+def save_study_materials(study: "Study", path: str) -> None:
     """Save Optuna study results and analysis.
     
     Saves:
@@ -96,6 +100,8 @@ def save_study_materials(study: Study, path: str) -> None:
         study (optuna.Study): The completed Optuna study
         path (str): Directory to save results to (created if not exists)
     """
+    from optuna.visualization import plot_param_importances
+
     os.makedirs(path, exist_ok=True)
 
     trials_path = os.path.join(path, TRIALS_FILE)

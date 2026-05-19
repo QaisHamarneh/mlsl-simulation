@@ -1,4 +1,3 @@
-import pyglet
 import time
 
 from abc import ABC, abstractmethod
@@ -7,9 +6,12 @@ from gymnasium import spaces
 from typing import Tuple, Dict
 from mlsl_simulation.game_model.game_model import TrafficEnv
 from mlsl_simulation.constants import MAX_ACC, MAX_DEC, TIME_PER_FRAME
-from mlsl_simulation.gui.pyglet_gui import GameWindow
 from mlsl_simulation.gui.render_mode import RenderMode
 from mlsl_simulation.reinforcement_learning.gymnasium_env.observation_spaces.abstract_observation import Observation
+from mlsl_simulation.reinforcement_learning.rl_constants import MAX_EPISODE_STEPS
+
+# pyglet and GameWindow are imported lazily so headless training and unit
+# tests can import this module without pulling in the GUI stack.
 
 class MlslEnv(Env, ABC):
     """Abstract Gymnasium environment for MLSL traffic simulation.
@@ -50,7 +52,7 @@ class MlslEnv(Env, ABC):
     ## Action Space
     
     MultiDiscrete with 2 components:
-    - Acceleration: [0, MAX_ACC + MAX_DEC - 1] → maps to [-MAX_DEC, MAX_ACC]
+    - Acceleration: [0, MAX_ACC + MAX_DEC] → maps to [-MAX_DEC, MAX_ACC]
     - Lane change: [0, 1, 2] → maps to [-1, 0, 1]
     
     ## Episode Termination
@@ -88,10 +90,12 @@ class MlslEnv(Env, ABC):
         self.game_model: TrafficEnv = game_model
 
         if self.render_mode == RenderMode.GUI:
+            from mlsl_simulation.gui.pyglet_gui import GameWindow
+
             self.game_window = GameWindow(
-                self.game_model.cars, 
-                self.game_model.roads, 
-                self.game_model.reservation_management, 
+                self.game_model.cars,
+                self.game_model.roads,
+                self.game_model.reservation_management,
                 self.show_reservation
                 )
         else:
@@ -101,12 +105,13 @@ class MlslEnv(Env, ABC):
 
         self.observation_model: Observation = observation_model
 
-        # accelaration = [0, MAX_DEC + MAX_ACC - 1] and lange changes = [0, 2]
-        self.action_space = spaces.MultiDiscrete([MAX_ACC + MAX_DEC, 3])
+        # accelaration = [0, MAX_DEC + MAX_ACC] and lange changes = [0, 2]
+        self.action_space = spaces.MultiDiscrete([MAX_ACC + MAX_DEC + 1, 3])
         self.observation_space = self.observation_model.space()
 
         self.done: bool = False
         self.truncated: bool = False
+        self.episode_step: int = 0
 
         self.map_history = self.game_model.game_history.map.copy()
         self.car_history = self.game_model.game_history.list_of_cars.copy()
@@ -129,6 +134,9 @@ class MlslEnv(Env, ABC):
                 - info: Dictionary with auxiliary information for debugging
         """
         self.game_model.reset()
+        self.episode_step = 0
+        self.done = False
+        self.truncated = False
         return (self.observation_model.observe(), self._get_info())
     
     def step(self, actions: Tuple[int, int]) -> Tuple[spaces.Space, float, bool, bool, Dict[str, any]]:
@@ -139,7 +147,7 @@ class MlslEnv(Env, ABC):
         
         Args:
             actions (Tuple[int, int]): Two-element action vector:
-                - actions[0]: Acceleration command [0, MAX_ACC + MAX_DEC - 1]
+                - actions[0]: Acceleration command [0, MAX_ACC + MAX_DEC]
                 - actions[1]: Lane change command [0, 1, 2]
         
         Returns:
@@ -151,12 +159,13 @@ class MlslEnv(Env, ABC):
                 - info (dict): Debugging information
         """
         # accelaration = [-MAX_DEC, MAX_ACC] and lange changes = [-1, 0, 1]
-        if actions[0] > MAX_DEC - 1:
-            decoded_action = (actions[0] - MAX_DEC + 1, actions[1] - 1)
-        else:
-            decoded_action = (actions[0] - MAX_DEC, actions[1] - 1)
+        decoded_action = (actions[0] - MAX_DEC, actions[1] - 1)
+
+        self.last_decoded_action: Tuple[int, int] = decoded_action
+        self._pre_step(decoded_action)
 
         self.result = self.game_model.play_step(action=decoded_action)
+        self.episode_step += 1
 
         observation = self.observation_model.observe()
 
@@ -168,6 +177,12 @@ class MlslEnv(Env, ABC):
         if self.result == "game_over":
             self.done = True
         elif self.result == "deadlock":
+            self.truncated = True
+        elif self.game_model.agent_car is not None and self.game_model.agent_car.get_death_status():
+            # Agent crashed; the RL episode is functionally over even if NPCs
+            # keep running. Without this, evaluate_policy can hang forever.
+            self.done = True
+        elif self.episode_step >= MAX_EPISODE_STEPS:
             self.truncated = True
 
         info = self._get_info() # for debugging
@@ -192,13 +207,24 @@ class MlslEnv(Env, ABC):
 
     def _render_frame(self):
         """Render a single frame to the display window.
-        
+
         Handles display events, drawing, and frame refresh using Pyglet.
         """
+        import pyglet
+
         self.game_window.dispatch_events()
         self.game_window.on_draw()
         pyglet.clock.tick()
         self.game_window.flip()
+
+    def _pre_step(self, decoded_action: Tuple[int, int]) -> None:
+        """Hook invoked just before the simulation advances on each step.
+
+        Subclasses override this to inspect the pre-step game state — for
+        example, to query a SafetyController for the action the agent is
+        about to take. Default implementation is a no-op.
+        """
+        pass
 
     @abstractmethod
     def compute_reward(self) -> float:

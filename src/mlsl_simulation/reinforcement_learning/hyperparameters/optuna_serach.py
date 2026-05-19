@@ -1,13 +1,15 @@
-import optuna
+from typing import TYPE_CHECKING
 
-from optuna.samplers import TPESampler
-from optuna.pruners import MedianPruner
-from optuna.visualization import plot_optimization_history, plot_param_importances, plot_timeline
-from optuna.study import Study
-from stable_baselines3.common.callbacks import StopTrainingOnNoModelImprovement, EvalCallback
 from mlsl_simulation.reinforcement_learning.algorithms.sample_ppo_params import sample_ppo_params
 from mlsl_simulation.reinforcement_learning.algorithms.rl_algorithm import RLAlgorithm
 from mlsl_simulation.reinforcement_learning.rl_constants import HYPERPARAMS_TRAINING_TIMESTEPS, OPTUNA_TRIALS, OPTUNA_PARALLEL_JOBS
+
+# optuna and stable_baselines3 are heavy deps imported lazily inside the
+# methods that need them, so this module can be imported by lighter tools
+# (e.g. tests that monkey-patch search_params) without paying that cost.
+if TYPE_CHECKING:
+    import optuna
+    from optuna.study import Study
 
 class OptunaSearch:
     """Hyperparameter optimization using Optuna.
@@ -52,16 +54,19 @@ class OptunaSearch:
     
     def __init__(self, rl_algorithm: RLAlgorithm):
         """Initialize the hyperparameter search.
-        
+
         Args:
             rl_algorithm (RLAlgorithm): The algorithm to optimize (PPO, etc.)
         """
+        from optuna.samplers import TPESampler
+        from optuna.pruners import MedianPruner
+
         self.rl_algorithm = rl_algorithm
 
         self.sampler = TPESampler(n_startup_trials=10, multivariate=True)
         self.pruner = MedianPruner(n_startup_trials=10, n_warmup_steps=10)
 
-    def search_params(self) -> Study:
+    def search_params(self) -> "Study":
         """Execute the hyperparameter optimization search.
         
         Runs multiple trials to find the best hyperparameters. Each trial trains
@@ -74,6 +79,8 @@ class OptunaSearch:
                 - trials_dataframe(): DataFrame with all trial results
                 - For visualization, use plot_optimization_history(study), etc.
         """
+        import optuna
+
         study = optuna.create_study(
             sampler=self.sampler,
             pruner=self.pruner,
@@ -84,7 +91,7 @@ class OptunaSearch:
 
         return study
 
-    def objective(self, trial: optuna.Trial) -> float:
+    def objective(self, trial: "optuna.Trial") -> float:
         """Objective function for a single Optuna trial.
         
         This function is called for each trial. It samples hyperparameters, trains
@@ -105,18 +112,27 @@ class OptunaSearch:
             4. Evaluate on validation data
             5. Return mean reward
         """
+        from stable_baselines3.common.callbacks import StopTrainingOnNoModelImprovement, EvalCallback
+
         sampled_hyperparams = self.rl_algorithm.get_sample_params(trial)
 
         self.rl_algorithm.change_params(sampled_hyperparams)
 
         self.model = self.rl_algorithm.algorithm
 
-        stop_callback = StopTrainingOnNoModelImprovement(max_no_improvement_evals=30, min_evals=50, verbose=1)
+        # eval_freq must leave room for several evaluations within
+        # HYPERPARAMS_TRAINING_TIMESTEPS, otherwise StopTrainingOnNoModelImprovement
+        # never reaches min_evals and the callback is effectively dead code.
+        eval_freq = max(1, HYPERPARAMS_TRAINING_TIMESTEPS // 10)
+        stop_callback = StopTrainingOnNoModelImprovement(max_no_improvement_evals=5, min_evals=5, verbose=1)
+        # n_eval_episodes=1 keeps eval cheap; episodes can still be long even with
+        # the MAX_EPISODE_STEPS cap in MlslEnv.
         eval_callback = EvalCallback(self.model.get_env(),
                                      callback_after_eval=stop_callback,
-                                     eval_freq=500,
+                                     eval_freq=eval_freq,
+                                     n_eval_episodes=1,
                                      render=False)
-        
+
         self.model.learn(total_timesteps=HYPERPARAMS_TRAINING_TIMESTEPS, callback=eval_callback, progress_bar=True)
 
         return eval_callback.best_mean_reward

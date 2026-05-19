@@ -48,7 +48,11 @@ class AstarCarController:
 
         if self.car.changing_lane:
             lane_change_segment = self.reservation_management.get_reserved_lane_change_segment(self.car.id)
-            assert lane_change_segment is not None, "lane_change_segment is none while lane changing"
+            if lane_change_segment is None:
+                raise RuntimeError(
+                    f"Car {self.car.id!r} is marked as changing_lane but has no reserved "
+                    f"lane-change segment in ReservationManagement."
+                )
             lane_change_segment_info = SegmentInfo(
                     lane_change_segment[1],
                     reservations[0].begin,
@@ -81,8 +85,16 @@ class AstarCarController:
         current_seg_info = reservations[0]
         current_lane_seg = current_seg_info.segment
 
-        assert len(reservations) == 1, "Lane changing on multiple segments"
-        assert isinstance(current_lane_seg, LaneSegment), "Lane changing on intersection"
+        if len(reservations) != 1:
+            raise RuntimeError(
+                f"_choose_lane_change called with {len(reservations)} reservations; "
+                f"lane changes require exactly one reservation (a single LaneSegment)."
+            )
+        if not isinstance(current_lane_seg, LaneSegment):
+            raise RuntimeError(
+                f"_choose_lane_change called on a {type(current_lane_seg).__name__}; "
+                f"lane changes are only valid on LaneSegments."
+            )
 
         current_lane_num = current_lane_seg.lane.num
         is_right_dir = right_direction[current_lane_seg.lane.direction]

@@ -276,7 +276,10 @@ main(
 
 # Train agent from scratch
 main(
-    **SCENARIOS["TWO_CROSSINGS"],
+    scenario_name=scenario["scenario_name"],
+    roads=scenario["roads"],
+    players=scenario["players"],
+    predefined_cars=scenario["predefined_cars"],
     render_mode=RenderMode.NO_GUI,
     show_reservation=False,
     rl_mode=RLMode.TRAIN,
@@ -291,7 +294,10 @@ main(
 ```python
 
 main(
-    **SCENARIOS["TWO_CROSSINGS"],
+    scenario_name=scenario["scenario_name"],
+    roads=scenario["roads"],
+    players=scenario["players"],
+    predefined_cars=scenario["predefined_cars"],
     render_mode=RenderMode.NO_GUI,
     show_reservation=False,
     rl_mode=RLMode.OPTIMIZE,
@@ -307,7 +313,10 @@ main(
 
 # Optimize hyperparameters, then train with best ones
 main(
-    **SCENARIOS["TWO_CROSSINGS"],
+    scenario_name=scenario["scenario_name"],
+    roads=scenario["roads"],
+    players=scenario["players"],
+    predefined_cars=scenario["predefined_cars"],
     render_mode=RenderMode.NO_GUI,
     show_reservation=False,
     rl_mode=RLMode.OPTIMIZE_AND_TRAIN,
@@ -323,7 +332,10 @@ main(
 
 # Load and visualize trained model
 main(
-    **SCENARIOS["TWO_CROSSINGS"],
+    scenario_name=scenario["scenario_name"],
+    roads=scenario["roads"],
+    players=scenario["players"],
+    predefined_cars=scenario["predefined_cars"],
     render_mode=RenderMode.GUI,
     show_reservation=True,
     rl_mode=RLMode.LOAD_TRAINED_MODEL,
@@ -340,7 +352,10 @@ main(
 
 # Replay a recorded episode
 main(
-    **SCENARIOS["TWO_CROSSINGS"],
+    scenario_name=scenario["scenario_name"],
+    roads=scenario["roads"],
+    players=scenario["players"],
+    predefined_cars=scenario["predefined_cars"],
     render_mode=RenderMode.GUI,
     show_reservation=True,
     rl_mode=RLMode.LOAD_HISTORY,

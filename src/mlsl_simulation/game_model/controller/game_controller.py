@@ -1,13 +1,14 @@
-import pyglet
-
 from typing import List
 from mlsl_simulation.game_model.controller.abstract_game_controller import AbstractGameController
 from mlsl_simulation.constants import TIME_PER_FRAME
 from mlsl_simulation.game_model.game_model import TrafficEnv
 from mlsl_simulation.game_model.road_network.road_network import Road
-from mlsl_simulation.gui.pyglet_gui import GameWindow
 from mlsl_simulation.gui.render_mode import RenderMode
-from mlsl_simulation.scenarios.predefined_cars import CarSpec
+from mlsl_simulation.scenario_parser.predefined_cars import CarSpec
+
+# pyglet and GameWindow are imported lazily inside the GUI methods so that
+# importing this module (and running NO_GUI simulations / unit tests) does
+# not require the pyglet GUI stack.
 
 class GameController(AbstractGameController):
     def __init__(
@@ -40,11 +41,16 @@ class GameController(AbstractGameController):
 
 
     def _run_gui(self) -> None:
+        import pyglet
+
         self._start_new_game()
         pyglet.app.run()
 
 
     def _start_new_game(self) -> None:
+        import pyglet
+        from mlsl_simulation.gui.pyglet_gui import GameWindow
+
         self.game_model.reset()
         self.done = None
         self.frame_count = 0

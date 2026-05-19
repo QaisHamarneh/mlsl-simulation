@@ -10,7 +10,7 @@ from mlsl_simulation.game_model.reservations.reservation_management import Reser
 from mlsl_simulation.game_model.road_network.road_network import Color, Goal, LaneSegment, Road, Segment
 from mlsl_simulation.gui.colors import colors
 from mlsl_simulation.gui.selected_colors import selected_colors
-from mlsl_simulation.scenarios.predefined_cars import CarSpec, GoalSpec, resolve_segment
+from mlsl_simulation.scenario_parser.predefined_cars import CarSpec, GoalSpec, resolve_segment
 
 
 def _pick_name_color(cars: List['Car']) -> Tuple[str, Color]:

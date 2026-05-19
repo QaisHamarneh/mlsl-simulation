@@ -1,11 +1,15 @@
-import optuna
+from typing import TYPE_CHECKING, Dict, Any
 
-from typing import Dict, Any
-from stable_baselines3 import PPO
 from mlsl_simulation.reinforcement_learning.algorithms.rl_algo_registry import register_rl_algorithm
 from mlsl_simulation.reinforcement_learning.algorithms.rl_algorithm import RLAlgorithm
 from mlsl_simulation.reinforcement_learning.algorithms.rl_algorithm_types import RLAlgorithmType
 from mlsl_simulation.reinforcement_learning.algorithms.sample_ppo_params import sample_ppo_params
+
+# Heavy deps are imported lazily so importing this module (e.g. for the algo
+# registry side effect) does not require stable_baselines3 or optuna.
+if TYPE_CHECKING:
+    import optuna
+    from stable_baselines3 import PPO
 
 @register_rl_algorithm(RLAlgorithmType.PPO)
 class PPOAlgorithm(RLAlgorithm):
@@ -28,7 +32,7 @@ class PPOAlgorithm(RLAlgorithm):
     - Stable Baselines3: https://stable-baselines3.readthedocs.io/en/master/modules/ppo.html
     """
     
-    def create_algorithm(self, params: Dict[str, Any] | None = None) -> PPO:
+    def create_algorithm(self, params: Dict[str, Any] | None = None) -> "PPO":
         """Create a PPO algorithm instance.
         
         Initializes a PPO agent with the given environment and hyperparameters.
@@ -51,13 +55,15 @@ class PPOAlgorithm(RLAlgorithm):
             ... }
             >>> algo = PPOAlgorithm(env, params)
         """
+        from stable_baselines3 import PPO
+
         if params == None:
             return PPO("MlpPolicy", self.env)
         else:
             print(params)
             return PPO("MlpPolicy", self.env, **params)
-        
-    def get_sample_params(self, trial: optuna.Trial) -> Dict[str, Any]:
+
+    def get_sample_params(self, trial: "optuna.Trial") -> Dict[str, Any]:
         """Sample PPO hyperparameters for Optuna optimization.
         
         Generates random hyperparameter combinations within sensible ranges

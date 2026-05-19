@@ -1,15 +1,12 @@
-import optuna
-import pandas as pd
 import datetime
 
-from typing import List, Callable, Dict
+from typing import TYPE_CHECKING, List, Callable, Dict
 from mlsl_simulation.game_model.controller.abstract_game_controller import AbstractGameController
 from mlsl_simulation.game_model.game_model import TrafficEnv
 from mlsl_simulation.game_model.road_network.road_network import Road
 from mlsl_simulation.game_model.game_history import GameHistory
 from mlsl_simulation.gui.render_mode import RenderMode
 from mlsl_simulation.reinforcement_learning.gymnasium_env.mlsl_env import MlslEnv
-from mlsl_simulation.reinforcement_learning.gymnasium_env.callbacks.game_history_callback import GameHistoryCallback
 from mlsl_simulation.reinforcement_learning.gymnasium_env.reward_types import RewardType
 from mlsl_simulation.reinforcement_learning.gymnasium_env.reward_registry import get_reward_model
 from mlsl_simulation.reinforcement_learning.gymnasium_env.observation_spaces.observation_model_types import ObservationModelType
@@ -18,14 +15,17 @@ from mlsl_simulation.reinforcement_learning.gymnasium_env.observation_spaces.obs
 from mlsl_simulation.reinforcement_learning.algorithms.rl_algorithm import RLAlgorithm
 from mlsl_simulation.reinforcement_learning.algorithms.rl_algorithm_types import RLAlgorithmType
 from mlsl_simulation.reinforcement_learning.algorithms.rl_algo_registry import get_rl_algo
+from mlsl_simulation.reinforcement_learning.algorithms.sample_ppo_params import constrain_ppo_params
 from mlsl_simulation.reinforcement_learning.rl_constants import TRAINING_TIMESTEPS
 from mlsl_simulation.reinforcement_learning.rl_modes import RLMode
 from mlsl_simulation.reinforcement_learning.rl_io import get_path_center, get_complete_path, load_best_params, load_best_model, save_best_params, save_study_materials, load_game_history
-from mlsl_simulation.reinforcement_learning.hyperparameters.optuna_serach import OptunaSearch
-from mlsl_simulation.scenarios.predefined_cars import CarSpec
-from stable_baselines3.common.monitor import Monitor
-from stable_baselines3.common.evaluation import evaluate_policy
-from stable_baselines3.common.callbacks import EvalCallback, CallbackList
+from mlsl_simulation.scenario_parser.predefined_cars import CarSpec
+
+# Heavy ML/optimization deps are imported lazily inside the methods that need
+# them (training, evaluation, hyperparameter search). This lets non-RL parts
+# of the codebase import this module without paying the optuna/sb3 cost.
+if TYPE_CHECKING:
+    import optuna  # noqa: F401
 
 class RLGameController(AbstractGameController):
     mode_handlers: Dict[RLMode, Callable] = {}
@@ -80,11 +80,13 @@ class RLGameController(AbstractGameController):
 
             env_class: MlslEnv = get_reward_model(self.reward_type)
             self.env: MlslEnv = env_class(
-                game_model=self.game_model, 
-                observation_model=self.observation_model, 
+                game_model=self.game_model,
+                observation_model=self.observation_model,
                 render_mode=self.render_mode,
                 show_reservation=self.show_reservation,
                 )
+            from stable_baselines3.common.monitor import Monitor
+
             self.env = Monitor(self.env) # Used to know the episode reward, length, time and other data
 
             rl_algo_class: RLAlgorithm = get_rl_algo(self.rl_algorithm_type)
@@ -123,26 +125,33 @@ class RLGameController(AbstractGameController):
 
     @register_mode(mode_handlers, RLMode.TRAIN) # _train_model = register_mode(mode_handlers, RLMode.TRAIN)(_train_model)
     def _train_model(self):
+        from stable_baselines3.common.callbacks import EvalCallback, CallbackList
+        from stable_baselines3.common.evaluation import evaluate_policy
+
+        from mlsl_simulation.reinforcement_learning.gymnasium_env.callbacks.game_history_callback import GameHistoryCallback
+
         if self.id_hyperparams != None:
             hyperparams = load_best_params(self.path_center, self.id_hyperparams)
             self.rl_algorithm.change_params(hyperparams)
 
         # Used to save the best model
-        eval_callback = EvalCallback(self.env, 
+        eval_callback = EvalCallback(self.env,
                                      best_model_save_path=self.model_path,
                                      eval_freq=500,
                                      render=self.render_mode.value)
-        
+
         history_callback = GameHistoryCallback(self.env.unwrapped, self.model_path)
 
         # Train the agent
         self.rl_algorithm.algorithm.learn(total_timesteps=TRAINING_TIMESTEPS, callback=CallbackList([eval_callback, history_callback]), progress_bar=True)
-        
+
         evaluate_policy(self.rl_algorithm.algorithm, self.env, n_eval_episodes=1, render=self.render_mode.value)
 
 
     @register_mode(mode_handlers, RLMode.LOAD_TRAINED_MODEL)
     def _load_model(self):
+        from stable_baselines3.common.evaluation import evaluate_policy
+
         model = load_best_model(self.path_center, self.id_model, self.rl_algorithm, self.env)
         evaluate_policy(model, self.env, n_eval_episodes=1, render=self.render_mode.value)
 
@@ -163,11 +172,19 @@ class RLGameController(AbstractGameController):
 
     @register_mode(mode_handlers, RLMode.OPTIMIZE)
     def _optimize_hyperparams(self):
+        import pandas as pd
+
+        from mlsl_simulation.reinforcement_learning.hyperparameters.optuna_serach import OptunaSearch
+
         optuna_search = OptunaSearch(self.rl_algorithm)
-        study: optuna.Study = optuna_search.search_params()
+        study = optuna_search.search_params()
 
         best_params = study.best_params.copy()
         best_params.pop("lr_schedule")
+        # study.best_params returns the values Optuna originally suggested, not the
+        # post-correction ones used inside the trial. Re-apply the PPO constraint
+        # so the saved/loaded best_params don't trigger SB3's truncated mini-batch warning.
+        best_params = constrain_ppo_params(best_params)
 
         best_params_df = pd.DataFrame([best_params])
         save_best_params(best_params_df, self.hyperparams_path)

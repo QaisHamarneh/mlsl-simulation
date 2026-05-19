@@ -38,9 +38,8 @@ class SafetyController:
         """
         if self.first_go:
             self.first_go = False
-            return 0, 0
+            return 0
         
-        lane_change = NO_LANE_CHANGE
         reservations = self.reservation_management.get_car_reservations(self.car.id)
 
         max_possible_acc = self.get_accelerate(reservations, True)
@@ -48,7 +47,11 @@ class SafetyController:
 
         if self.car.changing_lane:
             lane_change_segment = self.reservation_management.get_reserved_lane_change_segment(self.car.id)
-            assert lane_change_segment is not None, "lane_change_segment is none while lane changing"
+            if lane_change_segment is None:
+                raise RuntimeError(
+                    f"Car {self.car.id!r} is marked as changing_lane but has no reserved "
+                    f"lane-change segment in ReservationManagement."
+                )
             lane_change_segment_info = SegmentInfo(
                     lane_change_segment[1],
                     reservations[0].begin,
@@ -67,7 +70,7 @@ class SafetyController:
 
         return max_possible_acc
 
-    def get_safe_lane_change(self, reservations: list[SegmentInfo], current_acc: int) -> list[int]:
+    def get_safe_lane_change(self, reservations: list[SegmentInfo], current_acc: int) -> list[bool]:
         """
         Decide a single-step lane change action by comparing the safe acceleration
         of every lane on the current road. The car moves toward the lane with the
@@ -76,9 +79,9 @@ class SafetyController:
         current_seg_info = reservations[0]
         current_lane_seg = current_seg_info.segment
 
-        results = [0, 1, 0]
+        results = [False, True, False]
 
-        if len(reservations) != 1 or ! isinstance(current_lane_seg, LaneSegment): 
+        if len(reservations) != 1 or not isinstance(current_lane_seg, LaneSegment): 
             return results
         
         # Reject if the lane change cannot complete before the segment ends.
@@ -98,7 +101,7 @@ class SafetyController:
             )
             if self._check_collision(target_seg_info):
                 continue
-            results[1 + i] = 1
+            results[1 + i] = True
         
         return results
 

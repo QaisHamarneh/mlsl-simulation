@@ -4,6 +4,6 @@ venv
 ./idea
 .idea
 *.DS_Store
-build
+build/*
 src/mlsl_simulation.egg-info
-rl_results/
+rl_results/*

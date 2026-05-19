@@ -1,4 +1,3 @@
-import pyglet
 import time
 from copy import deepcopy
 
@@ -7,7 +6,9 @@ from mlsl_simulation.game_model.road_network.road_network import Road
 from mlsl_simulation.game_model.car import Car
 from mlsl_simulation.game_model.car_types import CarType
 from mlsl_simulation.constants import TIME_PER_FRAME
-from mlsl_simulation.gui.pyglet_gui import GameWindow
+
+# pyglet and GameWindow are imported lazily inside `history_playback` /
+# `_render_frame` so importing this module does not require the GUI stack.
 
 
 class GameHistory():
@@ -47,6 +48,8 @@ class GameHistory():
     
 
     def history_playback(self, show_reservations: bool) -> None:
+        from mlsl_simulation.gui.pyglet_gui import GameWindow
+
         for car in self.list_of_cars:
             car.reset()
             print(type(car))
@@ -72,6 +75,8 @@ class GameHistory():
 
 
     def _render_frame(self):
+        import pyglet
+
         self.game_window.dispatch_events()
         self.game_window.on_draw()
         pyglet.clock.tick()
